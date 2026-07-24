@@ -3,7 +3,8 @@
 Aplicación local que, en fases posteriores, permitirá consultar documentos
 jurídicos mediante recuperación aumentada por generación (RAG). El estado
 actual incorpora la gestión y carga diferida del modelo generativo local y la
-carga controlada de PDF, pero todavía no incluye extracción, embeddings ni RAG.
+carga controlada de PDF y extracción local. Todavía no incluye embeddings ni
+RAG.
 
 > **Advertencia profesional:** esta aplicación será una herramienta de apoyo.
 > No toma decisiones jurídicas definitivas ni sustituye el análisis, la
@@ -15,9 +16,10 @@ carga controlada de PDF, pero todavía no incluye extracción, embeddings ni RAG
   `GET /api/health` y el estado seguro `GET /api/models/status`.
 - **Frontend:** React, TypeScript y Vite, con React Router y TanStack Query.
   La página inicial muestra el estado real de conexión con el backend.
-- **Persistencia documental (Fase 2 completada):** SQLite registra metadatos y los PDF
-  validados se almacenan localmente por categoría. La base no se crea durante
-  imports ni al iniciar FastAPI; no hay extracción de texto, páginas o chunks.
+- **Extracción documental (Fase 3 completada):** PyMuPDF extrae texto por
+  solicitud manual, SQLite persiste páginas y chunks trazables. La validación
+  real confirmó 28 páginas, 44 chunks y 71.111 caracteres. No hay OCR;
+  los PDF escaneados sin capa de texto fallan de forma controlada.
 - **LLM local:** Qwen3-1.7B Q4_K_M en formato GGUF, ejecutado directamente con
   `llama-cpp-python` sobre CPU. La carga es diferida y nunca ocurre al importar
   módulos ni al iniciar FastAPI.
@@ -91,6 +93,9 @@ Los endpoints disponibles son:
 - `http://localhost:8000/api/models/status`
 - `POST http://localhost:8000/api/documents`
 - `GET http://localhost:8000/api/documents`
+- `POST http://localhost:8000/api/documents/{document_id}/extract`
+- `GET http://localhost:8000/api/documents/{document_id}/pages`
+- `GET http://localhost:8000/api/documents/{document_id}/chunks`
 
 Consultar el estado no descarga ni carga el modelo y nunca expone rutas
 absolutas. Si el adaptador compartido aún no existe, esta consulta tampoco lo
@@ -205,8 +210,8 @@ de persistencia y carga controlada de documentos. La
 inferencia solo está disponible mediante el script manual después de instalar
 dependencias y descargar el modelo; no existe todavía un endpoint de prompts.
 
-El proyecto sigue sin extracción o procesamiento de contenido PDF, OCR,
-embeddings, SQLite FTS5, ChromaDB,
+El proyecto sigue sin OCR, embeddings, indexación semántica, SQLite FTS5,
+ChromaDB, RAG ni inferencia jurídica,
 autenticación, CUDA, streaming, Docker ni despliegue.
 
 Las próximas fases previstas son persistencia, ingestión controlada,

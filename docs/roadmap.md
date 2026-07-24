@@ -19,22 +19,28 @@
 - Estado seguro en `GET /api/models/status`.
 - Pruebas unitarias con temporales y mocks, sin modelo real.
 
-## Fases siguientes propuestas
+## Fase 3 — completada: extracción, páginas y chunks
 
-1. **Persistencia:** diseño del esquema SQLite, repositorios y migraciones con
-   una estrategia explícita de respaldo.
-2. **Ingestión:** validación de archivos, extracción PDF, limpieza y
-   segmentación jurídica, sin OCR inicialmente.
-3. **Recuperación textual:** FTS5, filtros y referencias a documento y página.
-4. **Embeddings:** instalación verificada de `multilingual-e5-small`, lotes e
-   índice ChromaDB reconstruible.
-5. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
+- Extracción local con PyMuPDF mediante endpoint manual.
+- Persistencia SQLite de páginas y chunks trazables.
+- Limpieza conservadora y chunking jurídico determinista.
+- Sin OCR, embeddings, FTS5 ni RAG.
+- Validación manual: 28 páginas, 44 chunks, 71.111 caracteres y máximo de
+  1.969 caracteres por chunk.
+
+## Próxima fase: embeddings
+
+1. **Embeddings:** instalación verificada de `multilingual-e5-small`, lotes e
+   índice local, sin servicios externos.
+2. **Recuperación textual:** FTS5, filtros y referencias a documento y página.
+3. **Búsqueda semántica:** índice ChromaDB reconstruible.
+4. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
    evaluación usando el adaptador Qwen3 ya disponible.
-6. **Estructuras jurídicas:** relaciones entre hechos, pruebas y normas, con
+5. **Estructuras jurídicas:** relaciones entre hechos, pruebas y normas, con
    validación humana obligatoria.
-7. **Escenarios preliminares:** métricas y explicaciones, nunca decisiones
+6. **Escenarios preliminares:** métricas y explicaciones, nunca decisiones
    jurídicas automáticas.
-8. **Seguridad operativa:** autenticación local si se requiere, respaldo,
+7. **Seguridad operativa:** autenticación local si se requiere, respaldo,
    auditoría y políticas de retención.
 
 Cada fase deberá incorporar pruebas, límites de privacidad, medición de

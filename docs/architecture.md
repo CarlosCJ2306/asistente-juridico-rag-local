@@ -20,7 +20,7 @@ FastAPI en localhost:8000
         ├── router /api
         ├── respuesta de salud
         ├── estado físico seguro del modelo, sin cargarlo
-        └── carga y consulta de metadatos PDF controladas
+        └── carga, extracción manual y consulta documental controladas
 ```
 
 El frontend usa TanStack Query para representar carga, disponibilidad o error.
@@ -35,6 +35,8 @@ funcionalidad jurídica simulada.
 - `services/document_service.py`: valida PDF, escribe por bloques en temporal,
   calcula SHA-256, detecta duplicados y coordina el movimiento atómico con
   SQLite sin registrar contenido documental.
+- `services/document_extraction_service.py`: coordina el flujo PDF → páginas
+  limpias → chunks jurídicos en una transacción SQLite.
 - `database/`: base declarativa, modelo `documents`, repositorio y sesiones
   SQLAlchemy asíncronas creadas bajo demanda. No conecta, crea tablas ni migra
   durante imports o inicio de FastAPI.
@@ -55,8 +57,9 @@ Las tablas se crean exclusivamente mediante Alembic. La migración inicial crea
 solo `documents`, sus índices y restricciones; FastAPI no ejecuta migraciones
 ni crea la base al iniciar. El bloque 2B recibe PDF por `POST /api/documents`,
 valida nombre, MIME, extensión, firma y límite, y conserva el original bajo
-`storage/documents/<categoría>/`. No extrae texto, no crea páginas ni chunks,
-y no utiliza modelos ni embeddings.
+`storage/documents/<categoría>/`. La extracción se solicita manualmente, usa
+PyMuPDF y persiste páginas y chunks; SQLite sigue siendo la fuente de verdad.
+No hay OCR, embeddings, FTS5 ni RAG.
 
 ## Ciclo del modelo local
 
@@ -87,5 +90,7 @@ se limita automáticamente el número de hilos.
 SQLite es la fuente de verdad para metadatos documentales. SQLite FTS5 atenderá
 recuperación léxica y ChromaDB será un índice semántico reconstruible en fases
 posteriores. Qwen3-1.7B GGUF ya cuenta con gestión y adaptador local; los
-embeddings con `multilingual-e5-small`, RAG y el procesamiento documental aún
-no están implementados.
+La Fase 3 está completada y validada manualmente: SQLite contiene 28 páginas y
+44 chunks, con reconstrucción de palabras de PyMuPDF y overlap en límites de
+palabra. Embeddings con `multilingual-e5-small`, indexación semántica, FTS5,
+ChromaDB, RAG e inferencia jurídica aún no están implementados.

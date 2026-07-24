@@ -43,7 +43,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 0 | Estructura inicial | Proveer base web, configuración, salud y observabilidad. | Completada | FastAPI, React, TypeScript, Vite | `/api/health`, logging centralizado, pruebas y analizadores disponibles. |
 | 1 | Modelo generativo local | Gestionar, verificar y probar Qwen3 local bajo demanda. | Completada | GGUF Qwen3, `llama-cpp-python`, Hugging Face solo para descarga | Archivo verificado, carga diferida, estado seguro e inferencia conversacional controlada. |
 | 2 | Persistencia y registro documental | Registrar metadatos y archivos PDF de forma controlada. | Completada | Fase 0 | Metadatos, carga PDF segura, hash, duplicados y borrado lógico; sin extracción de texto, páginas ni chunks. |
-| 3 | Extracción, páginas y chunks | Extraer contenido y segmentarlo con trazabilidad documental. | Pendiente | Fase 2, PyMuPDF | Páginas y chunks persistidos con referencia a documento y página. |
+| 3 | Extracción, páginas y chunks | Extraer contenido y segmentarlo con trazabilidad documental. | Completada | Fase 2, PyMuPDF | Páginas y chunks persistidos con referencia a documento y página. |
 | 4 | Embeddings | Instalar y gestionar `multilingual-e5-small` localmente. | Pendiente | Fase 3, Sentence Transformers | Embeddings reproducibles sin servicios externos. |
 | 5 | Búsqueda textual | Implementar recuperación léxica con SQLite FTS5. | Pendiente | Fase 2 y Fase 3 | Consultas textuales trazables y cubiertas por pruebas. |
 | 6 | Búsqueda semántica | Crear el índice semántico local reconstruible. | Pendiente | Fase 4, ChromaDB | Recuperación semántica local evaluada. |
@@ -94,7 +94,7 @@ manifiesto.
 
 ## Próximo paso autorizado
 
-Fase 3: extracción, páginas y chunks con PyMuPDF.
+Fase 4: embeddings con `multilingual-e5-small`.
 
 ## Fuera de alcance actual
 
@@ -107,9 +107,6 @@ Ya están implementados en los bloques 2A y 2B:
 
 Todavía no están implementados:
 
-- Extracción con PyMuPDF.
-- Páginas.
-- Chunks.
 - SQLite FTS5.
 - Embeddings.
 - `multilingual-e5-small`.
@@ -123,5 +120,6 @@ Todavía no están implementados:
 - Búsqueda web controlada.
 - Especialización del modelo.
 
-La Fase 2 está **Completada**. La extracción de texto, páginas y chunks queda
-delimitada a la Fase 3.
+Las Fases 2 y 3 están **Completadas**. La Fase 3 fue validada manualmente con
+28 páginas persistidas, 44 chunks y 71.111 caracteres; el chunk máximo fue de
+1.969 caracteres.

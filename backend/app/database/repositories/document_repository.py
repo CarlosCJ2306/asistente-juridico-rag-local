@@ -120,6 +120,20 @@ class DocumentRepository:
         )
         return document
 
+    async def set_extraction_state(
+        self,
+        document: Document,
+        status: DocumentStatus,
+        *,
+        error_code: str | None = None,
+    ) -> None:
+        """Actualiza solo el estado estable y el código seguro de extracción."""
+
+        document.status = status
+        document.error_code = error_code
+        document.error_message = None
+        await self.session.flush()
+
     @staticmethod
     def _duplicate_field(error: IntegrityError) -> str:
         """Clasifica una restricción SQLite sin registrar detalles internos."""

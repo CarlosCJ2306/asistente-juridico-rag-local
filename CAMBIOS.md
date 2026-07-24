@@ -72,3 +72,25 @@ relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
   del documento original.
 - **Alcance:** no se realizó extracción ni creación de chunks.
 - **Estado:** Fase 2 completada.
+
+## 2026-07-23 — Fase 3: Extracción, páginas y chunks
+
+- **Añadido:** migración `20260723_02` para `document_pages` y
+  `document_chunks`, con trazabilidad e índices por documento.
+- **Añadido:** extracción local mediante PyMuPDF, limpieza conservadora y
+  chunking jurídico determinista sin OCR, modelos ni servicios externos.
+- **Añadido:** estados `extracting`, `extracted` y `extraction_failed`, con
+  códigos de error estables para errores de PDF.
+- **Añadido:** endpoints de extracción manual y consulta paginada de páginas y
+  chunks.
+- **Validaciones:** pruebas sintéticas con PyMuPDF, SQLite y almacenamiento
+  temporal para lector, limpieza, segmentación, persistencia y API.
+- **Validación manual:** se confirmó la aplicación de `20260723_02`, la cadena
+  Alembic sincronizada en `head`, extracción exitosa, estado `extracted`,
+  `error_code` nulo, 28 páginas, 44 chunks, 71.111 caracteres, máximo de 1.969
+  caracteres por chunk, rangos de página válidos y texto Unicode almacenado.
+- **Calidad:** se confirmó reconstrucción mediante palabras de PyMuPDF,
+  corrección de palabras concatenadas y overlap ajustado a límites de palabras.
+- **Control:** un segundo intento de extracción fue bloqueado con HTTP 409 y
+  el PDF original permaneció conservado e inmutable.
+- **Estado:** Fase 3 completada.

@@ -30,6 +30,10 @@ class Settings(BaseSettings):
 
     document_max_size_bytes: int = Field(default=52_428_800, gt=0)
     document_upload_chunk_size_bytes: int = Field(default=1_048_576, gt=0)
+    legal_chunk_target_chars: int = Field(default=1800, gt=0)
+    legal_chunk_max_chars: int = Field(default=2400, gt=0)
+    legal_chunk_overlap_chars: int = Field(default=200, ge=0)
+    pdf_min_extractable_chars: int = Field(default=20, gt=0)
 
     local_llm_context_size: int = 4096
     local_llm_threads: int = 0
@@ -64,13 +68,17 @@ class Settings(BaseSettings):
         return resolve_database_file(value)
 
     @model_validator(mode="after")
-    def validate_upload_chunk_size(self) -> "Settings":
-        """Impide bloques de carga mayores que el límite documental."""
+    def validate_document_limits(self) -> "Settings":
+        """Valida límites consistentes de carga y segmentación documental."""
 
         if self.document_upload_chunk_size_bytes > self.document_max_size_bytes:
             raise ValueError(
                 "DOCUMENT_UPLOAD_CHUNK_SIZE_BYTES no puede superar DOCUMENT_MAX_SIZE_BYTES"
             )
+        if self.legal_chunk_target_chars > self.legal_chunk_max_chars:
+            raise ValueError("LEGAL_CHUNK_TARGET_CHARS no puede superar LEGAL_CHUNK_MAX_CHARS")
+        if self.legal_chunk_overlap_chars >= self.legal_chunk_target_chars:
+            raise ValueError("LEGAL_CHUNK_OVERLAP_CHARS debe ser menor que LEGAL_CHUNK_TARGET_CHARS")
         return self
 
     @property
