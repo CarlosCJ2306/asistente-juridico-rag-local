@@ -40,6 +40,10 @@ funcionalidad jurídica simulada.
 - `database/`: base declarativa, modelo `documents`, repositorio y sesiones
   SQLAlchemy asíncronas creadas bajo demanda. No conecta, crea tablas ni migra
   durante imports o inicio de FastAPI.
+- `ai/embedding_model.py`: adaptador de embeddings local, perezoso y solo de
+  archivos locales; no persiste vectores.
+- `services/embedding_service.py`: aplica prefijos de consulta y pasaje y
+  devuelve vectores normalizados en memoria.
 - `vector_store/`: límite de persistencia semántica futuro, hoy inerte.
 - `ai/model_manager.py`: valida el manifiesto, contiene rutas dentro de
   `models/` y verifica el archivo GGUF.
@@ -59,7 +63,25 @@ ni crea la base al iniciar. El bloque 2B recibe PDF por `POST /api/documents`,
 valida nombre, MIME, extensión, firma y límite, y conserva el original bajo
 `storage/documents/<categoría>/`. La extracción se solicita manualmente, usa
 PyMuPDF y persiste páginas y chunks; SQLite sigue siendo la fuente de verdad.
-No hay OCR, embeddings, FTS5 ni RAG.
+No hay OCR, persistencia de embeddings, FTS5, indexación lexical o semántica,
+búsqueda vectorial o híbrida, reranking ni RAG.
+
+## Flujo local de embeddings
+
+```text
+chunks persistidos
+        │
+        ▼
+EmbeddingService (passage:) / consulta (query:)
+        │
+        ▼
+EmbeddingModel → Sentence Transformers local → vectores normalizados en memoria
+```
+
+El flujo no escribe vectores en SQLite ni en ChromaDB. La carga y descarga son
+explícitas mediante `/api/models/embeddings/load` y
+`/api/models/embeddings/unload`; el estado no carga pesos ni importa la
+dependencia opcional.
 
 ## Ciclo del modelo local
 
@@ -92,5 +114,9 @@ recuperación léxica y ChromaDB será un índice semántico reconstruible en fa
 posteriores. Qwen3-1.7B GGUF ya cuenta con gestión y adaptador local; los
 La Fase 3 está completada y validada manualmente: SQLite contiene 28 páginas y
 44 chunks, con reconstrucción de palabras de PyMuPDF y overlap en límites de
-palabra. Embeddings con `multilingual-e5-small`, indexación semántica, FTS5,
-ChromaDB, RAG e inferencia jurídica aún no están implementados.
+palabra. La Fase 4 está completada y validada con el adaptador local de
+`multilingual-e5-small`, dimensión 384, prefijos E5, normalización L2 y carga
+offline en CPU. Los vectores solo existen en memoria. Persistencia de
+embeddings, indexación semántica, FTS5, ChromaDB, búsqueda vectorial o híbrida,
+reranking, RAG e inferencia jurídica basada en recuperación aún no están
+implementados.

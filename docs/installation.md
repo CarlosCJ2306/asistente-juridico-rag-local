@@ -23,6 +23,7 @@ python -m pip install --upgrade pip
 python -m pip install -r backend\requirements.txt
 python -m pip install -r backend\requirements-dev.txt
 python -m pip install -r backend\requirements-llm.txt
+python -m pip install -r backend\requirements-embeddings.txt
 cd backend
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
@@ -142,6 +143,22 @@ La prueba no descarga automáticamente. Primero verifica el modelo, lo carga de
 forma diferida, solicita una frase controlada y ejecuta `unload()` al finalizar.
 No ejecute la prueba si todavía no descargó el archivo.
 
-Los artefactos `.gguf` están ignorados y no deben subirse a Git. No instale
-`requirements-embeddings.txt`: Sentence Transformers y ChromaDB pertenecen a
-una fase futura.
+### Embeddings locales
+
+El adaptador de embeddings no descarga, carga ni prueba pesos al importar la
+aplicación. Tras instalar `backend\requirements-embeddings.txt`, ejecute
+manualmente:
+
+```bat
+python scripts\download_models.py --model multilingual-e5-small
+python scripts\verify_models.py --model multilingual-e5-small
+python scripts\test_embedding_model.py
+```
+
+El directorio local esperado es `models/embeddings/multilingual-e5-small/`.
+La validación final confirmó carga offline en CPU, dimensión 384, prefijos
+`query:` y `passage:`, normalización L2, estado final `unloaded` y archivos
+locales disponibles después de liberar el modelo. No crea índices, no guarda
+vectores y no ejecuta RAG.
+
+Los artefactos de modelos están ignorados y no deben subirse a Git.

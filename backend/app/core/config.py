@@ -6,7 +6,13 @@ from typing import Any
 from pydantic import Field, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.core.paths import DATABASE_DIR, LOGS_DIR, PROJECT_ROOT, resolve_database_file
+from app.core.paths import (
+    DATABASE_DIR,
+    LOGS_DIR,
+    PROJECT_ROOT,
+    resolve_database_file,
+    resolve_embedding_model_directory,
+)
 
 
 class Settings(BaseSettings):
@@ -40,6 +46,17 @@ class Settings(BaseSettings):
     local_llm_gpu_layers: int = 0
     local_llm_verbose: bool = False
 
+    embedding_model_path: Path = Field(
+        default=Path("models/embeddings/multilingual-e5-small"),
+        validate_default=True,
+    )
+    embedding_model_name: str = "intfloat/multilingual-e5-small"
+    embedding_device: str = "cpu"
+    embedding_batch_size: int = Field(default=16, gt=0)
+    embedding_normalize: bool = True
+    embedding_query_prefix: str = "query:"
+    embedding_passage_prefix: str = "passage:"
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -66,6 +83,18 @@ class Settings(BaseSettings):
         """Acepta solo rutas de SQLite contenidas en el directorio autorizado."""
 
         return resolve_database_file(value)
+
+    @field_validator("embedding_model_path", mode="before")
+    @classmethod
+    def resolve_embedding_model_path(cls, value: str | Path) -> Path:
+        return resolve_embedding_model_directory(value)
+
+    @field_validator("embedding_query_prefix", "embedding_passage_prefix")
+    @classmethod
+    def validate_embedding_prefix(cls, value: str) -> str:
+        if not value.strip():
+            raise ValueError("Los prefijos de embeddings no pueden estar vacíos")
+        return value
 
     @model_validator(mode="after")
     def validate_document_limits(self) -> "Settings":

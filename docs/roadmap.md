@@ -24,23 +24,33 @@
 - Extracción local con PyMuPDF mediante endpoint manual.
 - Persistencia SQLite de páginas y chunks trazables.
 - Limpieza conservadora y chunking jurídico determinista.
-- Sin OCR, embeddings, FTS5 ni RAG.
+- Sin OCR, indexación semántica, FTS5 ni RAG.
 - Validación manual: 28 páginas, 44 chunks, 71.111 caracteres y máximo de
   1.969 caracteres por chunk.
 
-## Próxima fase: embeddings
+## Fase 4 — completada: embeddings locales
 
-1. **Embeddings:** instalación verificada de `multilingual-e5-small`, lotes e
-   índice local, sin servicios externos.
-2. **Recuperación textual:** FTS5, filtros y referencias a documento y página.
-3. **Búsqueda semántica:** índice ChromaDB reconstruible.
-4. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
+- Adaptador local de `multilingual-e5-small` con carga diferida, lotes,
+  normalización y prefijos E5.
+- Validación final local y offline: CPU, dimensión 384, prefijos E5,
+  normalización L2, endpoints de ciclo de vida y liberación correcta.
+- Sin persistencia de embeddings, indexación lexical o semántica, ChromaDB,
+  FTS5, búsqueda vectorial o híbrida, reranking ni RAG.
+
+## Próxima fase autorizada
+
+1. **Recuperación textual:** FTS5, filtros y referencias a documento y página.
+
+## Fases posteriores
+
+2. **Búsqueda semántica:** índice ChromaDB reconstruible.
+3. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
    evaluación usando el adaptador Qwen3 ya disponible.
-5. **Estructuras jurídicas:** relaciones entre hechos, pruebas y normas, con
+4. **Estructuras jurídicas:** relaciones entre hechos, pruebas y normas, con
    validación humana obligatoria.
-6. **Escenarios preliminares:** métricas y explicaciones, nunca decisiones
+5. **Escenarios preliminares:** métricas y explicaciones, nunca decisiones
    jurídicas automáticas.
-7. **Seguridad operativa:** autenticación local si se requiere, respaldo,
+6. **Seguridad operativa:** autenticación local si se requiere, respaldo,
    auditoría y políticas de retención.
 
 Cada fase deberá incorporar pruebas, límites de privacidad, medición de

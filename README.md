@@ -3,8 +3,8 @@
 Aplicación local que, en fases posteriores, permitirá consultar documentos
 jurídicos mediante recuperación aumentada por generación (RAG). El estado
 actual incorpora la gestión y carga diferida del modelo generativo local y la
-carga controlada de PDF y extracción local. Todavía no incluye embeddings ni
-RAG.
+carga controlada de PDF y extracción local. La Fase 4 incorpora el adaptador
+local de embeddings; todavía no incluye indexación ni RAG.
 
 > **Advertencia profesional:** esta aplicación será una herramienta de apoyo.
 > No toma decisiones jurídicas definitivas ni sustituye el análisis, la
@@ -23,8 +23,12 @@ RAG.
 - **LLM local:** Qwen3-1.7B Q4_K_M en formato GGUF, ejecutado directamente con
   `llama-cpp-python` sobre CPU. La carga es diferida y nunca ocurre al importar
   módulos ni al iniciar FastAPI.
-- **Embeddings futuros:** `multilingual-e5-small` continúa declarado pero no se
-  descarga, instala ni utiliza en esta fase.
+- **Embeddings locales (Fase 4 completada):**
+  `intfloat/multilingual-e5-small` usa Sentence Transformers bajo demanda,
+  archivos estrictamente locales, CPU, lotes, dimensión 384 y vectores
+  normalizados. La validación confirmó prefijos `query:` y `passage:`, carga y
+  descarga mediante los endpoints previstos y ausencia de fallback a Internet.
+  No hay persistencia ni índice vectorial.
 - **RAG futuro:** ingestión, segmentación jurídica, recuperación híbrida,
   construcción de contexto y presentación de fuentes. Todos estos módulos son
   únicamente estructura documental en el estado actual.
@@ -65,8 +69,12 @@ Para habilitar únicamente la gestión y ejecución del LLM:
 python -m pip install -r backend\requirements-llm.txt
 ```
 
-`requirements-embeddings.txt` queda reservado para una fase posterior y no es
-necesario para el estado actual.
+Para habilitar únicamente embeddings locales, sin instalar ningún índice
+vectorial:
+
+```bat
+python -m pip install -r backend\requirements-embeddings.txt
+```
 
 Para instalar el frontend manualmente:
 
@@ -91,6 +99,9 @@ Los endpoints disponibles son:
 
 - `http://localhost:8000/api/health`
 - `http://localhost:8000/api/models/status`
+- `GET http://localhost:8000/api/models/embeddings/status`
+- `POST http://localhost:8000/api/models/embeddings/load`
+- `POST http://localhost:8000/api/models/embeddings/unload`
 - `POST http://localhost:8000/api/documents`
 - `GET http://localhost:8000/api/documents`
 - `POST http://localhost:8000/api/documents/{document_id}/extract`
@@ -129,6 +140,23 @@ El script de prueba carga el modelo bajo demanda con contexto 4096,
 `n_gpu_layers=0`, CPU y un número conservador de hilos; ejecuta un prompt
 controlado y libera la memoria al terminar. Los archivos de modelos están
 ignorados y no deben subirse a Git.
+
+## Modelo local de embeddings
+
+El modelo de embeddings se descarga y verifica solo por decisión explícita del
+propietario. Desde la raíz del proyecto, con las dependencias de embeddings
+instaladas:
+
+```bat
+python scripts\download_models.py --model multilingual-e5-small
+python scripts\verify_models.py --model multilingual-e5-small
+python scripts\test_embedding_model.py
+```
+
+La prueba usa entradas sintéticas y comprueba carga local, dimensión,
+normalización, orden de resultados y liberación. La validación final confirmó
+74 pruebas aprobadas, Ruff y mypy sin errores. No procesa documentos ni guarda
+vectores.
 
 ## Inicio del frontend
 
@@ -210,11 +238,11 @@ de persistencia y carga controlada de documentos. La
 inferencia solo está disponible mediante el script manual después de instalar
 dependencias y descargar el modelo; no existe todavía un endpoint de prompts.
 
-El proyecto sigue sin OCR, embeddings, indexación semántica, SQLite FTS5,
-ChromaDB, RAG ni inferencia jurídica,
+El proyecto sigue sin OCR, persistencia de embeddings, indexación lexical o
+semántica, SQLite FTS5, ChromaDB, búsqueda vectorial o híbrida, reranking, RAG
+ni inferencia jurídica basada en recuperación,
 autenticación, CUDA, streaming, Docker ni despliegue.
 
-Las próximas fases previstas son persistencia, ingestión controlada,
-recuperación textual, embeddings e índice semántico, RAG con citas, relaciones
-entre hechos-pruebas-normas y análisis preliminar, cada una con sus propias
-pruebas y controles de privacidad.
+La próxima fase autorizada es la recuperación textual con SQLite FTS5, filtros
+y referencias a documento y página. Las fases posteriores mantienen sus
+propios controles de privacidad y no se adelantan en esta etapa.

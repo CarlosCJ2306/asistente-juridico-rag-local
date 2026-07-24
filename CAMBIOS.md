@@ -94,3 +94,34 @@ relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
 - **Control:** un segundo intento de extracción fue bloqueado con HTTP 409 y
   el PDF original permaneció conservado e inmutable.
 - **Estado:** Fase 3 completada.
+
+## 2026-07-23 — Fase 4: Embeddings locales
+
+- **Añadido:** adaptador local y de carga diferida para
+  `intfloat/multilingual-e5-small` mediante Sentence Transformers, sin acceso
+  a red durante la carga.
+- **Añadido:** configuración de ruta local, CPU, lotes, normalización y
+  prefijos `query:` y `passage:`.
+- **Añadido:** scripts explícitos para descarga, verificación y prueba manual
+  del modelo, más endpoints de estado, carga y liberación.
+- **Seguridad:** la ruta queda limitada a `models/embeddings/`; no se registran
+  textos, vectores, prompts ni respuestas completas.
+- **Validación final:** `sentence-transformers` quedó instalado y
+  `intfloat/multilingual-e5-small` fue descargado y verificado localmente con
+  código de salida 0. La carga fue estrictamente local y offline, en CPU, con
+  dimensión dinámica 384.
+- **Validación funcional:** se generó correctamente un embedding de consulta y
+  dos de pasajes, con prefijos `query:` y `passage:`, normalización L2,
+  vectores finitos y dimensiones consistentes. Se validaron `status`, `load`,
+  carga idempotente y `unload`; el estado final fue `unloaded` y los archivos
+  locales siguieron disponibles.
+- **Seguridad:** no existe fallback a Internet. La descarga futura es selectiva
+  y conserva los artefactos necesarios, incluido `safetensors`, excluyendo
+  formatos alternativos.
+- **Calidad:** se utilizó `get_embedding_dimension()` y se aprobaron 74
+  pruebas; Ruff y mypy finalizaron sin errores.
+- **Alcance:** los vectores solo existen en memoria; no hay persistencia de
+  embeddings, indexación lexical o semántica, ChromaDB, FTS5, búsqueda
+  vectorial o híbrida, reranking, RAG ni inferencia jurídica basada en
+  recuperación.
+- **Estado:** Fase 4 completada.

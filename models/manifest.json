@@ -21,8 +21,9 @@
       "repository": "intfloat/multilingual-e5-small",
       "local_path": "models/embeddings/multilingual-e5-small",
       "format": "Sentence Transformers",
-      "purpose": "Generación local futura de representaciones semánticas multilingües",
-      "installation_status": "not_installed"
+      "purpose": "Generación local de embeddings multilingües para fases posteriores",
+      "installation_status": "not_installed",
+      "minimum_file_size_bytes": 1
     }
   ]
 }

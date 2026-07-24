@@ -8,6 +8,7 @@ si falta un modelo o cualquier comprobación falla.
 from __future__ import annotations
 
 import sys
+import argparse
 from pathlib import Path
 
 
@@ -17,15 +18,22 @@ if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
 
 from app.ai.model_manager import ModelManager  # noqa: E402
+from app.core.config import settings  # noqa: E402
 from app.core.Log import log_error, log_exception, log_success  # noqa: E402
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
     """Verifica todos los artefactos individuales declarados."""
+
+    parser = argparse.ArgumentParser(description="Verificación manual de modelos locales")
+    parser.add_argument("--model", dest="model_id", help="Identificador del manifiesto")
+    arguments = parser.parse_args(argv)
 
     manager = ModelManager()
     try:
-        file_models = [entry for entry in manager.list_models() if entry.filename]
+        file_models = list(manager.list_models())
+        if arguments.model_id:
+            file_models = [entry for entry in file_models if entry.id == arguments.model_id]
         if not file_models:
             log_error("El manifiesto no contiene modelos de archivo para verificar")
             return 1
@@ -33,7 +41,10 @@ def main() -> int:
         all_verified = True
         verified_count = 0
         for entry in file_models:
-            result = manager.verify_model(entry.id)
+            result = manager.verify_model(
+                entry.id,
+                configured_path=settings.embedding_model_path if entry.id == "multilingual-e5-small" else None,
+            )
             if result.verified:
                 verified_count += 1
                 log_success(

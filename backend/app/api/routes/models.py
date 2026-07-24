@@ -2,9 +2,11 @@
 
 from typing import Literal
 
-from fastapi import APIRouter
+from fastapi import APIRouter, HTTPException
+from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
+from app.ai.embedding_model import EMBEDDING_MODEL_ID, EmbeddingError, get_embedding_model
 from app.ai.local_llm import is_local_llm_loaded
 from app.ai.model_manager import DEFAULT_LLM_MODEL_ID, ModelManager
 
@@ -34,6 +36,15 @@ class ModelsStatusResponse(BaseModel):
     embeddings: EmbeddingsStatus
 
 
+class EmbeddingModelStatus(BaseModel):
+    model: str
+    role: Literal["embeddings"] = "embeddings"
+    state: Literal["unloaded", "loading", "loaded", "error"]
+    local_files_available: bool
+    device: str
+    dimension: int | None
+
+
 @router.get("/status", response_model=ModelsStatusResponse)
 async def models_status() -> ModelsStatusResponse:
     """Consulta metadatos físicos sin descargar, cargar ni ejecutar el LLM."""
@@ -56,3 +67,53 @@ async def models_status() -> ModelsStatusResponse:
         ),
         embeddings=EmbeddingsStatus(),
     )
+
+
+def _embedding_status() -> EmbeddingModelStatus:
+    model = get_embedding_model()
+    verification = model.model_manager.verify_model(
+        EMBEDDING_MODEL_ID,
+        calculate_hash=False,
+        configured_path=model.configured_path,
+    )
+    return EmbeddingModelStatus(
+        model=EMBEDDING_MODEL_ID,
+        state=model.state,
+        local_files_available=verification.verified,
+        device=model.device,
+        dimension=model.dimension,
+    )
+
+
+def _embedding_http_error(error: EmbeddingError) -> HTTPException:
+    status_code = 503 if error.code in {
+        "EMBEDDING_DEPENDENCY_MISSING",
+        "EMBEDDING_MODEL_NOT_FOUND",
+    } else 409 if error.code == "EMBEDDING_MODEL_BUSY" else 500
+    return HTTPException(status_code=status_code, detail=error.code)
+
+
+@router.get("/embeddings/status", response_model=EmbeddingModelStatus)
+async def embeddings_status() -> EmbeddingModelStatus:
+    """Consulta estado sin importar Sentence Transformers ni cargar pesos."""
+
+    return _embedding_status()
+
+
+@router.post("/embeddings/load", response_model=EmbeddingModelStatus)
+async def load_embeddings_model() -> EmbeddingModelStatus:
+    """Carga explícitamente el modelo local fuera del event loop."""
+
+    try:
+        await run_in_threadpool(get_embedding_model().load)
+    except EmbeddingError as exc:
+        raise _embedding_http_error(exc) from exc
+    return _embedding_status()
+
+
+@router.post("/embeddings/unload", response_model=EmbeddingModelStatus)
+async def unload_embeddings_model() -> EmbeddingModelStatus:
+    """Libera el modelo local; la operación es idempotente."""
+
+    await run_in_threadpool(get_embedding_model().unload)
+    return _embedding_status()

@@ -32,6 +32,10 @@ class UnsafeModelPathError(ModelManagerError):
     """La ruta declarada escapa del directorio permitido de modelos."""
 
 
+class EmbeddingModelPathMismatchError(ModelManagerError):
+    """La ruta configurada de embeddings no coincide con el manifiesto."""
+
+
 class ModelManifestEntry(BaseModel):
     """Entrada validada del manifiesto local."""
 
@@ -203,6 +207,28 @@ class ModelManager:
             ) from exc
         return candidate
 
+    def resolve_embedding_model_path(self, configured_path: str | Path) -> Path:
+        """Resuelve la única ruta efectiva y exige coincidencia con el manifiesto."""
+
+        entry = self.get_model("multilingual-e5-small")
+        manifest_path = self.resolve_model_path(entry)
+        configured = Path(configured_path)
+        configured_path_resolved = (
+            configured.resolve()
+            if configured.is_absolute()
+            else (self.project_root / configured).resolve()
+        )
+        allowed_directory = (self.models_dir / "embeddings").resolve()
+        try:
+            configured_path_resolved.relative_to(allowed_directory)
+        except ValueError as exc:
+            raise UnsafeModelPathError(
+                "La ruta configurada de embeddings estÃ¡ fuera del directorio permitido"
+            ) from exc
+        if configured_path_resolved != manifest_path:
+            raise EmbeddingModelPathMismatchError("EMBEDDING_MODEL_PATH_MISMATCH")
+        return manifest_path
+
     @staticmethod
     def calculate_sha256(file_path: Path, *, chunk_size: int = 1024 * 1024) -> str:
         """Calcula SHA-256 en bloques para no cargar el archivo completo en memoria."""
@@ -218,11 +244,27 @@ class ModelManager:
         model_id: str,
         *,
         calculate_hash: bool = True,
+        configured_path: str | Path | None = None,
     ) -> ModelVerificationResult:
-        """Comprueba ruta, nombre, tamaño, cabecera GGUF y hash declarado."""
+        """Comprueba artefactos locales de archivo o directorio sin cargarlos."""
 
         entry = self.get_model(model_id)
-        path = self.resolve_model_path(entry)
+        try:
+            path = (
+                self.resolve_embedding_model_path(configured_path)
+                if entry.id == "multilingual-e5-small" and configured_path is not None
+                else self.resolve_model_path(entry)
+            )
+            if entry.id == "multilingual-e5-small" and configured_path is None:
+                raise EmbeddingModelPathMismatchError("EMBEDDING_MODEL_PATH_MISMATCH")
+        except EmbeddingModelPathMismatchError as exc:
+            return ModelVerificationResult(
+                model_id=entry.id,
+                installed=False,
+                verified=False,
+                relative_path=entry.local_path,
+                errors=[str(exc)],
+            )
         errors: list[str] = []
         file_size: int | None = None
         calculated_sha256: str | None = None
@@ -234,8 +276,19 @@ class ModelManager:
         if entry.format.upper() == "GGUF" and path.suffix.lower() != ".gguf":
             errors.append("El modelo GGUF debe utilizar la extensión .gguf")
 
+        is_sentence_transformers = entry.format.lower() == "sentence transformers"
         if not path.exists():
             errors.append("El archivo del modelo no está instalado")
+        elif is_sentence_transformers and not path.is_dir():
+            errors.append("La ruta del modelo de embeddings no corresponde a un directorio")
+        elif is_sentence_transformers:
+            required_files = ("config.json", "modules.json")
+            missing_files = [name for name in required_files if not (path / name).is_file()]
+            if missing_files or (path / ".incomplete").exists():
+                errors.append("El directorio del modelo de embeddings está incompleto")
+            file_size = sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
+            if file_size == 0:
+                errors.append("El directorio del modelo de embeddings está vacío")
         elif not path.is_file():
             errors.append("La ruta del modelo no corresponde a un archivo")
         else:
@@ -265,7 +318,7 @@ class ModelManager:
 
         result = ModelVerificationResult(
             model_id=entry.id,
-            installed=path.is_file(),
+            installed=path.is_dir() if is_sentence_transformers else path.is_file(),
             verified=not errors,
             relative_path=entry.local_path,
             file_size=file_size,

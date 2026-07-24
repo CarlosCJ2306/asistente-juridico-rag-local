@@ -32,7 +32,8 @@ conclusión requiere revisión y criterio de un profesional competente.
 - Índice semántico futuro: ChromaDB.
 - Modelo generativo local: Qwen3-1.7B Q4_K_M en GGUF mediante
   `llama-cpp-python`.
-- Embeddings futuros: `multilingual-e5-small`.
+- Embeddings locales completados: `multilingual-e5-small`; no hay indexación
+  ni recuperación semántica.
 - Extracción documental prevista: PyMuPDF.
 - Red jurídica y visualización futuras: NetworkX y PyVis.
 
@@ -44,7 +45,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 1 | Modelo generativo local | Gestionar, verificar y probar Qwen3 local bajo demanda. | Completada | GGUF Qwen3, `llama-cpp-python`, Hugging Face solo para descarga | Archivo verificado, carga diferida, estado seguro e inferencia conversacional controlada. |
 | 2 | Persistencia y registro documental | Registrar metadatos y archivos PDF de forma controlada. | Completada | Fase 0 | Metadatos, carga PDF segura, hash, duplicados y borrado lógico; sin extracción de texto, páginas ni chunks. |
 | 3 | Extracción, páginas y chunks | Extraer contenido y segmentarlo con trazabilidad documental. | Completada | Fase 2, PyMuPDF | Páginas y chunks persistidos con referencia a documento y página. |
-| 4 | Embeddings | Instalar y gestionar `multilingual-e5-small` localmente. | Pendiente | Fase 3, Sentence Transformers | Embeddings reproducibles sin servicios externos. |
+| 4 | Embeddings | Instalar y gestionar `multilingual-e5-small` localmente. | Completada | Fase 3, Sentence Transformers | Embeddings reproducibles sin servicios externos. |
 | 5 | Búsqueda textual | Implementar recuperación léxica con SQLite FTS5. | Pendiente | Fase 2 y Fase 3 | Consultas textuales trazables y cubiertas por pruebas. |
 | 6 | Búsqueda semántica | Crear el índice semántico local reconstruible. | Pendiente | Fase 4, ChromaDB | Recuperación semántica local evaluada. |
 | 7 | Recuperación híbrida | Combinar resultados textuales y semánticos. | Pendiente | Fase 5 y Fase 6 | Ranking híbrido medible y trazable. |
@@ -94,7 +95,8 @@ manifiesto.
 
 ## Próximo paso autorizado
 
-Fase 4: embeddings con `multilingual-e5-small`.
+Fase 5: recuperación textual con SQLite FTS5, filtros y referencias a documento
+y página.
 
 ## Fuera de alcance actual
 
@@ -108,10 +110,15 @@ Ya están implementados en los bloques 2A y 2B:
 Todavía no están implementados:
 
 - SQLite FTS5.
-- Embeddings.
-- `multilingual-e5-small`.
+- Persistencia de embeddings.
 - ChromaDB.
+- Indexación lexical.
+- Indexación semántica.
+- Búsqueda vectorial.
+- Búsqueda híbrida.
+- Reranking.
 - RAG.
+- Inferencia jurídica basada en recuperación.
 - Citas.
 - Matriz HPN.
 - Red jurídica.
@@ -123,3 +130,18 @@ Todavía no están implementados:
 Las Fases 2 y 3 están **Completadas**. La Fase 3 fue validada manualmente con
 28 páginas persistidas, 44 chunks y 71.111 caracteres; el chunk máximo fue de
 1.969 caracteres.
+
+La Fase 4 está **Completada**. La validación final confirmó la instalación de
+`sentence-transformers`, el modelo local `intfloat/multilingual-e5-small`,
+verificación local exitosa, carga estrictamente offline en CPU, dimensión 384,
+embeddings de una consulta y dos pasajes con prefijos `query:` y `passage:`,
+normalización L2, vectores finitos y dimensiones consistentes, liberación de
+memoria, estado final `unloaded` y archivos locales disponibles tras `unload`.
+También se validaron los endpoints `status`, `load` y `unload`, la carga
+idempotente, el uso de `get_embedding_dimension()` y la ausencia de fallback a
+Internet. La descarga futura queda filtrada a los artefactos necesarios y usa
+`safetensors`. El conjunto de 74 pruebas, Ruff y mypy terminó sin errores.
+
+La Fase 4 no incluye persistencia de embeddings, ChromaDB, FTS5, indexación
+lexical o semántica, búsqueda vectorial o híbrida, reranking, RAG ni inferencia
+jurídica basada en recuperación.
