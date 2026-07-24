@@ -79,6 +79,8 @@ La base local se crea en `storage/database/asistente_juridico.db` solo al
 ejecutar la migración. Importar módulos o iniciar FastAPI no crea la base ni
 tablas.
 
+PyMuPDF se instala con `backend\requirements.txt`; no se requiere OCR.
+
 ## 6. Carga documental manual
 
 Con el backend iniciado, puede cargar un PDF de prueba mediante `curl`:
@@ -88,10 +90,21 @@ curl -X POST http://localhost:8000/api/documents -F "document_type=expediente" -
 ```
 
 La carga valida extensión `.pdf`, MIME exacto, firma `%PDF-`, tamaño máximo y
-duplicados SHA-256. El archivo se conserva localmente bajo `storage/documents/`;
-no se extrae texto ni se crean páginas o chunks.
+duplicados SHA-256. El archivo se conserva localmente bajo `storage/documents/`.
 
-## 7. Modelos
+## 7. Extracción manual
+
+Después de aplicar la nueva migración, solicite la extracción explícitamente:
+
+```bat
+curl -X POST http://localhost:8000/api/documents/{document_id}/extract
+```
+
+El flujo usa PyMuPDF para PDFs con capa de texto, persiste páginas y chunks en
+SQLite y no realiza OCR. Un PDF escaneado sin texto extraíble falla de forma
+controlada.
+
+## 8. Modelos
 
 Los comandos de esta sección se ejecutan desde la **raíz del proyecto**, no
 desde `backend` ni `scripts`. Si estaba dentro de `backend`, ejecute primero:

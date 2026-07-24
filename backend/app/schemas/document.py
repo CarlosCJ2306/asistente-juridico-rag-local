@@ -112,3 +112,48 @@ class DocumentPage(BaseModel):
     total: int
     page: int
     page_size: int
+
+
+class ExtractedPageRead(BaseModel):
+    """Página extraída sin exponer metadatos de almacenamiento."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    page_number: int
+    text: str
+    char_count: int
+
+
+class ExtractedChunkRead(BaseModel):
+    """Chunk jurídico trazable sin semántica adicional."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    chunk_index: int
+    text: str
+    char_count: int
+    word_count: int
+    start_page: int
+    end_page: int
+
+
+class ExtractedPagesPage(BaseModel):
+    items: list[ExtractedPageRead]
+    total: int
+    page: int
+    page_size: int
+
+
+class ExtractedChunksPage(BaseModel):
+    items: list[ExtractedChunkRead]
+    total: int
+    page: int
+    page_size: int
+
+
+class ExtractionSummary(BaseModel):
+    document_id: UUID
+    status: DocumentStatus
+    total_pages: int = Field(ge=0)
+    total_chunks: int = Field(ge=0)
+    total_characters: int = Field(ge=0)

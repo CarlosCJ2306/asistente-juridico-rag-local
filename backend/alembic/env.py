@@ -19,7 +19,7 @@ if str(BACKEND_ROOT) not in sys.path:
 
 from app.core.config import settings  # noqa: E402
 from app.database.base import Base  # noqa: E402
-from app.database.models import Document  # noqa: F401, E402
+from app.database.models import Document, DocumentChunk, DocumentPage  # noqa: F401, E402
 from app.database.session import build_database_url  # noqa: E402
 
 

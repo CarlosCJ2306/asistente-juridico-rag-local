@@ -62,6 +62,9 @@ class DocumentStatus(str, Enum):
     REGISTERED = "registered"
     STORED = "stored"
     PENDING_EXTRACTION = "pending_extraction"
+    EXTRACTING = "extracting"
+    EXTRACTED = "extracted"
+    EXTRACTION_FAILED = "extraction_failed"
     FAILED = "failed"
     ARCHIVED = "archived"
 

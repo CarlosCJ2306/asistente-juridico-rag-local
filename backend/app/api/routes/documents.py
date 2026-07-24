@@ -10,9 +10,24 @@ from fastapi.responses import ORJSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.models.document import DocumentStatus, DocumentType
+from app.database.repositories.document_chunk_repository import DocumentChunkRepository
+from app.database.repositories.document_page_repository import DocumentPageRepository
 from app.database.repositories.document_repository import DocumentRepository, DuplicateDocumentError
 from app.database.session import get_db_session
-from app.schemas.document import DocumentListFilters, DocumentPage, DocumentRead
+from app.schemas.document import (
+    DocumentListFilters,
+    DocumentPage,
+    DocumentRead,
+    ExtractedChunkRead,
+    ExtractedChunksPage,
+    ExtractedPageRead,
+    ExtractedPagesPage,
+    ExtractionSummary,
+)
+from app.services.document_extraction_service import (
+    DocumentExtractionError,
+    DocumentExtractionService,
+)
 from app.services.document_service import (
     DocumentService,
     DocumentStorageError,
@@ -26,6 +41,10 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 def _service(session: AsyncSession) -> DocumentService:
     return DocumentService(session)
+
+
+def _extraction_service(session: AsyncSession) -> DocumentExtractionService:
+    return DocumentExtractionService(session)
 
 
 def _bad_request(error: Exception) -> HTTPException:
@@ -108,3 +127,66 @@ async def delete_document(
     if not await _service(session).soft_delete(document_id):
         raise HTTPException(status_code=404, detail="Documento no encontrado")
     return Response(status_code=204)
+
+
+@router.post("/{document_id}/extract", response_model=ExtractionSummary)
+async def extract_document(
+    document_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> ExtractionSummary:
+    """Ejecuta manualmente la extracción local de un PDF previamente cargado."""
+
+    try:
+        return await _extraction_service(session).extract(document_id)
+    except DocumentExtractionError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.code) from exc
+
+
+@router.get("/{document_id}/pages", response_model=ExtractedPagesPage)
+async def list_document_pages(
+    document_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> ExtractedPagesPage:
+    """Lista páginas extraídas en orden, con paginación."""
+
+    service = _extraction_service(session)
+    try:
+        await service.ensure_extracted_document(document_id)
+    except DocumentExtractionError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.code) from exc
+    repository = DocumentPageRepository(session)
+    offset = (page - 1) * page_size
+    pages = await repository.list_by_document(document_id, offset=offset, limit=page_size)
+    return ExtractedPagesPage(
+        items=[ExtractedPageRead.model_validate(item) for item in pages],
+        total=await repository.count_by_document(document_id),
+        page=page,
+        page_size=page_size,
+    )
+
+
+@router.get("/{document_id}/chunks", response_model=ExtractedChunksPage)
+async def list_document_chunks(
+    document_id: UUID,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 50,
+) -> ExtractedChunksPage:
+    """Lista chunks jurídicos extraídos en orden, con paginación."""
+
+    service = _extraction_service(session)
+    try:
+        await service.ensure_extracted_document(document_id)
+    except DocumentExtractionError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.code) from exc
+    repository = DocumentChunkRepository(session)
+    offset = (page - 1) * page_size
+    chunks = await repository.list_by_document(document_id, offset=offset, limit=page_size)
+    return ExtractedChunksPage(
+        items=[ExtractedChunkRead.model_validate(item) for item in chunks],
+        total=await repository.count_by_document(document_id),
+        page=page,
+        page_size=page_size,
+    )
