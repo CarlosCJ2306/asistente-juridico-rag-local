@@ -1,0 +1,66 @@
+# Entornos y configuración local
+.env
+.venv/
+venv/
+
+# Python
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Frontend
+node_modules/
+dist/
+
+# Modelos y cachés
+*.gguf
+*.safetensors
+.cache/huggingface/
+huggingface/
+
+# Persistencia local
+*.db
+*.sqlite
+*.sqlite3
+
+# Logs y temporales
+*.log
+storage/logs/*
+!storage/logs/.gitkeep
+storage/temp/*
+!storage/temp/.gitkeep
+
+# Datos privados o generados
+storage/documents/**/*
+!storage/documents/**/.gitkeep
+storage/extracted/*
+!storage/extracted/.gitkeep
+storage/vector_store/*
+!storage/vector_store/.gitkeep
+storage/database/*
+!storage/database/.gitkeep
+storage/database/*.db
+storage/database/*.sqlite
+storage/database/*.db-shm
+storage/database/*.db-wal
+storage/database/*.db-journal
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs locales
+storage/logs/*
+!storage/logs/.gitkeep
+*.log
+
+# Artefactos locales de modelos
+models/llm/
+models/embeddings/
+
+# Cache de compilacion TypeScript
+*.tsbuildinfo

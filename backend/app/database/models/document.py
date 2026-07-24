@@ -1,0 +1,120 @@
+"""Metadatos persistentes de documentos, sin contenido ni operaciones de archivo."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any
+from uuid import UUID, uuid4
+
+from sqlalchemy import BigInteger, Boolean, DateTime, Enum as SqlEnum, String, Uuid
+from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.types import TypeDecorator
+
+from app.database.base import Base
+
+
+def utc_now() -> datetime:
+    """Genera una fecha consciente de zona horaria en UTC."""
+
+    return datetime.now(timezone.utc)
+
+
+class UTCDateTime(TypeDecorator[datetime]):
+    """Conserva UTC explícito al guardar fechas en SQLite."""
+
+    impl = DateTime
+    cache_ok = True
+
+    def process_bind_param(
+        self,
+        value: datetime | None,
+        dialect: Any,
+    ) -> datetime | None:
+        del dialect
+        if value is None:
+            return None
+        if value.tzinfo is None:
+            raise ValueError("Los timestamps de documentos deben incluir zona horaria")
+        return value.astimezone(timezone.utc).replace(tzinfo=None)
+
+    def process_result_value(
+        self,
+        value: datetime | None,
+        dialect: Any,
+    ) -> datetime | None:
+        del dialect
+        return value.replace(tzinfo=timezone.utc) if value is not None else None
+
+
+class DocumentType(str, Enum):
+    """Clasificación inicial de metadatos documentales."""
+
+    EXPEDIENTE = "expediente"
+    NORMATIVA = "normativa"
+    JURISPRUDENCIA = "jurisprudencia"
+    OTRO = "otro"
+
+
+class DocumentStatus(str, Enum):
+    """Estados iniciales del ciclo documental, sin extracción en este bloque."""
+
+    REGISTERED = "registered"
+    STORED = "stored"
+    PENDING_EXTRACTION = "pending_extraction"
+    FAILED = "failed"
+    ARCHIVED = "archived"
+
+
+def enum_values(enum_class: type[Enum]) -> list[str]:
+    """Persiste valores legibles de enums en lugar de sus nombres Python."""
+
+    return [member.value for member in enum_class]
+
+
+class Document(Base):
+    """Registro de metadatos y estado; nunca almacena contenido documental."""
+
+    __tablename__ = "documents"
+
+    id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), primary_key=True, default=uuid4)
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    stored_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    relative_path: Mapped[str] = mapped_column(String(1024), nullable=False, unique=True)
+    document_type: Mapped[DocumentType] = mapped_column(
+        SqlEnum(
+            DocumentType,
+            native_enum=False,
+            values_callable=enum_values,
+            create_constraint=True,
+            length=32,
+        ),
+        nullable=False,
+    )
+    mime_type: Mapped[str] = mapped_column(String(127), nullable=False)
+    extension: Mapped[str] = mapped_column(String(16), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False, unique=True, index=True)
+    status: Mapped[DocumentStatus] = mapped_column(
+        SqlEnum(
+            DocumentStatus,
+            native_enum=False,
+            values_callable=enum_values,
+            create_constraint=True,
+            length=32,
+        ),
+        nullable=False,
+        default=DocumentStatus.REGISTERED,
+        index=True,
+    )
+    error_code: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    error_message: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(UTCDateTime(), nullable=False, default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(
+        UTCDateTime(),
+        nullable=False,
+        default=utc_now,
+        onupdate=utc_now,
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(UTCDateTime(), nullable=True)
+    is_deleted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)

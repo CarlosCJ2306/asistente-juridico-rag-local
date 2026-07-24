@@ -1,0 +1,3 @@
+# Archivo agregador reservado para una fase futura.
+# Instale requirements-llm.txt durante la Fase 1.
+# Las dependencias de embeddings permanecen en requirements-embeddings.txt.

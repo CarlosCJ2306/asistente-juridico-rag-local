@@ -1,0 +1,1 @@
+"""Índice vectorial local futuro."""

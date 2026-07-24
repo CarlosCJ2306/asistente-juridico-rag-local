@@ -1,0 +1,11 @@
+fastapi[standard-no-fastapi-cloud-cli]
+pydantic
+pydantic-settings
+sqlalchemy
+aiosqlite
+alembic
+python-multipart
+orjson
+pymupdf
+networkx
+pyvis

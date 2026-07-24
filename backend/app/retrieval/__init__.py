@@ -1,0 +1,1 @@
+"""Recuperación de información futura."""

@@ -1,0 +1,28 @@
+{
+  "models": [
+    {
+      "id": "qwen3-1.7b-q4-k-m",
+      "name": "Qwen3-1.7B Q4_K_M",
+      "type": "generative",
+      "repository": "ggml-org/Qwen3-1.7B-GGUF",
+      "filename": "Qwen3-1.7B-Q4_K_M.gguf",
+      "format": "GGUF",
+      "quantization": "Q4_K_M",
+      "local_path": "models/llm/qwen3-1.7b/Qwen3-1.7B-Q4_K_M.gguf",
+      "purpose": "Generación local de respuestas asistidas mediante llama-cpp-python",
+      "installation_status": "not_installed",
+      "sha256": null,
+      "minimum_file_size_bytes": 500000000
+    },
+    {
+      "id": "multilingual-e5-small",
+      "name": "multilingual-e5-small",
+      "type": "embedding",
+      "repository": "intfloat/multilingual-e5-small",
+      "local_path": "models/embeddings/multilingual-e5-small",
+      "format": "Sentence Transformers",
+      "purpose": "Generación local futura de representaciones semánticas multilingües",
+      "installation_status": "not_installed"
+    }
+  ]
+}
