@@ -64,3 +64,4 @@ models/embeddings/
 
 # Cache de compilacion TypeScript
 *.tsbuildinfo
+documentos_prueba_locales/
