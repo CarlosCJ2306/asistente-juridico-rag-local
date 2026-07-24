@@ -28,7 +28,8 @@ conclusión requiere revisión y criterio de un profesional competente.
 
 - Backend: FastAPI.
 - Frontend: React, TypeScript y Vite.
-- Persistencia documental en progreso: SQLite; SQLite FTS5 permanece futura.
+- Persistencia documental en progreso: SQLite; FTS5 textual implementado en
+  validación.
 - Índice semántico futuro: ChromaDB.
 - Modelo generativo local: Qwen3-1.7B Q4_K_M en GGUF mediante
   `llama-cpp-python`.
@@ -46,7 +47,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 2 | Persistencia y registro documental | Registrar metadatos y archivos PDF de forma controlada. | Completada | Fase 0 | Metadatos, carga PDF segura, hash, duplicados y borrado lógico; sin extracción de texto, páginas ni chunks. |
 | 3 | Extracción, páginas y chunks | Extraer contenido y segmentarlo con trazabilidad documental. | Completada | Fase 2, PyMuPDF | Páginas y chunks persistidos con referencia a documento y página. |
 | 4 | Embeddings | Instalar y gestionar `multilingual-e5-small` localmente. | Completada | Fase 3, Sentence Transformers | Embeddings reproducibles sin servicios externos. |
-| 5 | Búsqueda textual | Implementar recuperación léxica con SQLite FTS5. | Pendiente | Fase 2 y Fase 3 | Consultas textuales trazables y cubiertas por pruebas. |
+| 5 | Búsqueda textual | Implementar recuperación léxica con SQLite FTS5. | Completada | Fase 2 y Fase 3 | Consultas textuales trazables y cubiertas por pruebas. |
 | 6 | Búsqueda semántica | Crear el índice semántico local reconstruible. | Pendiente | Fase 4, ChromaDB | Recuperación semántica local evaluada. |
 | 7 | Recuperación híbrida | Combinar resultados textuales y semánticos. | Pendiente | Fase 5 y Fase 6 | Ranking híbrido medible y trazable. |
 | 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Pendiente | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
@@ -95,8 +96,7 @@ manifiesto.
 
 ## Próximo paso autorizado
 
-Fase 5: recuperación textual con SQLite FTS5, filtros y referencias a documento
-y página.
+Fase 6: búsqueda semántica local mediante ChromaDB.
 
 ## Fuera de alcance actual
 
@@ -109,7 +109,6 @@ Ya están implementados en los bloques 2A y 2B:
 
 Todavía no están implementados:
 
-- SQLite FTS5.
 - Persistencia de embeddings.
 - ChromaDB.
 - Indexación lexical.
@@ -145,3 +144,20 @@ Internet. La descarga futura queda filtrada a los artefactos necesarios y usa
 La Fase 4 no incluye persistencia de embeddings, ChromaDB, FTS5, indexación
 lexical o semántica, búsqueda vectorial o híbrida, reranking, RAG ni inferencia
 jurídica basada en recuperación.
+
+La Fase 5 está **Completada**. La validación final confirmó la migración
+`20260724_03` aplicada, Alembic en `head`, la tabla virtual
+`document_chunks_fts`, tokenizer `unicode61 remove_diacritics 2`, triggers
+`INSERT`, `UPDATE` y `DELETE`, y backfill completo de 44 chunks y 44 registros
+FTS5. Los datos documentales originales se conservaron.
+
+También se validaron `POST /api/search/text`, búsquedas con y sin tilde,
+`all_terms`, `any_term` y `phrase`, filtros documentales y contención completa
+de páginas, orden BM25 estable, snippets Unicode seguros, rechazos 422,
+sintaxis FTS5 o SQL tratada como texto y respuestas sin SQL, traceback ni rutas
+locales. El conjunto de 84 pruebas, Ruff y mypy terminó sin errores.
+
+La Fase 6 permanece **Pendiente** y corresponde a búsqueda semántica local
+mediante ChromaDB. Persistencia e indexación semántica, búsqueda vectorial,
+búsqueda híbrida, reranking, RAG e inferencia jurídica basada en recuperación
+siguen fuera de alcance.

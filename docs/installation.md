@@ -82,6 +82,26 @@ tablas.
 
 PyMuPDF se instala con `backend\requirements.txt`; no se requiere OCR.
 
+### Validación manual de FTS5
+
+La validación final de la Fase 5 confirmó la migración, la tabla FTS5, sus
+triggers, el backfill completo y las búsquedas con filtros en un entorno local
+controlado. Para repetirla posteriormente, use una base respaldada; el
+backend no crea el índice durante imports ni inicio.
+
+La Fase 5 requiere una base local respaldada y una migración explícita; el
+backend no crea el índice durante imports ni inicio. Antes de aplicar la
+migración, confirme que SQLite dispone de FTS5 en un entorno controlado. Luego:
+
+```bat
+python -m alembic upgrade head
+python -m alembic current
+```
+
+El endpoint `POST /api/search/text` devuelve 503 controlado mientras el índice
+no exista. Tras la migración, valide conteos de chunks e índice, búsqueda sin
+tilde, filtros y páginas antes de considerar la fase completada.
+
 ## 6. Carga documental manual
 
 Con el backend iniciado, puede cargar un PDF de prueba mediante `curl`:

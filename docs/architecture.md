@@ -63,8 +63,31 @@ ni crea la base al iniciar. El bloque 2B recibe PDF por `POST /api/documents`,
 valida nombre, MIME, extensión, firma y límite, y conserva el original bajo
 `storage/documents/<categoría>/`. La extracción se solicita manualmente, usa
 PyMuPDF y persiste páginas y chunks; SQLite sigue siendo la fuente de verdad.
-No hay OCR, persistencia de embeddings, FTS5, indexación lexical o semántica,
-búsqueda vectorial o híbrida, reranking ni RAG.
+No hay OCR, persistencia de embeddings, indexación semántica, búsqueda
+vectorial o híbrida, reranking ni RAG.
+
+## Flujo de recuperación textual
+
+```text
+document_chunks
+        │ triggers SQLite
+        ▼
+document_chunks_fts
+        │ BM25
+        ▼
+TextSearchService
+        ▼
+resultados trazables
+```
+
+SQLite y `document_chunks` siguen siendo la fuente de verdad. FTS5 es un índice
+derivado y reconstruible: no reemplaza los chunks ni contiene embeddings. La
+consulta se compila en modos cerrados, se ejecuta con parámetros enlazados y
+excluye documentos con borrado lógico.
+
+Los filtros de página aplican contención completa del chunk: página inicial
+mayor o igual al mínimo y página final menor o igual al máximo. Los solapamientos
+parciales quedan fuera del resultado.
 
 ## Flujo local de embeddings
 
@@ -117,6 +140,11 @@ La Fase 3 está completada y validada manualmente: SQLite contiene 28 páginas y
 palabra. La Fase 4 está completada y validada con el adaptador local de
 `multilingual-e5-small`, dimensión 384, prefijos E5, normalización L2 y carga
 offline en CPU. Los vectores solo existen en memoria. Persistencia de
-embeddings, indexación semántica, FTS5, ChromaDB, búsqueda vectorial o híbrida,
+embeddings, indexación semántica, ChromaDB, búsqueda vectorial o híbrida,
 reranking, RAG e inferencia jurídica basada en recuperación aún no están
-implementados.
+implementados. La Fase 5 está completada: se validaron la migración en `head`,
+la tabla FTS5, sus triggers, el backfill de 44 chunks y 44 registros, la
+búsqueda textual, los filtros, el orden BM25 y los rechazos seguros. La
+persistencia e indexación semántica, ChromaDB, la búsqueda vectorial o híbrida,
+el reranking, RAG y la inferencia jurídica basada en recuperación siguen
+pendientes.

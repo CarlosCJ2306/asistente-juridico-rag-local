@@ -37,20 +37,28 @@
 - Sin persistencia de embeddings, indexación lexical o semántica, ChromaDB,
   FTS5, búsqueda vectorial o híbrida, reranking ni RAG.
 
-## Próxima fase autorizada
+## Fase 5 — completada: recuperación textual FTS5
 
-1. **Recuperación textual:** FTS5, filtros y referencias a documento y página.
+- Índice derivado de `document_chunks` con backfill y triggers SQLite.
+- Consulta segura con BM25, snippets, filtros, paginación y trazabilidad.
+- La validación manual confirmó la migración en `head`, el backfill completo de
+  44 chunks y 44 registros FTS5, la búsqueda, los filtros y el ranking BM25.
+- Persistencia e indexación semántica, ChromaDB, búsqueda vectorial o híbrida,
+  reranking, RAG e inferencia jurídica basada en recuperación siguen pendientes.
+
+## Fase 6 — pendiente
+
+1. **Búsqueda semántica:** índice ChromaDB reconstruible.
 
 ## Fases posteriores
 
-2. **Búsqueda semántica:** índice ChromaDB reconstruible.
-3. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
+2. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
    evaluación usando el adaptador Qwen3 ya disponible.
-4. **Estructuras jurídicas:** relaciones entre hechos, pruebas y normas, con
+3. **Estructuras jurídicas:** relaciones entre hechos, pruebas y normas, con
    validación humana obligatoria.
-5. **Escenarios preliminares:** métricas y explicaciones, nunca decisiones
+4. **Escenarios preliminares:** métricas y explicaciones, nunca decisiones
    jurídicas automáticas.
-6. **Seguridad operativa:** autenticación local si se requiere, respaldo,
+5. **Seguridad operativa:** autenticación local si se requiere, respaldo,
    auditoría y políticas de retención.
 
 Cada fase deberá incorporar pruebas, límites de privacidad, medición de

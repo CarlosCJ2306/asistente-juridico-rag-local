@@ -32,6 +32,9 @@ local de embeddings; todavía no incluye indexación ni RAG.
 - **RAG futuro:** ingestión, segmentación jurídica, recuperación híbrida,
   construcción de contexto y presentación de fuentes. Todos estos módulos son
   únicamente estructura documental en el estado actual.
+- **Búsqueda textual (Fase 5 completada):** SQLite FTS5 recupera chunks
+  activos con BM25, filtros y trazabilidad. No usa embeddings ni búsqueda
+  semántica.
 
 Más detalle en [arquitectura](docs/architecture.md) y
 [hoja de ruta](docs/roadmap.md).
@@ -102,6 +105,7 @@ Los endpoints disponibles son:
 - `GET http://localhost:8000/api/models/embeddings/status`
 - `POST http://localhost:8000/api/models/embeddings/load`
 - `POST http://localhost:8000/api/models/embeddings/unload`
+- `POST http://localhost:8000/api/search/text`
 - `POST http://localhost:8000/api/documents`
 - `GET http://localhost:8000/api/documents`
 - `POST http://localhost:8000/api/documents/{document_id}/extract`
@@ -180,6 +184,42 @@ python -m ruff check app tests
 python -m mypy app
 ```
 
+## Búsqueda textual local
+
+La Fase 5 incorpora recuperación textual de chunks mediante
+SQLite FTS5. El índice es derivado y reconstruible; SQLite y `document_chunks`
+siguen siendo la fuente de verdad. La migración no se ejecuta al iniciar el
+backend.
+
+```json
+{
+  "query": "consulta sintética",
+  "match_mode": "all_terms",
+  "document_types": ["jurisprudencia"],
+  "page": 1,
+  "page_size": 20
+}
+```
+
+`POST /api/search/text` admite los modos `all_terms`, `any_term` y `phrase`,
+además de filtros opcionales por documento, tipo y rango de páginas. Devuelve
+resultados trazables con ranking BM25 —menor valor es mejor— y snippets seguros;
+no devuelve la consulta, texto completo, rutas, hashes ni vectores. FTS5,
+persistencia de embeddings, ChromaDB, búsqueda semántica y RAG siguen sin estar
+implementados.
+
+El rango de páginas usa contención completa: `min_page` exige que el chunk
+comience en esa página o después, y `max_page` que termine en esa página o
+antes. Un chunk que solo se solapa parcialmente con el rango queda excluido.
+
+La validación manual, tras respaldar la base local, utiliza:
+
+```bat
+cd backend
+python -m alembic upgrade head
+python -m alembic current
+```
+
 Para comprobar el frontend:
 
 ```bat
@@ -243,6 +283,10 @@ semántica, SQLite FTS5, ChromaDB, búsqueda vectorial o híbrida, reranking, RA
 ni inferencia jurídica basada en recuperación,
 autenticación, CUDA, streaming, Docker ni despliegue.
 
-La próxima fase autorizada es la recuperación textual con SQLite FTS5, filtros
-y referencias a documento y página. Las fases posteriores mantienen sus
-propios controles de privacidad y no se adelantan en esta etapa.
+La próxima fase autorizada es la búsqueda semántica local mediante ChromaDB.
+Persistencia e indexación semántica, búsqueda vectorial, búsqueda híbrida,
+reranking, RAG e inferencia jurídica basada en recuperación siguen pendientes.
+La recuperación textual SQLite FTS5 de la Fase 5 está completada y validada.
+La próxima fase autorizada es búsqueda semántica local mediante ChromaDB;
+persistencia e indexación semántica, búsqueda vectorial o híbrida, reranking,
+RAG e inferencia jurídica basada en recuperación siguen pendientes.

@@ -125,3 +125,32 @@ relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
   vectorial o híbrida, reranking, RAG ni inferencia jurídica basada en
   recuperación.
 - **Estado:** Fase 4 completada.
+
+## 2026-07-24 — Fase 5: Recuperación textual FTS5
+
+- **Añadido:** migración `20260724_03` con índice FTS5 derivado exclusivamente
+  de `document_chunks`, tokenizer `unicode61 remove_diacritics 2`, backfill y
+  triggers de inserción, actualización y borrado.
+- **Añadido:** búsqueda textual local parametrizada con compilación cerrada de
+  consultas, modos `all_terms`, `any_term` y `phrase`, BM25, snippets seguros,
+  filtros documentales, paginación y trazabilidad por documento, chunk y páginas.
+- **Seguridad:** no se acepta sintaxis FTS5 libre ni se registran consultas,
+  expresiones MATCH, textos o snippets. Los errores de disponibilidad son
+  controlados.
+- **Validación final:** la migración `20260724_03` se aplicó correctamente y
+  Alembic quedó sincronizado en `head`. Se confirmó la tabla virtual,
+  tokenizer `unicode61 remove_diacritics 2`, triggers `INSERT`, `UPDATE` y
+  `DELETE`, y backfill completo de 44 chunks y 44 registros FTS5. Los datos
+  documentales originales se conservaron.
+- **Validación funcional:** `POST /api/search/text`, búsquedas con y sin tilde,
+  modos `all_terms`, `any_term` y `phrase`, filtro `document_type`, contención
+  completa por páginas, BM25 ascendente con desempates estables y snippets
+  Unicode con marcadores seguros.
+- **Seguridad:** consultas vacías y rangos invertidos devuelven HTTP 422;
+  sintaxis semejante a FTS5 o SQL se trata como texto. Las respuestas no
+  contienen SQL, traceback ni rutas locales.
+- **Pruebas:** 84 pruebas aprobadas; Ruff y mypy finalizaron sin errores.
+- **Alcance:** persisten como pendientes la persistencia e indexación semántica,
+  ChromaDB, búsqueda vectorial, búsqueda híbrida, reranking, RAG e inferencia
+  jurídica basada en recuperación.
+- **Estado:** Fase 5 completada.

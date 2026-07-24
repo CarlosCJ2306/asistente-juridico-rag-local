@@ -57,6 +57,12 @@ class Settings(BaseSettings):
     embedding_query_prefix: str = "query:"
     embedding_passage_prefix: str = "passage:"
 
+    text_search_query_max_chars: int = Field(default=500, gt=0)
+    text_search_max_terms: int = Field(default=32, gt=0)
+    text_search_default_page_size: int = Field(default=20, gt=0)
+    text_search_max_page_size: int = Field(default=100, gt=0)
+    text_search_max_document_types: int = Field(default=10, gt=0)
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -108,6 +114,8 @@ class Settings(BaseSettings):
             raise ValueError("LEGAL_CHUNK_TARGET_CHARS no puede superar LEGAL_CHUNK_MAX_CHARS")
         if self.legal_chunk_overlap_chars >= self.legal_chunk_target_chars:
             raise ValueError("LEGAL_CHUNK_OVERLAP_CHARS debe ser menor que LEGAL_CHUNK_TARGET_CHARS")
+        if self.text_search_default_page_size > self.text_search_max_page_size:
+            raise ValueError("TEXT_SEARCH_DEFAULT_PAGE_SIZE no puede superar TEXT_SEARCH_MAX_PAGE_SIZE")
         return self
 
     @property
