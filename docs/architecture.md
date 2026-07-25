@@ -172,9 +172,7 @@ se limita automáticamente el número de hilos.
 
 SQLite es la fuente de verdad documental. La Fase 5 completó la recuperación
 léxica con FTS5. La Fase 6 implementa persistencia e indexación semántica en
-ChromaDB y búsqueda vectorial, pero permanece en validación hasta instalar la
-dependencia y comprobar offline el índice real, sus conteos y su persistencia
-tras reiniciar el backend.
+ChromaDB y búsqueda vectorial, validado localmente y offline como índice derivado persistente y reconstruible.
 
 Qwen3-1.7B GGUF y `multilingual-e5-small` conservan sus ciclos de vida
 explícitos e independientes. La búsqueda híbrida RRF está implementada y en
@@ -189,7 +187,7 @@ verdad; ChromaDB es un índice derivado reconstruible con metadatos mínimos, y
 los candidatos y snippets se validan u obtienen desde SQLite. La persistencia
 tras reinicio funcionó sin rebuild posterior y el modelo terminó `unloaded`.
 
-Fase 7 queda en validación con recuperación híbrida RRF mediante FTS5 y
+La Fase 7 está completada con recuperación híbrida RRF mediante FTS5 y
 búsqueda semántica; no incluye reranking, RAG, generación con contexto
 recuperado, citas finales ni inferencia jurídica basada en recuperación.
 ## Recuperación híbrida RRF

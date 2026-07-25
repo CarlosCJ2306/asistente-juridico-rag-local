@@ -88,7 +88,7 @@ filtros y validación contra SQLite. La persistencia tras reinicio funcionó sin
 rebuild posterior y el modelo terminó `unloaded`; el validador integral fue
 aprobado con código 0, junto con 146 pruebas, Ruff y mypy en 70 archivos.
 
-La Fase 7 está en validación con recuperación híbrida RRF implementada. El
+La Fase 7 está completada con recuperación híbrida RRF. El
 reranking, RAG, generación con contexto recuperado, citas finales e inferencia
 jurídica basada en recuperación siguen pendientes.
 ## Fase 7 — completada: recuperación híbrida RRF

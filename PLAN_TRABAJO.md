@@ -1,6 +1,6 @@
 # Plan de trabajo — Asistente Jurídico RAG Local
 
-**Última actualización:** 2026-07-23
+**Última actualización:** 2026-07-25
 
 ## Objetivo general
 
@@ -29,7 +29,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 - Backend: FastAPI.
 - Frontend: React, TypeScript y Vite.
 - Persistencia documental: SQLite; recuperación textual FTS5 completada.
-- Índice semántico ChromaDB implementado y pendiente de validación local real.
+- Índice semántico ChromaDB local validado y completado; recuperación híbrida RRF completada.
 - Modelo generativo local: Qwen3-1.7B Q4_K_M en GGUF mediante
   `llama-cpp-python`.
 - Embeddings locales completados: `multilingual-e5-small`, reutilizados por el
@@ -92,108 +92,6 @@ manifiesto.
 - Persistencia de páginas.
 - Segmentación y persistencia de chunks.
 - Trazabilidad por documento y página.
-
-## Próximo paso autorizado
-
-Validación manual de la Fase 7: comprobar FTS5, índice semántico y embeddings
-locales; validar las búsquedas textual, semántica e híbrida, la fusión RRF,
-los filtros, la persistencia y la privacidad. La Fase 8 permanece pendiente.
-
-## Fuera de alcance actual
-
-Ya están implementados en los bloques 2A y 2B:
-
-- SQLite como persistencia principal.
-- El modelo de metadatos `documents`.
-- El repositorio documental.
-- La migración inicial de Alembic.
-
-Todavía no están implementados:
-
-- Validación manual real de la recuperación híbrida RRF.
-- Reranking.
-- RAG.
-- Inferencia jurídica basada en recuperación.
-- Citas.
-- Matriz HPN.
-- Red jurídica.
-- Simulación.
-- OCR.
-- Búsqueda web controlada.
-- Especialización del modelo.
-
-Las Fases 2 y 3 están **Completadas**. La Fase 3 fue validada manualmente con
-28 páginas persistidas, 44 chunks y 71.111 caracteres; el chunk máximo fue de
-1.969 caracteres.
-
-La Fase 4 está **Completada**. La validación final confirmó la instalación de
-`sentence-transformers`, el modelo local `intfloat/multilingual-e5-small`,
-verificación local exitosa, carga estrictamente offline en CPU, dimensión 384,
-embeddings de una consulta y dos pasajes con prefijos `query:` y `passage:`,
-normalización L2, vectores finitos y dimensiones consistentes, liberación de
-memoria, estado final `unloaded` y archivos locales disponibles tras `unload`.
-También se validaron los endpoints `status`, `load` y `unload`, la carga
-idempotente, el uso de `get_embedding_dimension()` y la ausencia de fallback a
-Internet. La descarga futura queda filtrada a los artefactos necesarios y usa
-`safetensors`. El conjunto de 74 pruebas, Ruff y mypy terminó sin errores.
-
-La Fase 4 no incluye persistencia de embeddings, ChromaDB, FTS5, indexación
-lexical o semántica, búsqueda vectorial o híbrida, reranking, RAG ni inferencia
-jurídica basada en recuperación.
-
-La Fase 5 está **Completada**. La validación final confirmó la migración
-`20260724_03` aplicada, Alembic en `head`, la tabla virtual
-`document_chunks_fts`, tokenizer `unicode61 remove_diacritics 2`, triggers
-`INSERT`, `UPDATE` y `DELETE`, y backfill completo de 44 chunks y 44 registros
-FTS5. Los datos documentales originales se conservaron.
-
-También se validaron `POST /api/search/text`, búsquedas con y sin tilde,
-`all_terms`, `any_term` y `phrase`, filtros documentales y contención completa
-de páginas, orden BM25 estable, snippets Unicode seguros, rechazos 422,
-sintaxis FTS5 o SQL tratada como texto y respuestas sin SQL, traceback ni rutas
-locales. El conjunto de 84 pruebas, Ruff y mypy terminó sin errores.
-
-La Fase 6 está **Completada** y su validación integral real quedó registrada.
-## Cierre documental de la Fase 6
-
-La Fase 6 queda **Completada** tras la validación integral real: ChromaDB
-operó localmente y offline, con telemetría anonimizada deshabilitada; el modelo
-se cargó en CPU con dimensión dinámica 384; se reconstruyeron 44 chunks activos
-con distancia cosine, fingerprint SHA-256, activación atómica y conservación
-del índice anterior ante fallos. ChromaDB mantuvo metadatos mínimos sin texto
-completo y cada candidato y snippet se validó u obtuvo desde SQLite, que sigue
-siendo la fuente de verdad.
-
-La persistencia tras reiniciar el backend, la búsqueda semántica sin rebuild
-posterior, los filtros y el estado final `unloaded` fueron validados. Los
-conteos iniciales y finales fueron iguales: 1 documento, 28 páginas, 44 chunks
-y 44 registros FTS5. El validador integral terminó aprobado con código 0; se
-aprobaron 146 pruebas, Ruff no reportó errores y mypy no reportó errores en 70
-archivos.
-
-La Fase 7 inicia su implementación de recuperación híbrida combinando FTS5 y
-búsqueda semántica. Siguen pendientes reranking, RAG, generación con contexto
-recuperado, citas finales e inferencia jurídica basada en recuperación.
-
-## Fase 7 — Recuperación híbrida RRF
-
-La Fase 7 está **En validación — recuperación híbrida RRF implementada**. El
-servicio ejecuta secuencialmente FTS5 y ChromaDB con los mismos filtros, limita
-candidatos, deduplica por chunk, fusiona posiciones mediante RRF ponderado y
-revalida contra SQLite antes de generar snippets seguros. El score híbrido no
-es una probabilidad y no mezcla directamente BM25 con distancia cosine.
-
-No se marcará completada hasta validar manualmente FTS5 real, índice semántico,
-modelo de embeddings, búsquedas textual y semántica, fusión RRF, filtros,
-persistencia y privacidad. La Fase 8 permanece **Pendiente**. No se incluyen
-reranking, RAG, generación, citas finales ni inferencia jurídica.
-## Cierre documental de la Fase 7
-
-La Fase 7 está **Completada**. FTS5 y ChromaDB permanecen como índices derivados y SQLite como fuente de verdad. La fusión usa RRF determinista con ranks iniciados en 1: `text_weight / (rrf_k + text_rank)` y `semantic_weight / (rrf_k + semantic_rank)`. BM25 y cosine distance no se suman ni normalizan en el score, que no representa probabilidad ni certeza.
-
-Se validaron candidatos limitados, deduplicación por `chunk_id`, trazabilidad, filtros con contención completa por página, validación contra SQLite, snippets desde SQLite, errores controlados y persistencia de ambos índices tras reinicio. Los conteos permanecieron en 1 documento, 28 páginas, 44 chunks y 44 registros FTS5; el modelo terminó `unloaded`, Uvicorn se cerró y no quedaron procesos. El validador obtuvo código 0, con 206 pruebas aprobadas, Ruff sin errores y mypy sin errores en 72 archivos.
-
-Fases 0 a 6: **Completadas**. Fase 7: **Completada**. Fase 8: **Pendiente**.
 
 ## Próximo paso autorizado
 

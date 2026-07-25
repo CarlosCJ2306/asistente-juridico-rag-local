@@ -223,9 +223,9 @@ telemetría anonimizada deshabilitada, el modelo se cargó en CPU con dimensión
 384, se reconstruyeron 44 chunks activos y la persistencia tras reinicio fue
 confirmada sin una reconstrucción posterior. El modelo terminó `unloaded` y
 SQLite mantuvo sin cambios sus conteos documentales.
-## Validación futura de la Fase 7
+## Registro de validación de la Fase 7
 
-La validación requiere FTS5 disponible, índice semántico `ready`, ChromaDB y
+La validación real confirmó FTS5 disponible, índice semántico `ready`, ChromaDB y
 Sentence Transformers instalados, modelo de embeddings local y un único worker
 del backend. Debe cargarse embeddings antes de invocar
 `POST /api/search/hybrid` y descargarse al terminar. El validador preparado no

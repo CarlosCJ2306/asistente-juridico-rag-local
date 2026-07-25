@@ -348,8 +348,7 @@ de persistencia y carga controlada de documentos. La
 inferencia solo está disponible mediante el script manual después de instalar
 dependencias y descargar el modelo; no existe todavía un endpoint de prompts.
 
-Las Fases 5 y 6 están completadas y validadas. La Fase 7 implementa la
-recuperación híbrida RRF y permanece en validación manual. El proyecto sigue
+Las Fases 5 y 6 están completadas y validadas. La Fase 7 implementa y valida la recuperación híbrida RRF. El proyecto sigue
 sin reranking, RAG, inferencia jurídica basada en recuperación, OCR,
 autenticación, streaming, Docker ni despliegue.
 ### Cierre de la Fase 6
@@ -369,7 +368,7 @@ registros FTS5. El validador integral terminó aprobado con código 0; hubo 146
 pruebas aprobadas, Ruff sin errores y mypy sin errores en 70 archivos.
 
 La Fase 7 implementa recuperación híbrida combinando FTS5 y búsqueda semántica
-y permanece en validación. Siguen pendientes reranking, RAG, generación con
+y está completada. Siguen pendientes reranking, RAG, generación con
 contexto recuperado, citas finales e inferencia jurídica basada en recuperación.
 ## Recuperación híbrida local
 
@@ -396,7 +395,7 @@ La respuesta contiene trazabilidad documental, snippet seguro,
 `hybrid_score` mayor indica mejor posición RRF, no probabilidad. BM25 y cosine
 distance conservan semántica “menor es mejor” y tampoco son probabilidades.
 
-La Fase 7 permanece en validación manual. No implementa reranking, RAG,
+La Fase 7 está completada. No implementa reranking, RAG,
 generación con contexto recuperado ni citas finales.
 ## Estado de la Fase 7
 
