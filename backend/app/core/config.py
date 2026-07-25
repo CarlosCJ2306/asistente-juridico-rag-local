@@ -1,5 +1,6 @@
 """Configuración centralizada obtenida del entorno y del archivo raíz `.env`."""
 
+import math
 import re
 from pathlib import Path
 from typing import Any
@@ -82,6 +83,13 @@ class Settings(BaseSettings):
     semantic_query_max_chars: int = Field(default=1000, gt=0)
     semantic_max_document_types: int = Field(default=10, gt=0)
 
+    hybrid_rrf_k: int = Field(default=60, gt=0, le=1000)
+    hybrid_text_weight: float = Field(default=1.0, gt=0, le=10.0)
+    hybrid_semantic_weight: float = Field(default=1.0, gt=0, le=10.0)
+    hybrid_top_k_default: int = Field(default=10, gt=0)
+    hybrid_top_k_max: int = Field(default=50, gt=0)
+    hybrid_candidate_multiplier: int = Field(default=3, ge=1, le=10)
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -142,6 +150,28 @@ class Settings(BaseSettings):
             raise ValueError("Los prefijos de embeddings no pueden estar vacíos")
         return value
 
+    @field_validator("hybrid_text_weight", "hybrid_semantic_weight")
+    @classmethod
+    def validate_hybrid_weight(cls, value: float) -> float:
+        if not math.isfinite(value) or value <= 0 or value > 10:
+            raise ValueError("HYBRID_WEIGHT_INVALID")
+        return value
+
+    @field_validator(
+        "hybrid_rrf_k",
+        "hybrid_text_weight",
+        "hybrid_semantic_weight",
+        "hybrid_top_k_default",
+        "hybrid_top_k_max",
+        "hybrid_candidate_multiplier",
+        mode="before",
+    )
+    @classmethod
+    def reject_boolean_hybrid_numbers(cls, value: Any) -> Any:
+        if isinstance(value, bool):
+            raise ValueError("HYBRID_NUMERIC_VALUE_INVALID")
+        return value
+
     @model_validator(mode="after")
     def validate_document_limits(self) -> "Settings":
         """Valida límites consistentes de carga y segmentación documental."""
@@ -160,6 +190,8 @@ class Settings(BaseSettings):
             raise ValueError(
                 "SEMANTIC_SEARCH_TOP_K_DEFAULT no puede superar SEMANTIC_SEARCH_TOP_K_MAX"
             )
+        if self.hybrid_top_k_default > self.hybrid_top_k_max:
+            raise ValueError("HYBRID_TOP_K_DEFAULT no puede superar HYBRID_TOP_K_MAX")
         return self
 
     @property

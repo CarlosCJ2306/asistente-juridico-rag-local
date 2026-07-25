@@ -348,14 +348,10 @@ de persistencia y carga controlada de documentos. La
 inferencia solo está disponible mediante el script manual después de instalar
 dependencias y descargar el modelo; no existe todavía un endpoint de prompts.
 
-La recuperación textual SQLite FTS5 de la Fase 5 está completada y validada.
-La Fase 6 está en validación: el índice persistente y la búsqueda semántica
-local mediante ChromaDB están implementados, pero la dependencia y el índice
-real todavía no se han instalado ni construido como parte de esta tarea.
-
-El proyecto sigue sin búsqueda híbrida, reranking, RAG, inferencia jurídica
-basada en recuperación, OCR, autenticación, streaming, Docker ni despliegue.
-La Fase 7 permanece pendiente.
+Las Fases 5 y 6 están completadas y validadas. La Fase 7 implementa la
+recuperación híbrida RRF y permanece en validación manual. El proyecto sigue
+sin reranking, RAG, inferencia jurídica basada en recuperación, OCR,
+autenticación, streaming, Docker ni despliegue.
 ### Cierre de la Fase 6
 
 La Fase 6 está **Completada** y validada: ChromaDB opera localmente y offline
@@ -372,7 +368,38 @@ iniciales y finales fueron iguales: 1 documento, 28 páginas, 44 chunks y 44
 registros FTS5. El validador integral terminó aprobado con código 0; hubo 146
 pruebas aprobadas, Ruff sin errores y mypy sin errores en 70 archivos.
 
-La Fase 7 permanece pendiente: recuperación híbrida combinando FTS5 y búsqueda
-semántica. También siguen pendientes fusión de rankings, reranking, RAG,
-generación con contexto recuperado, citas finales e inferencia jurídica basada
-en recuperación.
+La Fase 7 implementa recuperación híbrida combinando FTS5 y búsqueda semántica
+y permanece en validación. Siguen pendientes reranking, RAG, generación con
+contexto recuperado, citas finales e inferencia jurídica basada en recuperación.
+## Recuperación híbrida local
+
+La Fase 7 implementa `POST /api/search/hybrid`. Requiere FTS5 listo, índice
+semántico en estado `ready` y embeddings en estado `loaded`. El servicio
+ejecuta ambas fuentes secuencialmente, aplica filtros idénticos, deduplica por
+chunk y fusiona sus posiciones mediante Reciprocal Rank Fusion ponderado.
+
+Request sintético:
+
+```json
+{
+  "query": "consulta sintética",
+  "text_match_mode": "all_terms",
+  "top_k": 10,
+  "document_types": ["jurisprudencia"],
+  "min_page": null,
+  "max_page": null
+}
+```
+
+La respuesta contiene trazabilidad documental, snippet seguro,
+`hybrid_score`, presencia y rank en cada fuente, BM25 y distancia cosine. Un
+`hybrid_score` mayor indica mejor posición RRF, no probabilidad. BM25 y cosine
+distance conservan semántica “menor es mejor” y tampoco son probabilidades.
+
+La Fase 7 permanece en validación manual. No implementa reranking, RAG,
+generación con contexto recuperado ni citas finales.
+## Estado de la Fase 7
+
+La Fase 7 está **Completada**: la recuperación híbrida local combina FTS5 y ChromaDB mediante RRF determinista ponderado por rangos. SQLite sigue siendo la fuente de verdad y ambos índices son derivados. Se validaron filtros, deduplicación, trazabilidad, snippets desde SQLite y persistencia tras reinicio.
+
+La siguiente fase autorizada es la **Fase 8 — Chat RAG local y construcción controlada de contexto recuperado**. Aún no existen selección final de contexto, presupuestos de tokens, prompts, generación con Qwen, respuestas RAG, prevención de instrucciones documentales, citas finales, reranking ni historial conversacional persistente.

@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.repositories.text_search_repository import TextSearchRepositoryError
 from app.database.session import get_db_session
+from app.schemas.hybrid_search import HybridSearchRequest, HybridSearchResponse
 from app.schemas.semantic_search import (
     SemanticRebuildResponse,
     SemanticSearchRequest,
@@ -15,11 +16,28 @@ from app.schemas.semantic_search import (
 )
 from app.schemas.text_search import TextSearchPage, TextSearchRequest
 from app.services.semantic_index_service import SemanticIndexService, SemanticServiceError
+from app.services.hybrid_search_service import HybridSearchError, HybridSearchService
 from app.services.semantic_search_service import SemanticSearchService
 from app.services.text_search_service import TextSearchService, TextSearchValidationError
 
 
 router = APIRouter(prefix="/search", tags=["search"])
+
+
+def _hybrid_http_error(error: Exception) -> HTTPException:
+    code = getattr(error, "code", "HYBRID_SEARCH_ERROR")
+    unavailable = {
+        "FTS5_NOT_AVAILABLE",
+        "TEXT_SEARCH_INDEX_NOT_READY",
+        "CHROMA_DEPENDENCY_MISSING",
+        "SEMANTIC_INDEX_NOT_READY",
+        "SEMANTIC_INDEX_STATE_INVALID",
+        "SEMANTIC_INDEX_INCOMPATIBLE",
+        "EMBEDDING_MODEL_NOT_LOADED",
+        "HYBRID_SEARCH_UNAVAILABLE",
+    }
+    status_code = 503 if code in unavailable else 500
+    return HTTPException(status_code=status_code, detail=code)
 
 
 def _semantic_http_error(error: SemanticServiceError) -> HTTPException:
@@ -103,3 +121,20 @@ async def search_semantic(
         )
     except SemanticServiceError as exc:
         raise _semantic_http_error(exc) from exc
+
+
+@router.post("/hybrid", response_model=HybridSearchResponse)
+async def search_hybrid(
+    payload: HybridSearchRequest,
+    request: Request,
+    session: Annotated[AsyncSession, Depends(get_db_session)],
+) -> HybridSearchResponse:
+    """Fusiona resultados textuales y semánticos mediante RRF ponderado."""
+
+    try:
+        return await HybridSearchService(session).search(
+            payload,
+            request_id=getattr(request.state, "request_id", None),
+        )
+    except (TextSearchRepositoryError, SemanticServiceError, HybridSearchError) as exc:
+        raise _hybrid_http_error(exc) from exc

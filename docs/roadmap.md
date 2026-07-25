@@ -43,28 +43,33 @@
 - Consulta segura con BM25, snippets, filtros, paginación y trazabilidad.
 - La validación manual confirmó la migración en `head`, el backfill completo de
   44 chunks y 44 registros FTS5, la búsqueda, los filtros y el ranking BM25.
-- La Fase 5 no combina FTS5 con el índice semántico; búsqueda híbrida,
-  reranking, RAG e inferencia jurídica basada en recuperación siguen pendientes.
+- La Fase 5 conserva su endpoint textual independiente; la combinación con el
+  índice semántico pertenece al servicio híbrido de la Fase 7.
 
-## Fase 6 — en validación: índice y búsqueda semántica local
+## Fase 6 — completada: índice y búsqueda semántica local
 
 - Cliente ChromaDB local con telemetría deshabilitada e imports perezosos.
 - Índice persistente y reconstruible mediante colección temporal y activación
   atómica, sin almacenar texto completo en ChromaDB.
 - Búsqueda por distancia coseno con filtros, snippets desde SQLite y descarte
   de resultados obsoletos.
-- Pendiente instalar ChromaDB y validar offline el índice real, conteos,
-  persistencia tras reinicio y búsqueda semántica real.
+- ChromaDB, conteos, persistencia tras reinicio y búsqueda semántica real
+  validados localmente y offline.
 
-## Fase 7 — pendiente
+## Fase 7 — completada: recuperación híbrida RRF
 
-1. **Recuperación híbrida:** combinar FTS5 y búsqueda semántica sin ampliar aún
-   a reranking o RAG.
+1. **Recuperación híbrida:** FTS5 y búsqueda semántica se combinan mediante RRF
+   ponderado, deduplicación, filtros comunes y validación final contra SQLite.
+   Queda pendiente la validación manual real de índices, embeddings, fusión,
+   filtros, persistencia y privacidad.
 
-## Fases posteriores
+## Fase 8 — pendiente
 
 2. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
    evaluación usando el adaptador Qwen3 ya disponible.
+
+## Fases posteriores
+
 3. **Estructuras jurídicas:** relaciones entre hechos, pruebas y normas, con
    validación humana obligatoria.
 4. **Escenarios preliminares:** métricas y explicaciones, nunca decisiones
@@ -83,7 +88,13 @@ filtros y validación contra SQLite. La persistencia tras reinicio funcionó sin
 rebuild posterior y el modelo terminó `unloaded`; el validador integral fue
 aprobado con código 0, junto con 146 pruebas, Ruff y mypy en 70 archivos.
 
-La Fase 7 sigue pendiente y queda limitada a recuperación híbrida combinando
-FTS5 y búsqueda semántica. Fusión de rankings, reranking, RAG, generación con
-contexto recuperado, citas finales e inferencia jurídica basada en recuperación
-siguen pendientes.
+La Fase 7 está en validación con recuperación híbrida RRF implementada. El
+reranking, RAG, generación con contexto recuperado, citas finales e inferencia
+jurídica basada en recuperación siguen pendientes.
+## Fase 7 — completada: recuperación híbrida RRF
+
+La recuperación híbrida combina FTS5 y búsqueda semántica mediante RRF ponderado, deduplicación, filtros comunes y validación final contra SQLite. La validación real confirmó fusión, persistencia y privacidad. La Fase 8 queda autorizada como siguiente paso.
+
+## Fase 8 — pendiente
+
+Chat RAG local y construcción controlada de contexto recuperado.

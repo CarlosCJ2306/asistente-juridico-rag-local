@@ -177,8 +177,9 @@ dependencia y comprobar offline el índice real, sus conteos y su persistencia
 tras reiniciar el backend.
 
 Qwen3-1.7B GGUF y `multilingual-e5-small` conservan sus ciclos de vida
-explícitos e independientes. La búsqueda híbrida, el reranking, RAG y la
-inferencia jurídica basada en recuperación siguen pendientes.
+explícitos e independientes. La búsqueda híbrida RRF está implementada y en
+validación; el reranking, RAG y la inferencia jurídica basada en recuperación
+siguen pendientes.
 ## Cierre de Fase 6
 
 La validación real confirmó ChromaDB local y offline, telemetría anonimizada
@@ -188,6 +189,27 @@ verdad; ChromaDB es un índice derivado reconstruible con metadatos mínimos, y
 los candidatos y snippets se validan u obtienen desde SQLite. La persistencia
 tras reinicio funcionó sin rebuild posterior y el modelo terminó `unloaded`.
 
-Fase 7 queda pendiente para recuperación híbrida mediante FTS5 y búsqueda
-semántica; no incluye aún fusión de rankings, reranking, RAG, generación con
-contexto recuperado, citas finales ni inferencia jurídica basada en recuperación.
+Fase 7 queda en validación con recuperación híbrida RRF mediante FTS5 y
+búsqueda semántica; no incluye reranking, RAG, generación con contexto
+recuperado, citas finales ni inferencia jurídica basada en recuperación.
+## Recuperación híbrida RRF
+
+```text
+consulta
+   ├── FTS5 → ranking textual
+   └── ChromaDB → ranking semántico
+               ↓
+        Reciprocal Rank Fusion
+               ↓
+      validación final SQLite
+               ↓
+      resultados híbridos trazables
+```
+
+SQLite continúa como fuente de verdad; FTS5 y ChromaDB son índices derivados.
+Las fuentes se ejecutan secuencialmente porque comparten el contexto de sesión
+del request. RRF combina posiciones, no valores BM25 y cosine, y no es un
+modelo ni una probabilidad. No existe reranking ni generación en esta fase.
+## Cierre de la Fase 7
+
+La Fase 7 está completada. RRF utiliza únicamente ranks iniciados en 1 con los pesos configurados; BM25 y cosine distance no se suman ni se normalizan dentro del score. Los resultados se deduplican, se filtran con contención completa por página y se validan contra SQLite antes de generar snippets. FTS5 y ChromaDB permanecen como índices derivados persistentes; SQLite sigue siendo la fuente de verdad. La Fase 8 queda pendiente y corresponde al chat RAG local.

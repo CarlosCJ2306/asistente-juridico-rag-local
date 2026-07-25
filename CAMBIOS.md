@@ -206,3 +206,25 @@ relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
 - **Estado:** Fases 0 a 6 completadas; Fase 7 pendiente. Quedan fuera de
   alcance búsqueda híbrida, fusión de rankings, reranking, RAG, generación con
   contexto recuperado, citas finales e inferencia jurídica basada en recuperación.
+## 2026-07-25 — Fase 7: Recuperación híbrida RRF
+
+- **Añadido:** servicio híbrido que reutiliza las búsquedas FTS5 y ChromaDB de
+  forma secuencial y aplica los mismos filtros a ambas fuentes.
+- **Añadido:** fusión RRF ponderada configurable, candidatos limitados,
+  deduplicación por chunk y ranking estable con trazabilidad de origen.
+- **Seguridad:** revalidación final de candidatos contra SQLite, descarte de
+  resultados obsoletos, snippets desde SQLite y logging sólo de metadatos.
+- **API:** `POST /api/search/hybrid` con request y response tipados, errores
+  controlados y sin fallback silencioso a una sola fuente.
+- **Pruebas:** cobertura sintética de configuración, fusión, pesos, límites,
+  deduplicación, filtros, resultados obsoletos, HTML, API y privacidad.
+- **Pendiente:** validación manual real con ambos índices y embeddings locales.
+  No incluye reranking, RAG, generación ni citas finales.
+## 2026-07-25 — Cierre de Fase 7: Recuperación híbrida
+
+- **Validación final:** recuperación local mediante FTS5 y ChromaDB, con SQLite como fuente de verdad e índices derivados persistentes.
+- **RRF:** fusión determinista ponderada por posiciones iniciadas en 1; BM25 y cosine distance no participan directamente en `hybrid_score`.
+- **Resultados:** candidatos limitados, deduplicación por chunk, trazabilidad, filtros documentales y de página con contención completa, y snippets desde SQLite tras validación final.
+- **Operación:** errores de disponibilidad controlados, sin fallback silencioso; persistencia de FTS5 y ChromaDB confirmada tras reinicio.
+- **Validación:** conteos SQLite sin cambios (1 documento, 28 páginas, 44 chunks y 44 registros FTS5), modelo `unloaded`, Uvicorn cerrado y puertos liberados. Validador aprobado con código 0, 206 pruebas, Ruff y mypy sin errores en 72 archivos.
+- **Pendiente:** selección de contexto, presupuestos de tokens, prompts, generación con Qwen, RAG, prevención de instrucciones documentales, citas, reranking, historial persistente, HPN, red jurídica, OCR y búsqueda web.
