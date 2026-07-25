@@ -43,12 +43,23 @@
 - Consulta segura con BM25, snippets, filtros, paginación y trazabilidad.
 - La validación manual confirmó la migración en `head`, el backfill completo de
   44 chunks y 44 registros FTS5, la búsqueda, los filtros y el ranking BM25.
-- Persistencia e indexación semántica, ChromaDB, búsqueda vectorial o híbrida,
+- La Fase 5 no combina FTS5 con el índice semántico; búsqueda híbrida,
   reranking, RAG e inferencia jurídica basada en recuperación siguen pendientes.
 
-## Fase 6 — pendiente
+## Fase 6 — en validación: índice y búsqueda semántica local
 
-1. **Búsqueda semántica:** índice ChromaDB reconstruible.
+- Cliente ChromaDB local con telemetría deshabilitada e imports perezosos.
+- Índice persistente y reconstruible mediante colección temporal y activación
+  atómica, sin almacenar texto completo en ChromaDB.
+- Búsqueda por distancia coseno con filtros, snippets desde SQLite y descarte
+  de resultados obsoletos.
+- Pendiente instalar ChromaDB y validar offline el índice real, conteos,
+  persistencia tras reinicio y búsqueda semántica real.
+
+## Fase 7 — pendiente
+
+1. **Recuperación híbrida:** combinar FTS5 y búsqueda semántica sin ampliar aún
+   a reranking o RAG.
 
 ## Fases posteriores
 
@@ -63,3 +74,16 @@
 
 Cada fase deberá incorporar pruebas, límites de privacidad, medición de
 recursos y documentación antes de avanzar a la siguiente.
+## Cierre de la Fase 6
+
+**Completada.** ChromaDB local y offline fue validado como índice derivado
+persistente y reconstruible, con telemetría deshabilitada, dimensión 384,
+distancia cosine, 44 chunks activos, fingerprint SHA-256, activación atómica,
+filtros y validación contra SQLite. La persistencia tras reinicio funcionó sin
+rebuild posterior y el modelo terminó `unloaded`; el validador integral fue
+aprobado con código 0, junto con 146 pruebas, Ruff y mypy en 70 archivos.
+
+La Fase 7 sigue pendiente y queda limitada a recuperación híbrida combinando
+FTS5 y búsqueda semántica. Fusión de rankings, reranking, RAG, generación con
+contexto recuperado, citas finales e inferencia jurídica basada en recuperación
+siguen pendientes.

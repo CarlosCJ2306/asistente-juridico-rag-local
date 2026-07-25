@@ -44,7 +44,8 @@ funcionalidad jurídica simulada.
   archivos locales; no persiste vectores.
 - `services/embedding_service.py`: aplica prefijos de consulta y pasaje y
   devuelve vectores normalizados en memoria.
-- `vector_store/`: límite de persistencia semántica futuro, hoy inerte.
+- `vector_store/`: cliente ChromaDB perezoso y estado atómico del índice
+  semántico derivado.
 - `ai/model_manager.py`: valida el manifiesto, contiene rutas dentro de
   `models/` y verifica el archivo GGUF.
 - `ai/local_llm.py`: encapsula `llama_cpp.Llama` con carga diferida, una
@@ -63,8 +64,7 @@ ni crea la base al iniciar. El bloque 2B recibe PDF por `POST /api/documents`,
 valida nombre, MIME, extensión, firma y límite, y conserva el original bajo
 `storage/documents/<categoría>/`. La extracción se solicita manualmente, usa
 PyMuPDF y persiste páginas y chunks; SQLite sigue siendo la fuente de verdad.
-No hay OCR, persistencia de embeddings, indexación semántica, búsqueda
-vectorial o híbrida, reranking ni RAG.
+No hay OCR, búsqueda híbrida, reranking ni RAG.
 
 ## Flujo de recuperación textual
 
@@ -101,10 +101,48 @@ EmbeddingService (passage:) / consulta (query:)
 EmbeddingModel → Sentence Transformers local → vectores normalizados en memoria
 ```
 
-El flujo no escribe vectores en SQLite ni en ChromaDB. La carga y descarga son
-explícitas mediante `/api/models/embeddings/load` y
+El adaptador de embeddings no escribe vectores por sí mismo. La Fase 6 los
+persiste únicamente en ChromaDB durante una reconstrucción explícita. La carga
+y descarga son explícitas mediante `/api/models/embeddings/load` y
 `/api/models/embeddings/unload`; el estado no carga pesos ni importa la
 dependencia opcional.
+
+## Flujo de recuperación semántica
+
+```text
+document_chunks + documents activos
+                ↓
+        EmbeddingService (passage:)
+                ↓
+      colección temporal ChromaDB
+                ↓ validación de modelo, dimensión, métrica y conteo
+       estado activo reemplazado atómicamente
+                ↓
+       consulta con embedding query:
+                ↓
+       validación final contra SQLite
+                ↓
+          resultados trazables
+```
+
+SQLite sigue siendo la fuente de verdad. ChromaDB es un índice local,
+persistente, derivado, reemplazable y reconstruible: almacena vectores y
+metadatos mínimos, no textos completos. Los snippets se producen con el texto
+vigente en SQLite. FTS5 y ChromaDB todavía no se combinan; esa integración
+pertenece a una fase posterior.
+
+La reconstrucción conserva la colección activa mientras construye una nueva y
+solo cambia el archivo de estado tras verificarla. El estado incluye un
+fingerprint SHA-256 determinista de la fuente activa para detectar cambios aun
+cuando el conteo permanezca igual; no incluye textos ni identificadores
+individuales. Si la fuente no contiene chunks, un rebuild explícito activa un
+índice vacío válido.
+
+El índice anterior se elimina después de activar el nuevo. Si esa limpieza
+falla, el nuevo sigue activo y la colección anterior queda huérfana para
+revisión manual; no se enumeran ni eliminan colecciones desconocidas. El
+proceso local debe usar un único worker durante el rebuild: la protección
+concurrente es interna al proceso y no afirma coordinación multiproceso.
 
 ## Ciclo del modelo local
 
@@ -132,19 +170,24 @@ se limita automáticamente el número de hilos.
 
 ## Evolución prevista
 
-SQLite es la fuente de verdad para metadatos documentales. SQLite FTS5 atenderá
-recuperación léxica y ChromaDB será un índice semántico reconstruible en fases
-posteriores. Qwen3-1.7B GGUF ya cuenta con gestión y adaptador local; los
-La Fase 3 está completada y validada manualmente: SQLite contiene 28 páginas y
-44 chunks, con reconstrucción de palabras de PyMuPDF y overlap en límites de
-palabra. La Fase 4 está completada y validada con el adaptador local de
-`multilingual-e5-small`, dimensión 384, prefijos E5, normalización L2 y carga
-offline en CPU. Los vectores solo existen en memoria. Persistencia de
-embeddings, indexación semántica, ChromaDB, búsqueda vectorial o híbrida,
-reranking, RAG e inferencia jurídica basada en recuperación aún no están
-implementados. La Fase 5 está completada: se validaron la migración en `head`,
-la tabla FTS5, sus triggers, el backfill de 44 chunks y 44 registros, la
-búsqueda textual, los filtros, el orden BM25 y los rechazos seguros. La
-persistencia e indexación semántica, ChromaDB, la búsqueda vectorial o híbrida,
-el reranking, RAG y la inferencia jurídica basada en recuperación siguen
-pendientes.
+SQLite es la fuente de verdad documental. La Fase 5 completó la recuperación
+léxica con FTS5. La Fase 6 implementa persistencia e indexación semántica en
+ChromaDB y búsqueda vectorial, pero permanece en validación hasta instalar la
+dependencia y comprobar offline el índice real, sus conteos y su persistencia
+tras reiniciar el backend.
+
+Qwen3-1.7B GGUF y `multilingual-e5-small` conservan sus ciclos de vida
+explícitos e independientes. La búsqueda híbrida, el reranking, RAG y la
+inferencia jurídica basada en recuperación siguen pendientes.
+## Cierre de Fase 6
+
+La validación real confirmó ChromaDB local y offline, telemetría anonimizada
+deshabilitada, dimensión dinámica 384, 44 chunks activos, distancia cosine,
+fingerprint SHA-256 y activación atómica. SQLite sigue siendo la fuente de
+verdad; ChromaDB es un índice derivado reconstruible con metadatos mínimos, y
+los candidatos y snippets se validan u obtienen desde SQLite. La persistencia
+tras reinicio funcionó sin rebuild posterior y el modelo terminó `unloaded`.
+
+Fase 7 queda pendiente para recuperación híbrida mediante FTS5 y búsqueda
+semántica; no incluye aún fusión de rankings, reranking, RAG, generación con
+contexto recuperado, citas finales ni inferencia jurídica basada en recuperación.

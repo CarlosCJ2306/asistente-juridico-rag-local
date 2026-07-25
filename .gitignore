@@ -39,6 +39,8 @@ storage/extracted/*
 !storage/extracted/.gitkeep
 storage/vector_store/*
 !storage/vector_store/.gitkeep
+storage/vector/
+local_validation_reports/
 storage/database/*
 !storage/database/.gitkeep
 storage/database/*.db

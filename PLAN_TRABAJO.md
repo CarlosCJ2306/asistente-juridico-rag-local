@@ -28,13 +28,12 @@ conclusión requiere revisión y criterio de un profesional competente.
 
 - Backend: FastAPI.
 - Frontend: React, TypeScript y Vite.
-- Persistencia documental en progreso: SQLite; FTS5 textual implementado en
-  validación.
-- Índice semántico futuro: ChromaDB.
+- Persistencia documental: SQLite; recuperación textual FTS5 completada.
+- Índice semántico ChromaDB implementado y pendiente de validación local real.
 - Modelo generativo local: Qwen3-1.7B Q4_K_M en GGUF mediante
   `llama-cpp-python`.
-- Embeddings locales completados: `multilingual-e5-small`; no hay indexación
-  ni recuperación semántica.
+- Embeddings locales completados: `multilingual-e5-small`, reutilizados por el
+  índice semántico reconstruible.
 - Extracción documental prevista: PyMuPDF.
 - Red jurídica y visualización futuras: NetworkX y PyVis.
 
@@ -48,7 +47,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 3 | Extracción, páginas y chunks | Extraer contenido y segmentarlo con trazabilidad documental. | Completada | Fase 2, PyMuPDF | Páginas y chunks persistidos con referencia a documento y página. |
 | 4 | Embeddings | Instalar y gestionar `multilingual-e5-small` localmente. | Completada | Fase 3, Sentence Transformers | Embeddings reproducibles sin servicios externos. |
 | 5 | Búsqueda textual | Implementar recuperación léxica con SQLite FTS5. | Completada | Fase 2 y Fase 3 | Consultas textuales trazables y cubiertas por pruebas. |
-| 6 | Búsqueda semántica | Crear el índice semántico local reconstruible. | Pendiente | Fase 4, ChromaDB | Recuperación semántica local evaluada. |
+| 6 | Búsqueda semántica | Crear el índice semántico local reconstruible. | En validación — índice y búsqueda semántica local implementados | Fase 4, ChromaDB | Recuperación semántica local evaluada. |
 | 7 | Recuperación híbrida | Combinar resultados textuales y semánticos. | Pendiente | Fase 5 y Fase 6 | Ranking híbrido medible y trazable. |
 | 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Pendiente | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
 | 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Pendiente | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias verificables. |
@@ -96,7 +95,9 @@ manifiesto.
 
 ## Próximo paso autorizado
 
-Fase 6: búsqueda semántica local mediante ChromaDB.
+Validación manual de la Fase 6: instalar ChromaDB, comprobar operación offline,
+cargar embeddings, reconstruir el índice local, validar conteos y persistencia
+tras reinicio, y ejecutar una búsqueda semántica real.
 
 ## Fuera de alcance actual
 
@@ -109,11 +110,6 @@ Ya están implementados en los bloques 2A y 2B:
 
 Todavía no están implementados:
 
-- Persistencia de embeddings.
-- ChromaDB.
-- Indexación lexical.
-- Indexación semántica.
-- Búsqueda vectorial.
 - Búsqueda híbrida.
 - Reranking.
 - RAG.
@@ -157,7 +153,33 @@ de páginas, orden BM25 estable, snippets Unicode seguros, rechazos 422,
 sintaxis FTS5 o SQL tratada como texto y respuestas sin SQL, traceback ni rutas
 locales. El conjunto de 84 pruebas, Ruff y mypy terminó sin errores.
 
-La Fase 6 permanece **Pendiente** y corresponde a búsqueda semántica local
-mediante ChromaDB. Persistencia e indexación semántica, búsqueda vectorial,
-búsqueda híbrida, reranking, RAG e inferencia jurídica basada en recuperación
-siguen fuera de alcance.
+La Fase 6 está **En validación — índice y búsqueda semántica local
+implementados**. ChromaDB se integra mediante un cliente local perezoso con
+telemetría deshabilitada, colección temporal, activación atómica y validación
+final contra SQLite. La implementación no afirma que el índice real haya sido
+creado: aún se requiere instalar la dependencia, validar operación offline,
+cargar el modelo de embeddings, reconstruir el índice real, comprobar conteos
+y persistencia tras reinicio, y ejecutar una búsqueda semántica real. La Fase
+7 permanece **Pendiente**; búsqueda híbrida, reranking, RAG e inferencia
+jurídica basada en recuperación siguen fuera de alcance.
+## Cierre documental de la Fase 6
+
+La Fase 6 queda **Completada** tras la validación integral real: ChromaDB
+operó localmente y offline, con telemetría anonimizada deshabilitada; el modelo
+se cargó en CPU con dimensión dinámica 384; se reconstruyeron 44 chunks activos
+con distancia cosine, fingerprint SHA-256, activación atómica y conservación
+del índice anterior ante fallos. ChromaDB mantuvo metadatos mínimos sin texto
+completo y cada candidato y snippet se validó u obtuvo desde SQLite, que sigue
+siendo la fuente de verdad.
+
+La persistencia tras reiniciar el backend, la búsqueda semántica sin rebuild
+posterior, los filtros y el estado final `unloaded` fueron validados. Los
+conteos iniciales y finales fueron iguales: 1 documento, 28 páginas, 44 chunks
+y 44 registros FTS5. El validador integral terminó aprobado con código 0; se
+aprobaron 146 pruebas, Ruff no reportó errores y mypy no reportó errores en 70
+archivos.
+
+La Fase 7 permanece **Pendiente** y su alcance autorizado es recuperación
+híbrida combinando FTS5 y búsqueda semántica. Siguen pendientes la fusión de
+rankings, reranking, RAG, generación con contexto recuperado, citas finales e
+inferencia jurídica basada en recuperación.

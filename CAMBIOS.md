@@ -154,3 +154,55 @@ relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
   ChromaDB, búsqueda vectorial, búsqueda híbrida, reranking, RAG e inferencia
   jurídica basada en recuperación.
 - **Estado:** Fase 5 completada.
+
+## 2026-07-24 — Fase 6: Índice y búsqueda semántica local
+
+- **Añadido:** dependencia separada para ChromaDB y cliente `PersistentClient`
+  local de carga perezosa, sin servidor remoto y con telemetría anonimizada
+  deshabilitada.
+- **Añadido:** índice vectorial persistente y reconstruible desde chunks de
+  documentos activos en SQLite, con distancia coseno y metadatos mínimos de
+  trazabilidad; ChromaDB no almacena el texto completo.
+- **Seguridad:** la reconstrucción utiliza una colección temporal, valida
+  dimensión, modelo, métrica y conteo, y activa el índice mediante un archivo
+  de estado reemplazado atómicamente. Un fallo conserva el índice anterior.
+- **Añadido:** endpoints tipados de estado, reconstrucción explícita y búsqueda
+  semántica, con filtros documentales y contención completa por páginas.
+- **Validación:** cada candidato vectorial se contrasta con SQLite; chunks
+  inexistentes, eliminados o con metadatos obsoletos se descartan sin exponer
+  identificadores, consultas, textos o vectores en logs.
+- **Pruebas:** cobertura con SQLite, almacenamiento y embeddings sintéticos,
+  además de una integración opcional que se omite si ChromaDB no está
+  instalado.
+- **Pendiente:** instalar ChromaDB y validar offline el índice real, sus
+  conteos, persistencia tras reinicio y búsqueda semántica sobre datos locales.
+- **Alcance:** no incluye búsqueda híbrida, reranking, RAG ni generación con
+  Qwen.
+- **Estado:** en validación; no se afirma que el índice real haya sido creado.
+- **Corregido tras auditoría:** `needs_rebuild` compara ahora un fingerprint
+  SHA-256 determinista de la fuente activa, además del conteo. Detecta cambios
+  de texto, páginas, tipo documental, sustituciones y compensaciones entre
+  altas y borrados sin guardar textos ni identificadores individuales.
+- **Seguridad transaccional:** se reforzó la validación del estado, timestamps,
+  vectores, ids y respuestas de Chroma. Los fallos parciales intentan retirar
+  únicamente la colección temporal y registran de forma segura si queda
+  huérfana; un fallo al retirar el índice anterior no invalida el nuevo.
+- **Cero chunks:** un rebuild explícito activa un índice vacío válido, con
+  conteo cero y fingerprint de fuente vacía, y reemplaza el índice anterior
+  solo después de completar la activación atómica.
+- **Cierre Fase 6 (validación real):** ChromaDB local y offline, telemetría
+  anonimizada deshabilitada, modelo en CPU con dimensión 384, índice de 44
+  chunks activos con distancia cosine, fingerprint SHA-256, colección temporal
+  y activación atómica. SQLite permaneció como fuente de verdad y el índice
+  anterior se conservó ante fallos.
+- **Seguridad y trazabilidad:** metadatos mínimos sin texto completo en
+  ChromaDB, candidatos validados contra SQLite, snippets obtenidos desde
+  SQLite y filtros documentales y de páginas comprobados.
+- **Persistencia:** la búsqueda semántica funcionó tras reiniciar sin rebuild;
+  el modelo terminó `unloaded`. Los conteos iniciales y finales no cambiaron:
+  1 documento, 28 páginas, 44 chunks y 44 registros FTS5.
+- **Calidad:** validador integral aprobado con código 0; 146 pruebas aprobadas,
+  Ruff sin errores y mypy sin errores en 70 archivos.
+- **Estado:** Fases 0 a 6 completadas; Fase 7 pendiente. Quedan fuera de
+  alcance búsqueda híbrida, fusión de rankings, reranking, RAG, generación con
+  contexto recuperado, citas finales e inferencia jurídica basada en recuperación.

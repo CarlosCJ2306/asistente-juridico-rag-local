@@ -24,6 +24,7 @@ python -m pip install -r backend\requirements.txt
 python -m pip install -r backend\requirements-dev.txt
 python -m pip install -r backend\requirements-llm.txt
 python -m pip install -r backend\requirements-embeddings.txt
+python -m pip install -r backend\requirements-vector.txt
 cd backend
 python -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
 ```
@@ -89,9 +90,9 @@ triggers, el backfill completo y las búsquedas con filtros en un entorno local
 controlado. Para repetirla posteriormente, use una base respaldada; el
 backend no crea el índice durante imports ni inicio.
 
-La Fase 5 requiere una base local respaldada y una migración explícita; el
-backend no crea el índice durante imports ni inicio. Antes de aplicar la
-migración, confirme que SQLite dispone de FTS5 en un entorno controlado. Luego:
+Para repetir la validación, use una base local respaldada y aplique la
+migración explícitamente; el backend no crea el índice durante imports ni
+inicio. Confirme primero que SQLite dispone de FTS5 en un entorno controlado:
 
 ```bat
 python -m alembic upgrade head
@@ -100,7 +101,7 @@ python -m alembic current
 
 El endpoint `POST /api/search/text` devuelve 503 controlado mientras el índice
 no exista. Tras la migración, valide conteos de chunks e índice, búsqueda sin
-tilde, filtros y páginas antes de considerar la fase completada.
+tilde, filtros y páginas.
 
 ## 6. Carga documental manual
 
@@ -182,3 +183,43 @@ locales disponibles después de liberar el modelo. No crea índices, no guarda
 vectores y no ejecuta RAG.
 
 Los artefactos de modelos están ignorados y no deben subirse a Git.
+
+### Índice semántico local
+
+ChromaDB se instala manualmente desde la raíz y no forma parte de las
+dependencias base:
+
+```bat
+python -m pip install -r backend\requirements-vector.txt
+```
+
+Las variables principales son `CHROMA_PERSIST_PATH`,
+`SEMANTIC_INDEX_STATE_FILE`, `SEMANTIC_COLLECTION_PREFIX`,
+`SEMANTIC_INDEX_BATCH_SIZE`, los límites `SEMANTIC_SEARCH_TOP_K_*` y
+`SEMANTIC_SNIPPET_MAX_LENGTH`. Las rutas se limitan a `storage/vector/`, que
+permanece ignorado. El cliente usa persistencia local y telemetría anonimizada
+deshabilitada.
+
+La validación futura debe ejecutarse con un único worker durante la
+reconstrucción. La secuencia manual, después de respaldar los datos, es:
+
+```bat
+curl -X POST http://localhost:8000/api/models/embeddings/load
+curl http://localhost:8000/api/search/semantic/status
+curl -X POST http://localhost:8000/api/search/semantic/rebuild
+python scripts\validate_semantic_index.py --status
+python scripts\validate_semantic_index.py --validate-active
+curl -X POST http://localhost:8000/api/models/embeddings/unload
+```
+
+Los comandos de validación no reconstruyen por sí solos. La búsqueda se prueba
+mediante `POST /api/search/semantic` con una consulta sintética o autorizada.
+No use múltiples workers durante el rebuild: la exclusión concurrente actual
+protege un único proceso y no implementa un lock multiproceso.
+### Cierre de la Fase 6
+
+La validación integral real fue aprobada: ChromaDB funcionó offline con
+telemetría anonimizada deshabilitada, el modelo se cargó en CPU con dimensión
+384, se reconstruyeron 44 chunks activos y la persistencia tras reinicio fue
+confirmada sin una reconstrucción posterior. El modelo terminó `unloaded` y
+SQLite mantuvo sin cambios sus conteos documentales.

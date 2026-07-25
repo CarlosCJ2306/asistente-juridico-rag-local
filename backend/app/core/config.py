@@ -1,5 +1,6 @@
 """Configuración centralizada obtenida del entorno y del archivo raíz `.env`."""
 
+import re
 from pathlib import Path
 from typing import Any
 
@@ -12,6 +13,7 @@ from app.core.paths import (
     PROJECT_ROOT,
     resolve_database_file,
     resolve_embedding_model_directory,
+    resolve_vector_path,
 )
 
 
@@ -63,6 +65,23 @@ class Settings(BaseSettings):
     text_search_max_page_size: int = Field(default=100, gt=0)
     text_search_max_document_types: int = Field(default=10, gt=0)
 
+    chroma_persist_path: Path = Field(
+        default=Path("storage/vector/chroma"), validate_default=True
+    )
+    semantic_index_state_file: Path = Field(
+        default=Path("storage/vector/semantic_index_state.json"),
+        validate_default=True,
+    )
+    semantic_collection_prefix: str = "legal_chunks"
+    semantic_index_schema_version: int = Field(default=1, gt=0)
+    semantic_index_batch_size: int = Field(default=32, gt=0)
+    semantic_search_top_k_default: int = Field(default=10, gt=0)
+    semantic_search_top_k_max: int = Field(default=50, gt=0)
+    semantic_search_candidate_multiplier: int = Field(default=3, ge=1, le=10)
+    semantic_snippet_max_length: int = Field(default=500, gt=0, le=5000)
+    semantic_query_max_chars: int = Field(default=1000, gt=0)
+    semantic_max_document_types: int = Field(default=10, gt=0)
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -95,6 +114,27 @@ class Settings(BaseSettings):
     def resolve_embedding_model_path(cls, value: str | Path) -> Path:
         return resolve_embedding_model_directory(value)
 
+    @field_validator("chroma_persist_path", mode="before")
+    @classmethod
+    def resolve_chroma_path(cls, value: str | Path) -> Path:
+        return resolve_vector_path(value, expected_directory=True)
+
+    @field_validator("semantic_index_state_file", mode="before")
+    @classmethod
+    def resolve_semantic_state_path(cls, value: str | Path) -> Path:
+        resolved = resolve_vector_path(value, expected_directory=False)
+        if resolved.suffix.lower() != ".json":
+            raise ValueError("VECTOR_STORE_PATH_INVALID")
+        return resolved
+
+    @field_validator("semantic_collection_prefix")
+    @classmethod
+    def validate_collection_prefix(cls, value: str) -> str:
+        normalized = value.strip()
+        if re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{1,48}", normalized) is None:
+            raise ValueError("SEMANTIC_COLLECTION_PREFIX_INVALID")
+        return normalized
+
     @field_validator("embedding_query_prefix", "embedding_passage_prefix")
     @classmethod
     def validate_embedding_prefix(cls, value: str) -> str:
@@ -116,6 +156,10 @@ class Settings(BaseSettings):
             raise ValueError("LEGAL_CHUNK_OVERLAP_CHARS debe ser menor que LEGAL_CHUNK_TARGET_CHARS")
         if self.text_search_default_page_size > self.text_search_max_page_size:
             raise ValueError("TEXT_SEARCH_DEFAULT_PAGE_SIZE no puede superar TEXT_SEARCH_MAX_PAGE_SIZE")
+        if self.semantic_search_top_k_default > self.semantic_search_top_k_max:
+            raise ValueError(
+                "SEMANTIC_SEARCH_TOP_K_DEFAULT no puede superar SEMANTIC_SEARCH_TOP_K_MAX"
+            )
         return self
 
     @property

@@ -28,7 +28,8 @@ local de embeddings; todavía no incluye indexación ni RAG.
   archivos estrictamente locales, CPU, lotes, dimensión 384 y vectores
   normalizados. La validación confirmó prefijos `query:` y `passage:`, carga y
   descarga mediante los endpoints previstos y ausencia de fallback a Internet.
-  No hay persistencia ni índice vectorial.
+  La Fase 6 reutiliza este servicio para el índice vectorial local; su
+  validación real permanece pendiente.
 - **RAG futuro:** ingestión, segmentación jurídica, recuperación híbrida,
   construcción de contexto y presentación de fuentes. Todos estos módulos son
   únicamente estructura documental en el estado actual.
@@ -79,6 +80,12 @@ vectorial:
 python -m pip install -r backend\requirements-embeddings.txt
 ```
 
+Para habilitar el índice vectorial local, después de instalar embeddings:
+
+```bat
+python -m pip install -r backend\requirements-vector.txt
+```
+
 Para instalar el frontend manualmente:
 
 ```bat
@@ -106,6 +113,9 @@ Los endpoints disponibles son:
 - `POST http://localhost:8000/api/models/embeddings/load`
 - `POST http://localhost:8000/api/models/embeddings/unload`
 - `POST http://localhost:8000/api/search/text`
+- `GET http://localhost:8000/api/search/semantic/status`
+- `POST http://localhost:8000/api/search/semantic/rebuild`
+- `POST http://localhost:8000/api/search/semantic`
 - `POST http://localhost:8000/api/documents`
 - `GET http://localhost:8000/api/documents`
 - `POST http://localhost:8000/api/documents/{document_id}/extract`
@@ -204,9 +214,8 @@ backend.
 `POST /api/search/text` admite los modos `all_terms`, `any_term` y `phrase`,
 además de filtros opcionales por documento, tipo y rango de páginas. Devuelve
 resultados trazables con ranking BM25 —menor valor es mejor— y snippets seguros;
-no devuelve la consulta, texto completo, rutas, hashes ni vectores. FTS5,
-persistencia de embeddings, ChromaDB, búsqueda semántica y RAG siguen sin estar
-implementados.
+no devuelve la consulta, texto completo, rutas, hashes ni vectores. La búsqueda
+híbrida, el reranking y RAG siguen sin estar implementados.
 
 El rango de páginas usa contención completa: `min_page` exige que el chunk
 comience en esa página o después, y `max_page` que termine en esa página o
@@ -219,6 +228,67 @@ cd backend
 python -m alembic upgrade head
 python -m alembic current
 ```
+
+## Búsqueda semántica local
+
+La Fase 6 implementa un índice ChromaDB local, persistente, derivado y
+reconstruible. SQLite continúa como fuente de verdad. Chroma almacena embeddings
+y metadatos mínimos, pero no el texto completo de los chunks. La distancia
+coseno se interpreta como “menor es más similar”; no es probabilidad, porcentaje
+ni certeza jurídica.
+
+La secuencia manual prevista es:
+
+1. `POST /api/models/embeddings/load`.
+2. `GET /api/search/semantic/status`.
+3. `POST /api/search/semantic/rebuild`.
+4. `POST /api/search/semantic`.
+5. `POST /api/models/embeddings/unload`.
+
+Solicitud sintética:
+
+```json
+{
+  "query": "consulta semántica sintética",
+  "top_k": 10,
+  "document_types": ["jurisprudencia"],
+  "min_page": 1,
+  "max_page": 5
+}
+```
+
+Respuesta sintética:
+
+```json
+{
+  "items": [
+    {
+      "chunk_id": "00000000-0000-0000-0000-000000000001",
+      "document_id": "00000000-0000-0000-0000-000000000002",
+      "document_type": "jurisprudencia",
+      "chunk_index": 1,
+      "start_page": 1,
+      "end_page": 2,
+      "snippet": "Fragmento sintético limitado.",
+      "distance_cosine": 0.2
+    }
+  ],
+  "returned": 1,
+  "top_k": 10
+}
+```
+
+Los filtros de páginas exigen contención completa. Los resultados se validan
+contra SQLite y pueden ser menos que `top_k` cuando el índice esté desactualizado.
+El almacenamiento bajo `storage/vector/` está ignorado. La búsqueda híbrida,
+el reranking y RAG permanecen fuera de alcance.
+
+El estado detecta obsolescencia mediante un fingerprint SHA-256 determinista
+de los chunks activos y sus metadatos relevantes; el archivo guarda únicamente
+el hash, nunca textos ni ids individuales. Si no existen chunks activos, un
+rebuild explícito activa un índice vacío válido. Una colección antigua que no
+pueda eliminarse después de activar la nueva queda como huérfana segura para
+revisión manual y no se buscan ni borran colecciones desconocidas.
 
 Para comprobar el frontend:
 
@@ -260,7 +330,7 @@ necesarios para diagnóstico. Consulta [logging](docs/logging.md).
 │   │   ├── retrieval/    # Estructura futura, sin búsquedas
 │   │   ├── legal/        # Estructura futura, sin análisis
 │   │   ├── graph/        # Estructura futura, sin grafo
-│   │   └── vector_store/ # Estructura futura, sin ChromaDB
+│   │   └── vector_store/ # Adaptador local y estado del índice ChromaDB
 │   └── tests/
 ├── frontend/             # React + TypeScript + Vite
 ├── models/               # Manifiesto y destino local ignorado de artefactos
@@ -278,15 +348,31 @@ de persistencia y carga controlada de documentos. La
 inferencia solo está disponible mediante el script manual después de instalar
 dependencias y descargar el modelo; no existe todavía un endpoint de prompts.
 
-El proyecto sigue sin OCR, persistencia de embeddings, indexación lexical o
-semántica, SQLite FTS5, ChromaDB, búsqueda vectorial o híbrida, reranking, RAG
-ni inferencia jurídica basada en recuperación,
-autenticación, CUDA, streaming, Docker ni despliegue.
-
-La próxima fase autorizada es la búsqueda semántica local mediante ChromaDB.
-Persistencia e indexación semántica, búsqueda vectorial, búsqueda híbrida,
-reranking, RAG e inferencia jurídica basada en recuperación siguen pendientes.
 La recuperación textual SQLite FTS5 de la Fase 5 está completada y validada.
-La próxima fase autorizada es búsqueda semántica local mediante ChromaDB;
-persistencia e indexación semántica, búsqueda vectorial o híbrida, reranking,
-RAG e inferencia jurídica basada en recuperación siguen pendientes.
+La Fase 6 está en validación: el índice persistente y la búsqueda semántica
+local mediante ChromaDB están implementados, pero la dependencia y el índice
+real todavía no se han instalado ni construido como parte de esta tarea.
+
+El proyecto sigue sin búsqueda híbrida, reranking, RAG, inferencia jurídica
+basada en recuperación, OCR, autenticación, streaming, Docker ni despliegue.
+La Fase 7 permanece pendiente.
+### Cierre de la Fase 6
+
+La Fase 6 está **Completada** y validada: ChromaDB opera localmente y offline
+como índice derivado persistente y reconstruible; la telemetría anonimizada está
+deshabilitada; `multilingual-e5-small` se cargó en CPU con dimensión dinámica
+384; se reconstruyeron 44 chunks activos con distancia cosine, fingerprint
+SHA-256 y activación atómica. SQLite continúa siendo la fuente de verdad,
+ChromaDB conserva metadatos mínimos sin texto completo y los candidatos y
+snippets se validan u obtienen desde SQLite.
+
+La persistencia después del reinicio, la búsqueda sin reconstrucción posterior,
+los filtros y el estado final `unloaded` fueron comprobados. Los conteos SQLite
+iniciales y finales fueron iguales: 1 documento, 28 páginas, 44 chunks y 44
+registros FTS5. El validador integral terminó aprobado con código 0; hubo 146
+pruebas aprobadas, Ruff sin errores y mypy sin errores en 70 archivos.
+
+La Fase 7 permanece pendiente: recuperación híbrida combinando FTS5 y búsqueda
+semántica. También siguen pendientes fusión de rankings, reranking, RAG,
+generación con contexto recuperado, citas finales e inferencia jurídica basada
+en recuperación.
