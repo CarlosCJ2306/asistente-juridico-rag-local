@@ -4,7 +4,8 @@ Aplicación local que, en fases posteriores, permitirá consultar documentos
 jurídicos mediante recuperación aumentada por generación (RAG). El estado
 actual incorpora la gestión y carga diferida del modelo generativo local y la
 carga controlada de PDF y extracción local. La Fase 4 incorpora el adaptador
-local de embeddings; todavía no incluye indexación ni RAG.
+local de embeddings, recuperación híbrida y Chat RAG completado; la siguiente
+fase autorizada corresponde a citas y trazabilidad.
 
 > **Advertencia profesional:** esta aplicación será una herramienta de apoyo.
 > No toma decisiones jurídicas definitivas ni sustituye el análisis, la
@@ -401,4 +402,65 @@ generación con contexto recuperado ni citas finales.
 
 La Fase 7 está **Completada**: la recuperación híbrida local combina FTS5 y ChromaDB mediante RRF determinista ponderado por rangos. SQLite sigue siendo la fuente de verdad y ambos índices son derivados. Se validaron filtros, deduplicación, trazabilidad, snippets desde SQLite y persistencia tras reinicio.
 
-La siguiente fase autorizada es la **Fase 8 — Chat RAG local y construcción controlada de contexto recuperado**. Aún no existen selección final de contexto, presupuestos de tokens, prompts, generación con Qwen, respuestas RAG, prevención de instrucciones documentales, citas finales, reranking ni historial conversacional persistente.
+La **Fase 8 — Chat RAG local y construcción controlada de contexto recuperado**
+está completada. Aún no existen citas finales, reranking ni historial
+conversacional persistente.
+## Chat RAG local — Fase 8 completada
+
+`POST /api/chat/rag` recibe una pregunta y filtros controlados. El servicio
+reutiliza FTS5 y ChromaDB mediante recuperación híbrida, obtiene el texto desde
+SQLite, construye contexto limitado por tokens y genera con Qwen ya cargado.
+
+Secuencia operativa manual futura:
+
+1. Confirmar FTS5 listo.
+2. Confirmar ChromaDB `ready`.
+3. Cargar embeddings.
+4. Cargar Qwen.
+5. Invocar Chat RAG.
+6. Descargar Qwen.
+7. Descargar embeddings.
+
+Request sintético:
+
+```json
+{"question":"Pregunta sintética","text_match_mode":"any_term","top_k":8,"document_types":["jurisprudencia"]}
+```
+
+Response sintético:
+
+```json
+{"status":"answered","answer":"Respuesta local controlada.","retrieved_chunks":5,"context_chunks":4,"context_tokens":1480,"requires_professional_review":true}
+```
+
+Cuando no existe evidencia utilizable, devuelve `insufficient_context` con
+HTTP 200 y no llama a Qwen. El flujo no conserva historial y exige revisión
+profesional. Las citas finales, las referencias visibles, el reranking y el
+historial persistente siguen pendientes.
+
+Qwen y embeddings deben estar cargados explícitamente. Si Qwen está
+`unloaded`, el endpoint devuelve HTTP 503 con `RAG_LLM_NOT_LOADED` y no intenta
+cargarlo ni ejecutar recuperación. Una recuperación disponible pero sin
+candidatos devuelve HTTP 200 con `insufficient_context` y no genera mediante
+conocimiento general.
+
+## Cierre documental de la Fase 8
+
+La validación integral real confirmó el flujo local y stateless de Chat RAG:
+recuperación híbrida FTS5 + ChromaDB, selección determinista de contexto,
+revalidación contra SQLite y generación local con Qwen fuera del event loop.
+Se comprobaron la plantilla conversacional GGUF, `/no_think` controlado,
+neutralización de evidencia no confiable y el presupuesto de tokens con
+`context_size=4096`, `max_new_tokens=512`, `safety_margin=128`,
+`context_tokens=1728` y prompt máximo de `3456` tokens.
+
+Se validaron los casos `answered` e `insufficient_context`, la persistencia de
+ambos índices tras reinicio sin rebuild y la revisión profesional obligatoria.
+Los conteos SQLite permanecieron en 1 / 28 / 44 / 44. El validador terminó con
+código 0; hubo 281 pruebas aprobadas, Ruff sin errores y mypy sin errores en
+76 archivos.
+
+La Fase 9 queda como único siguiente paso autorizado: citas y trazabilidad de
+las fuentes utilizadas por las respuestas RAG. Todavía no existen citas
+finales visibles, reranking, historial persistente ni decisiones jurídicas
+automatizadas.

@@ -90,6 +90,18 @@ class Settings(BaseSettings):
     hybrid_top_k_max: int = Field(default=50, gt=0)
     hybrid_candidate_multiplier: int = Field(default=3, ge=1, le=10)
 
+    rag_top_k_default: int = Field(default=8, gt=0)
+    rag_top_k_max: int = Field(default=20, gt=0, le=50)
+    rag_context_max_chunks: int = Field(default=8, gt=0)
+    rag_context_max_tokens: int = Field(default=2200, gt=0)
+    rag_max_new_tokens: int = Field(default=512, gt=0)
+    rag_token_safety_margin: int = Field(default=128, gt=0)
+    rag_question_max_length: int = Field(default=2000, gt=0, le=10000)
+    rag_answer_max_length: int = Field(default=6000, gt=0, le=20000)
+    rag_temperature: float = Field(default=0.1, ge=0, le=2)
+    rag_top_p: float = Field(default=0.9, gt=0, le=1)
+    rag_repeat_penalty: float = Field(default=1.05, gt=0, le=2)
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -157,6 +169,13 @@ class Settings(BaseSettings):
             raise ValueError("HYBRID_WEIGHT_INVALID")
         return value
 
+    @field_validator("rag_temperature", "rag_top_p", "rag_repeat_penalty")
+    @classmethod
+    def validate_rag_float(cls, value: float) -> float:
+        if not math.isfinite(value):
+            raise ValueError("RAG_NUMERIC_VALUE_INVALID")
+        return value
+
     @field_validator(
         "hybrid_rrf_k",
         "hybrid_text_weight",
@@ -164,6 +183,17 @@ class Settings(BaseSettings):
         "hybrid_top_k_default",
         "hybrid_top_k_max",
         "hybrid_candidate_multiplier",
+        "rag_top_k_default",
+        "rag_top_k_max",
+        "rag_context_max_chunks",
+        "rag_context_max_tokens",
+        "rag_max_new_tokens",
+        "rag_token_safety_margin",
+        "rag_question_max_length",
+        "rag_answer_max_length",
+        "rag_temperature",
+        "rag_top_p",
+        "rag_repeat_penalty",
         mode="before",
     )
     @classmethod
@@ -192,6 +222,17 @@ class Settings(BaseSettings):
             )
         if self.hybrid_top_k_default > self.hybrid_top_k_max:
             raise ValueError("HYBRID_TOP_K_DEFAULT no puede superar HYBRID_TOP_K_MAX")
+        if self.rag_top_k_default > self.rag_top_k_max:
+            raise ValueError("RAG_TOP_K_DEFAULT no puede superar RAG_TOP_K_MAX")
+        if self.rag_top_k_max > self.hybrid_top_k_max:
+            raise ValueError("RAG_TOP_K_MAX no puede superar HYBRID_TOP_K_MAX")
+        if self.rag_context_max_chunks > self.rag_top_k_max:
+            raise ValueError("RAG_CONTEXT_MAX_CHUNKS no puede superar RAG_TOP_K_MAX")
+        reserved = self.rag_max_new_tokens + self.rag_token_safety_margin
+        if reserved >= self.local_llm_context_size:
+            raise ValueError("RAG_TOKEN_BUDGET_INVALID")
+        if self.rag_context_max_tokens >= self.local_llm_context_size:
+            raise ValueError("RAG_CONTEXT_MAX_TOKENS debe ser menor que LOCAL_LLM_CONTEXT_SIZE")
         return self
 
     @property

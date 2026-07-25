@@ -7,8 +7,9 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel
 
 from app.ai.embedding_model import EMBEDDING_MODEL_ID, EmbeddingError, get_embedding_model
-from app.ai.local_llm import is_local_llm_loaded
+from app.ai.local_llm import LocalLLMError, get_local_llm, is_local_llm_loaded
 from app.ai.model_manager import DEFAULT_LLM_MODEL_ID, ModelManager
+from app.core.config import settings
 
 
 router = APIRouter(prefix="/models", tags=["models"])
@@ -43,6 +44,12 @@ class EmbeddingModelStatus(BaseModel):
     local_files_available: bool
     device: str
     dimension: int | None
+
+
+class LlmRuntimeStatus(BaseModel):
+    model: str
+    state: Literal["unloaded", "loaded"]
+    context_size: int
 
 
 @router.get("/status", response_model=ModelsStatusResponse)
@@ -117,3 +124,38 @@ async def unload_embeddings_model() -> EmbeddingModelStatus:
 
     await run_in_threadpool(get_embedding_model().unload)
     return _embedding_status()
+
+
+def _llm_runtime_status() -> LlmRuntimeStatus:
+    llm = get_local_llm()
+    return LlmRuntimeStatus(
+        model=DEFAULT_LLM_MODEL_ID,
+        state="loaded" if llm.is_loaded else "unloaded",
+        context_size=settings.local_llm_context_size,
+    )
+
+
+@router.get("/llm/status", response_model=LlmRuntimeStatus)
+async def llm_runtime_status() -> LlmRuntimeStatus:
+    """Consulta el ciclo de vida sin cargar el GGUF."""
+
+    return _llm_runtime_status()
+
+
+@router.post("/llm/load", response_model=LlmRuntimeStatus)
+async def load_llm_model() -> LlmRuntimeStatus:
+    """Carga explícitamente Qwen fuera del event loop."""
+
+    try:
+        await run_in_threadpool(get_local_llm().load)
+    except LocalLLMError as exc:
+        raise HTTPException(status_code=503, detail="RAG_LLM_UNAVAILABLE") from exc
+    return _llm_runtime_status()
+
+
+@router.post("/llm/unload", response_model=LlmRuntimeStatus)
+async def unload_llm_model() -> LlmRuntimeStatus:
+    """Libera Qwen; la operación es idempotente."""
+
+    await run_in_threadpool(get_local_llm().unload)
+    return _llm_runtime_status()

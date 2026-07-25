@@ -49,7 +49,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 5 | Búsqueda textual | Implementar recuperación léxica con SQLite FTS5. | Completada | Fase 2 y Fase 3 | Consultas textuales trazables y cubiertas por pruebas. |
 | 6 | Búsqueda semántica | Crear el índice semántico local reconstruible. | Completada | Fase 4, ChromaDB | Recuperación semántica local evaluada. |
 | 7 | Recuperación híbrida | Combinar resultados textuales y semánticos. | Completada | Fase 5 y Fase 6 | Ranking híbrido medible y trazable. |
-| 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Pendiente | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
+| 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Completada | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
 | 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Pendiente | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias verificables. |
 | 10 | Matriz HPN | Modelar relaciones entre hechos, pruebas y normas. | Pendiente | Fase 2 y Fase 9 | Relaciones revisables por el profesional. |
 | 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | Pendiente | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
@@ -93,8 +93,49 @@ manifiesto.
 - Segmentación y persistencia de chunks.
 - Trazabilidad por documento y página.
 
+## Fase 8 — Chat RAG local
+
+La Fase 8 está **Completada**. `POST /api/chat/rag` reutiliza la recuperación híbrida, lee el
+texto vigente desde SQLite, selecciona chunks en orden mediante un presupuesto
+estricto calculado con el tokenizer de Qwen y genera con el modelo local ya
+cargado. Los documentos se serializan como evidencia no confiable y nunca como
+roles o instrucciones.
+
+El flujo es stateless, no carga modelos ni reconstruye índices automáticamente
+y responde sin generación cuando no hay contexto suficiente. No incluye citas
+finales, reranking, historial persistente, streaming ni cambios de frontend.
+
+## Cierre documental de la Fase 8
+
+La validación integral real confirmó Chat RAG local y stateless mediante
+`POST /api/chat/rag`, recuperación híbrida FTS5 + ChromaDB y una única
+invocación de `HybridSearchService` por petición. SQLite permanece como fuente
+de verdad; el texto vigente se obtiene desde SQLite, los candidatos se
+revalidan y deduplican por `chunk_id`, y los snippets no se usan como contexto.
+La selección fue determinista y respetó límites de chunks y tokens.
+
+Se validaron el tokenizer GGUF y la plantilla conversacional de Qwen cuando
+está disponible, el margen conservador de mensajes y la condición
+`prompt_tokens + max_new_tokens + safety_margin <= context_size`, con
+`context_size=4096`, `max_new_tokens=512`, `safety_margin=128`,
+`context_tokens=1728` y `prompt_tokens <= 3456`. La evidencia se trató como no
+confiable, con un mensaje system fijo y uno user, `/no_think` controlado y
+neutralización de roles y delimitadores.
+
+La generación local se ejecutó fuera del event loop, con lock controlado,
+salida sin bloques de razonamiento ni HTML ejecutable, sin historial,
+streaming ni APIs externas. Se validaron HTTP 200 `answered`, tres chunks de
+contexto, el caso `insufficient_context` sin invocar Qwen, persistencia tras
+reinicio sin rebuild y respuestas públicas sin datos internos. `requires_professional_review`
+permanece siempre en `true`.
+
+Los conteos SQLite iniciales y finales permanecieron en 1 documento, 28
+páginas, 44 chunks y 44 registros FTS5. Qwen y embeddings terminaron
+`unloaded`, los archivos locales permanecieron disponibles, Uvicorn se cerró,
+el puerto quedó libre y no quedaron procesos, handles ni tareas propias.
+El validador fue aprobado con código 0: 281 pruebas, Ruff sin errores y mypy
+sin errores en 76 archivos.
+
 ## Próximo paso autorizado
 
-Fase 8 — Chat RAG local y construcción controlada de contexto recuperado.
-
-Siguen pendientes la selección final del contexto, presupuestos de tokens, construcción de prompts, generación con Qwen, respuestas RAG, prevención de instrucciones provenientes de documentos, citas finales, reranking, historial conversacional persistente, HPN, red jurídica, OCR y búsqueda web.
+Fase 9 — Citas y trazabilidad de las fuentes utilizadas por las respuestas RAG.

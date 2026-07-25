@@ -233,3 +233,17 @@ reconstruye índices ni modifica SQLite.
 ## Cierre de la Fase 7
 
 La validación integral real fue aprobada con 206 pruebas, Ruff sin errores y mypy sin errores en 72 archivos. Se confirmaron la búsqueda híbrida, RRF, filtros, persistencia de FTS5 y ChromaDB tras reinicio y el estado final `unloaded`, sin cambios en SQLite.
+## Validación final de la Fase 8
+
+La validación real requiere FTS5 disponible, índice ChromaDB `ready`, modelos
+de embeddings y Qwen instalados localmente, operación offline y un solo worker
+de Uvicorn. Los modelos iniciaron `unloaded`, se cargaron explícitamente y se
+descargaron al finalizar. La validación integral real confirmó Chat RAG HTTP
+200, persistencia de FTS5 y ChromaDB tras reinicio, y ausencia de cambios en
+SQLite. Se obtuvieron 281 pruebas aprobadas, Ruff sin errores y mypy sin
+errores en 76 archivos; el validador terminó con código 0.
+
+El presupuesto validado fue context_size 4096, max_new_tokens 512,
+safety_margin 128, context_tokens 1728 y prompt_tokens dentro de 3456.
+No se incluyen citas finales, reranking ni historial persistente; el próximo
+paso autorizado es la Fase 9 de citas y trazabilidad.

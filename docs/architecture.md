@@ -64,7 +64,8 @@ ni crea la base al iniciar. El bloque 2B recibe PDF por `POST /api/documents`,
 valida nombre, MIME, extensión, firma y límite, y conserva el original bajo
 `storage/documents/<categoría>/`. La extracción se solicita manualmente, usa
 PyMuPDF y persiste páginas y chunks; SQLite sigue siendo la fuente de verdad.
-No hay OCR, búsqueda híbrida, reranking ni RAG.
+No hay OCR ni reranking. La búsqueda híbrida y Chat RAG están completados;
+la siguiente fase autorizada corresponde a citas y trazabilidad.
 
 ## Flujo de recuperación textual
 
@@ -210,4 +211,53 @@ del request. RRF combina posiciones, no valores BM25 y cosine, y no es un
 modelo ni una probabilidad. No existe reranking ni generación en esta fase.
 ## Cierre de la Fase 7
 
-La Fase 7 está completada. RRF utiliza únicamente ranks iniciados en 1 con los pesos configurados; BM25 y cosine distance no se suman ni se normalizan dentro del score. Los resultados se deduplican, se filtran con contención completa por página y se validan contra SQLite antes de generar snippets. FTS5 y ChromaDB permanecen como índices derivados persistentes; SQLite sigue siendo la fuente de verdad. La Fase 8 queda pendiente y corresponde al chat RAG local.
+La Fase 7 está completada. RRF utiliza únicamente ranks iniciados en 1 con los pesos configurados; BM25 y cosine distance no se suman ni se normalizan dentro del score. Los resultados se deduplican, se filtran con contención completa por página y se validan contra SQLite antes de generar snippets. FTS5 y ChromaDB permanecen como índices derivados persistentes; SQLite sigue siendo la fuente de verdad. La Fase 8 está completada con Chat RAG local y contexto controlado.
+## Flujo de Chat RAG local
+
+```text
+pregunta
+    ↓
+recuperación híbrida
+    ↓
+texto vigente desde SQLite
+    ↓
+selección por presupuesto de tokens
+    ↓
+prompt con evidencia no confiable
+    ↓
+Qwen local
+    ↓
+salida controlada
+```
+
+SQLite continúa como fuente de verdad. Los documentos son datos, nunca
+instrucciones: se neutralizan delimitadores y tokens de roles antes de crear un
+único mensaje de usuario bajo un system prompt fijo. RAG no implica certeza y
+toda respuesta requiere revisión profesional. La Fase 8 no incluye citas
+finales, historial persistente ni reranking.
+
+El presupuesto cuenta el prompt renderizado con la plantilla del GGUF cuando
+llama.cpp la expone. En versiones que no permiten renderizarla, se aplica un
+overhead conservador por mensaje además de reservar salida y margen de
+seguridad. La truncación del primer chunk utiliza tokens y detokenización del
+mismo GGUF; nunca usa el tokenizer de embeddings ni aproximaciones por
+caracteres en producción. Si un chunk posterior no cabe, se descarta y se
+continúa en el orden híbrido. Solo el primer candidato puede truncarse cuando
+ningún chunk completo cabe.
+
+## Cierre de la Fase 8
+
+La validación integral real confirmó Chat RAG stateless mediante `POST
+/api/chat/rag`, una recuperación híbrida única por petición, contexto
+determinista y texto vigente revalidado desde SQLite. Se comprobaron la
+plantilla GGUF, `/no_think`, la neutralización de evidencia no confiable y el
+presupuesto con context_size 4096, max_new_tokens 512, safety_margin 128 y
+context_tokens 1728; el prompt quedó dentro de 3456 tokens.
+
+Se validaron `answered` e `insufficient_context`, la persistencia de FTS5 y
+ChromaDB tras reinicio sin rebuild, los conteos SQLite 1 / 28 / 44 / 44, el
+estado final `unloaded`, la liberación del puerto y la ausencia de procesos
+propios pendientes. El validador terminó con código 0, con 281 pruebas, Ruff
+limpio y mypy sin errores en 76 archivos. La Fase 9 queda autorizada para
+citas y trazabilidad; no existen aún citas visibles, reranking ni historial
+persistente.

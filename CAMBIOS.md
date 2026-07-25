@@ -228,3 +228,47 @@ relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
 - **Operación:** errores de disponibilidad controlados, sin fallback silencioso; persistencia de FTS5 y ChromaDB confirmada tras reinicio.
 - **Validación:** conteos SQLite sin cambios (1 documento, 28 páginas, 44 chunks y 44 registros FTS5), modelo `unloaded`, Uvicorn cerrado y puertos liberados. Validador aprobado con código 0, 206 pruebas, Ruff y mypy sin errores en 72 archivos.
 - **Pendiente:** selección de contexto, presupuestos de tokens, prompts, generación con Qwen, RAG, prevención de instrucciones documentales, citas, reranking, historial persistente, HPN, red jurídica, OCR y búsqueda web.
+## 2026-07-25 — Fase 8: Chat RAG local y contexto controlado
+
+- **Añadido:** servicio RAG stateless que reutiliza una única recuperación
+  híbrida y recupera el texto vigente desde SQLite.
+- **Añadido:** selección determinista de chunks y presupuesto estricto mediante
+  el tokenizer del GGUF, reservando salida y margen de seguridad.
+- **Seguridad:** prompt fijo con evidencia documental no confiable, tokens de
+  roles neutralizados y ausencia de prompts, preguntas, contexto o respuestas
+  en logs.
+- **Añadido:** generación Qwen local bajo demanda, sin carga automática,
+  streaming, Internet ni historial persistente.
+- **Añadido:** respuesta controlada `insufficient_context` sin invocar Qwen y
+  endpoint tipado `POST /api/chat/rag`.
+- **Validaciones:** pruebas con recuperación, SQLite, tokenizer y Qwen falsos;
+  validador integral preparado sin ejecución real.
+- **Alcance:** no incluye citas finales, reranking, Fase 9 ni frontend.
+- **Estado:** en validación; no se afirma generación real todavía.
+
+## 2026-07-25 — Cierre de la Fase 8
+
+- **Estado:** Fase 8 completada tras la validación integral real.
+- **Chat RAG:** `POST /api/chat/rag` opera localmente y de forma stateless,
+  con una recuperación híbrida única por petición y texto vigente obtenido
+  desde SQLite.
+- **Contexto:** selección determinista, tres chunks validados, deduplicación
+  por `chunk_id`, neutralización de evidencia no confiable y límites de tokens
+  comprobados (`4096`, `512`, `128`, `1728` y máximo de prompt `3456`).
+- **Generación:** Qwen local con tokenizer y plantilla GGUF, `/no_think`
+  controlado, ejecución fuera del event loop, lock de generación y salida
+  pública sin razonamiento interno ni HTML ejecutable.
+- **Casos validados:** `answered` HTTP 200 e `insufficient_context` HTTP 200
+  sin invocar Qwen cuando no hay evidencia suficiente; persistencia de FTS5 y
+  ChromaDB tras reinicio sin rebuild.
+- **Integridad:** conteos SQLite sin cambios (1 documento, 28 páginas,
+  44 chunks y 44 registros FTS5); Qwen y embeddings finalizaron `unloaded` y
+  el entorno quedó sin procesos propios pendientes.
+- **Calidad:** validador aprobado con código 0, 281 pruebas aprobadas, Ruff sin
+  errores y mypy sin errores en 76 archivos.
+- **Alcance pendiente:** citas finales, referencias visibles, reranking,
+  historial persistente, frontend, HPN, red jurídica, simulación, OCR y
+  búsqueda web.
+
+La siguiente fase autorizada es la Fase 9 — Citas y trazabilidad de las
+fuentes utilizadas por las respuestas RAG.

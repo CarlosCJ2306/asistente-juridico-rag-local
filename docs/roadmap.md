@@ -60,13 +60,14 @@
 
 1. **Recuperación híbrida:** FTS5 y búsqueda semántica se combinan mediante RRF
    ponderado, deduplicación, filtros comunes y validación final contra SQLite.
-   Queda pendiente la validación manual real de índices, embeddings, fusión,
-   filtros, persistencia y privacidad.
+   La validación real confirmó índices, embeddings, fusión, filtros,
+   persistencia y privacidad.
 
-## Fase 8 — pendiente
+## Fase 8 — completada: Chat RAG local y contexto controlado
 
-2. **RAG local:** recuperación, contexto limitado, respuestas con fuentes y
-   evaluación usando el adaptador Qwen3 ya disponible.
+2. **RAG local:** recuperación híbrida, contexto limitado por tokens, prompt
+   seguro y generación con el adaptador Qwen3, validados integralmente en
+   operación local y stateless.
 
 ## Fases posteriores
 
@@ -88,13 +89,10 @@ filtros y validación contra SQLite. La persistencia tras reinicio funcionó sin
 rebuild posterior y el modelo terminó `unloaded`; el validador integral fue
 aprobado con código 0, junto con 146 pruebas, Ruff y mypy en 70 archivos.
 
-La Fase 7 está completada con recuperación híbrida RRF. El
-reranking, RAG, generación con contexto recuperado, citas finales e inferencia
-jurídica basada en recuperación siguen pendientes.
-## Fase 7 — completada: recuperación híbrida RRF
+Las Fases 7 y 8 están completadas con recuperación híbrida RRF y Chat RAG
+local stateless. El reranking, las citas finales y la inferencia jurídica
+automática siguen pendientes.
 
-La recuperación híbrida combina FTS5 y búsqueda semántica mediante RRF ponderado, deduplicación, filtros comunes y validación final contra SQLite. La validación real confirmó fusión, persistencia y privacidad. La Fase 8 queda autorizada como siguiente paso.
+## Fase 9 — pendiente y autorizada
 
-## Fase 8 — pendiente
-
-Chat RAG local y construcción controlada de contexto recuperado.
+Citas finales y trazabilidad visible para las respuestas RAG.

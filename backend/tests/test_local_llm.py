@@ -30,6 +30,13 @@ class FakeLlama:
         self.chat_calls.append(kwargs)
         return self.response
 
+    def tokenize(self, content: bytes, *, add_bos: bool = False) -> list[int]:
+        del add_bos
+        return list(content)
+
+    def detokenize(self, tokens: list[int]) -> bytes:
+        return bytes(tokens)
+
     def close(self) -> None:
         self.closed = True
 
@@ -64,6 +71,7 @@ def test_load_generate_and_unload_use_mock_only(model_project_factory) -> None:
     result = local_llm.generate("Prompt controlado")
 
     assert local_llm.is_loaded is True
+    assert local_llm.count_tokens("á") == len("á".encode("utf-8"))
     assert result == "MODELO LOCAL FUNCIONANDO"
     assert len(fake_llama.chat_calls) == 1
     chat_options = fake_llama.chat_calls[0]
@@ -173,4 +181,60 @@ def test_generation_logs_only_safe_metadata(
     assert success_log.call_args.kwargs["input_length"] == len(secret_prompt)
     assert success_log.call_args.kwargs["output_length"] == len(secret_response)
     assert "generation_duration_ms" in success_log.call_args.kwargs
+    local_llm.unload()
+
+
+def test_qwen_tokenizer_counts_truncates_and_preserves_unicode(model_project_factory) -> None:
+    manager, model_path = model_project_factory()
+    model_path.parent.mkdir(parents=True)
+    model_path.write_bytes(b"GGUFcontenido-valido")
+    local_llm = local_llm_module.LocalLLM(
+        manager, llama_factory=Mock(return_value=FakeLlama())
+    )
+    with pytest.raises(local_llm_module.LLMNotLoadedError):
+        local_llm.count_tokens("acción")
+    local_llm.load()
+    assert local_llm.count_tokens("acción") == len("acción".encode())
+    assert local_llm.truncate_text_to_tokens("acción", 4) == "acci"
+    local_llm.unload()
+
+
+def test_chat_token_count_uses_loaded_gguf_template(model_project_factory) -> None:
+    class TemplatedLlama(FakeLlama):
+        def apply_chat_template(self, messages, **kwargs):
+            del messages, kwargs
+            return "plantilla-real"
+
+    manager, model_path = model_project_factory()
+    model_path.parent.mkdir(parents=True)
+    model_path.write_bytes(b"GGUFcontenido-valido")
+    local_llm = local_llm_module.LocalLLM(
+        manager, llama_factory=Mock(return_value=TemplatedLlama())
+    )
+    local_llm.load()
+    count = local_llm.count_chat_tokens(
+        [{"role": "system", "content": "s"}, {"role": "user", "content": "u"}]
+    )
+    assert count == len("plantilla-real".encode())
+    local_llm.unload()
+
+
+def test_generation_lock_is_nonblocking_and_released_after_error(model_project_factory) -> None:
+    manager, model_path = model_project_factory()
+    model_path.parent.mkdir(parents=True)
+    model_path.write_bytes(b"GGUFcontenido-valido")
+    local_llm = local_llm_module.LocalLLM(
+        manager, llama_factory=Mock(return_value=FakeLlama(response={})),
+    )
+    local_llm.load()
+    local_llm._generation_lock.acquire()
+    try:
+        with pytest.raises(local_llm_module.LLMGenerationBusyError):
+            local_llm.count_tokens("x")
+    finally:
+        local_llm._generation_lock.release()
+    with pytest.raises(local_llm_module.LLMGenerationError):
+        local_llm.generate("x")
+    assert local_llm._generation_lock.acquire(blocking=False)
+    local_llm._generation_lock.release()
     local_llm.unload()
