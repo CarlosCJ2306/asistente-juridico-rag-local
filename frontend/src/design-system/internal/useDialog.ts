@@ -13,7 +13,7 @@ export function useDialog({
 }: UseDialogOptions) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const previousFocusRef = useRef<HTMLElement | null>(null);
-  const unmountingRef = useRef(false);
+  const suppressProgrammaticCloseRef = useRef(false);
 
   const restoreFocus = useCallback(() => {
     const previousFocus = previousFocusRef.current;
@@ -22,7 +22,6 @@ export function useDialog({
   }, []);
 
   useEffect(() => {
-    unmountingRef.current = false;
     const dialog = dialogRef.current;
     if (!dialog) return;
 
@@ -33,14 +32,17 @@ export function useDialog({
           : null;
       dialog.showModal();
     } else if (!open && dialog.open) {
+      suppressProgrammaticCloseRef.current = true;
       dialog.close();
     }
   }, [open]);
 
   useEffect(
     () => () => {
-      unmountingRef.current = true;
-      if (dialogRef.current?.open) dialogRef.current.close();
+      if (dialogRef.current?.open) {
+        suppressProgrammaticCloseRef.current = true;
+        dialogRef.current.close();
+      }
       restoreFocus();
     },
     [restoreFocus],
@@ -61,7 +63,11 @@ export function useDialog({
 
   const handleClose = () => {
     restoreFocus();
-    if (open && !unmountingRef.current) onOpenChange(false);
+    if (suppressProgrammaticCloseRef.current) {
+      suppressProgrammaticCloseRef.current = false;
+      return;
+    }
+    if (open) onOpenChange(false);
   };
 
   return { dialogRef, requestClose, handleCancel, handleBackdropClick, handleClose };

@@ -41,7 +41,7 @@ function HpnMatrixDetailContent({ matrixId }: { readonly matrixId: HpnId }) {
   async function remove() { await deletion.mutateAsync(matrixId); navigate("/matrices-hpn", { replace: true }); }
 
   return (
-    <FullWidthLayout title={matrix?.title ?? "Detalle de matriz HPN"} description="Vista estructurada para revisión humana de hechos, evidencias, normas y relaciones." actions={matrix ? <Inline gap="sm">{!readOnly ? <Button variant="secondary" onClick={() => { update.reset(); setEditing(true); }}>Editar matriz</Button> : null}<Button variant="danger" onClick={() => { deletion.reset(); setDeleting(true); }}>Eliminar</Button></Inline> : undefined} metadata={matrix ? <HpnMatrixStatus matrix={matrix} /> : undefined}>
+    <FullWidthLayout title={matrix?.title ?? "Detalle de matriz HPN"} description="Vista estructurada para revisión humana de hechos, evidencias, normas y relaciones." actions={matrix ? <Inline gap="sm"><Link className={styles.secondaryLink} to={`/legal-network/${matrixId}`}>Ver red jurídica</Link>{!readOnly ? <Button variant="secondary" onClick={() => { update.reset(); setEditing(true); }}>Editar matriz</Button> : null}<Button variant="danger" onClick={() => { deletion.reset(); setDeleting(true); }}>Eliminar</Button></Inline> : undefined} metadata={matrix ? <HpnMatrixStatus matrix={matrix} /> : undefined}>
       <div><Link className={styles.backLink} to="/matrices-hpn">← Volver a matrices</Link></div>
       <ProfessionalReviewNotice />
       {status === "success" ? <AsyncContent status="success">

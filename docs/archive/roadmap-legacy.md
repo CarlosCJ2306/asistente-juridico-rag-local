@@ -1,4 +1,6 @@
-# Hoja de ruta
+# Hoja de ruta histórica
+
+> **Documento histórico.** No representa el plan vigente. La fuente actual es [PLAN_TRABAJO.md](../../PLAN_TRABAJO.md). Se conserva por sus hitos y contexto de fases anteriores.
 
 ## Fase 0 — completada por este esqueleto
 

@@ -1,5 +1,11 @@
 # Historial técnico de cambios
 
+## 2026-07-26 — Reorganización documental
+
+- Se consolidaron las fuentes canónicas de producto, seguridad, calidad, arquitectura, instalación y plan activo.
+- Se actualizó la hoja de ruta hacia los bloques 12A-0 a 12F y se archivó el roadmap histórico.
+- No se modificaron código, pruebas, configuración, SQLite, modelos ni índices.
+
 Este documento registra cambios funcionales, decisiones técnicas y validaciones
 relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
 **Corregido**, **Seguridad**, **Validaciones**, **Pendiente** y **Estado**.
@@ -664,3 +670,26 @@ fuentes utilizadas por las respuestas RAG.
   interactiva, visual y de integración permanece diferida a 11D-5.
 - **Estado:** 11D-4 completada en implementación estática; 11D-5 es el siguiente
   bloque autorizado. La Fase 11 continúa en desarrollo.
+
+## 2026-07-26 — Fase 11D-5: integración frontend de Red jurídica
+
+- **Rutas:** se activaron `/legal-network` y `/legal-network/:matrixId`; una
+  matriz HPN permite abrir su red sin exponer su identificador como texto.
+- **Integración:** la página consume únicamente la proyección JSON HPN y carga
+  la exportación PyVis mediante un iframe con `sandbox="allow-scripts"`,
+  `referrerPolicy="no-referrer"` y título accesible. En desarrollo, Vite reenvía
+  la ruta relativa `/api` hacia el backend HTTP local para respetar la CSP de la
+  exportación sin copiar ni modificar el HTML.
+- **Accesibilidad y privacidad:** se añadió resumen técnico, advertencias y una
+  alternativa textual obligatoria. No se persisten grafo ni HTML, no se muestran
+  UUID como contenido, y no hay HTML interpretado por React, recursos remotos,
+  credenciales, telemetría ni almacenamiento HPN.
+- **Validación disponible:** ESLint, TypeScript estricto y build Vite aprobaron;
+  219 módulos fueron transformados. Los barridos estáticos confirmaron cliente
+  HTTP único, ausencia de `fetch` fuera de él y ausencia de ciclos.
+- **Pendiente real:** no hay navegador, Playwright, Cypress ni Puppeteer en el
+  entorno, y no se inició backend contra la base principal. La validación de
+  iframe, PyVis, Drawer, diálogos, foco, zoom, responsive y requests reales
+  requiere un navegador local y una base temporal aislada.
+- **Estado:** 11D-5 está implementada y en validación integrada; la Fase 11 no
+  se marca como completada todavía.
