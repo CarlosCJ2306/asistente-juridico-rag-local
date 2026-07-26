@@ -614,3 +614,53 @@ fuentes utilizadas por las respuestas RAG.
   11D-5.
 - **Estado:** 11D-3 completada en implementación estática; 11D-4 — Matriz HPN —
   es el siguiente bloque autorizado. La Fase 11 continúa en desarrollo.
+
+## 2026-07-26 — Fase 11D-4: módulo frontend de Matrices HPN
+
+- **Contratos:** se auditó la API HPN real y se derivaron tipos cerrados y
+  guards manuales para matrices, nodos, fuentes, relaciones, paginación y
+  resumen estructural.
+- **Feature:** se creó `src/features/hpn-matrices` con API sobre el cliente
+  compartido, keys y hooks TanStack Query, componentes, formularios, páginas y
+  estilos encapsulados.
+- **Operaciones:** listado, detalle y CRUD de matrices, nodos y relaciones;
+  consulta y desvinculación de fuentes; confirmaciones y actualizaciones solo
+  después de respuesta del backend.
+- **Rutas:** se activaron `/matrices-hpn` y `/matrices-hpn/:matrixId`, junto con
+  navegación y breadcrumbs cerrados que no muestran UUID. Red jurídica sigue
+  oculta.
+- **Estados y seguridad:** carga, vacío, error, offline, validación, conflictos,
+  modo archivado de solo lectura y advertencias `stale`/`unavailable`, sin
+  payloads, rutas, persistencia web, HTML interpretado ni contenido HPN en
+  notificaciones.
+- **Alcance:** no se añadió vinculación de fuentes porque requiere un selector
+  documental todavía no autorizado; tampoco se consumen grafo, exportación,
+  PyVis o validación separada ya incluida en el detalle.
+- **Validación estática:** ESLint, TypeScript estricto y build Vite aprobados;
+  204 módulos transformados. No existe test runner ni se ejecutó navegador o
+  backend; esas comprobaciones permanecen en 11D-5.
+- **Estado:** 11D-4 implementada y en validación; 11D-5 pendiente. La Fase 11
+  continúa en desarrollo.
+
+## 2026-07-26 — Auditoría estática de la Fase 11D-4
+
+- **Contrato:** se contrastaron rutas, estados HTTP, DTO, enums, límites,
+  paginación, orden, reglas de archivado y resumen estructural con el backend
+  HPN vigente. La API frontend exige ahora el código de éxito exacto y reconoce
+  también el tipo documental `otro`.
+- **Comportamiento:** se corrigieron la eliminación permitida de una matriz
+  archivada, el ajuste de página tras cambios del listado, la reapertura limpia
+  de formularios, los PATCH vacíos y el manejo de rechazos de mutations sin
+  perder los valores introducidos.
+- **Presentación:** el resumen muestra por separado los once contadores reales,
+  sin sumar categorías que pueden superponerse; las relaciones distinguen
+  nodos homónimos mediante tipo y orden, sin mostrar UUID.
+- **Seguridad y alcance:** se verificaron guards, query keys, cancelación de
+  lecturas, invalidaciones limitadas, ausencia de persistencia HPN, HTML
+  inseguro, logs, telemetría, clientes duplicados y consumo de endpoints de
+  grafo. La vinculación de fuentes y el selector documental siguen aplazados.
+- **Validación:** ESLint, TypeScript estricto y build Vite aprobados; 204 módulos
+  transformados. No se ejecutaron backend ni navegador y la validación
+  interactiva, visual y de integración permanece diferida a 11D-5.
+- **Estado:** 11D-4 completada en implementación estática; 11D-5 es el siguiente
+  bloque autorizado. La Fase 11 continúa en desarrollo.

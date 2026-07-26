@@ -354,9 +354,10 @@ completadas; su validación interactiva y visual se difiere a 11D-5. 11D-2
 implementa el App Shell, la navegación y los layouts responsive y está
 completada en alcance estático. 11D-3 implementa servicios compartidos,
 sesión local, errores seguros, preferencias visuales y notificaciones en
-memoria y está completada en alcance estático; 11D-4 es el siguiente bloque
-autorizado.
-Todavía no existe una interfaz funcional de los dominios jurídicos.
+memoria y está completada en alcance estático. 11D-4 implementa el módulo
+frontend de Matrices HPN y está completada en implementación estática; 11D-5
+es el siguiente bloque y sigue pendiente.
+Todavía no existe una interfaz frontend para la red jurídica.
 El proyecto continúa sin frontend de red,
 simulación, reranking, historial persistente, OCR, autenticación, streaming,
 Docker ni despliegue.
@@ -557,7 +558,7 @@ Ejemplo sintético de creación:
 La Fase 10, el servicio NetworkX de solo lectura de 11A y la API JSON de 11B
 están completados. La exportación PyVis de 11C está completada en su alcance de
 backend y seguridad; su integración real en navegador se verificará en 11D-5.
-Simulación, generación automática de HPN y frontend profesional no están
+Simulación, generación automática de HPN y frontend de red jurídica no están
 implementados.
 La instrumentación del centinela de disposición es diagnóstica y no bloqueante.
 
@@ -587,9 +588,8 @@ scripts. Solo se permiten imágenes PNG `data:` incluidas en el CSS local. Los
 tooltips permanecen como texto mediante `innerText`; las multiaristas usan
 curvas deterministas y ninguna de estas categorías implica valoración jurídica.
 
-No existe todavía frontend de red. 11D-0 a 11D-3 están completadas en alcance
-estático; 11D-4 es el siguiente bloque autorizado. La validación
-interactiva y visual permanece
+No existe todavía frontend de red. 11D-0 a 11D-4 están completadas en alcance
+estático. La validación interactiva y visual permanece
 diferida a 11D-5. Las decisiones
 rectoras y la secuencia completa se documentan en
 [`docs/frontend-product-architecture.md`](docs/frontend-product-architecture.md),
@@ -604,8 +604,9 @@ No se añaden dependencias, páginas ni navegación de producto en 11D-1.
 
 11D-2 añade una navegación central tipada, sidebar local colapsable, topbar,
 Drawer móvil, skip link, breadcrumbs estructurales, layouts de contenido y un
-404 seguro. Solo Inicio (`/`) está activo y conserva la comprobación real de
-salud; los módulos futuros permanecen ocultos y no generan enlaces. No existen
+404 seguro. Al cierre de 11D-2 solo Inicio (`/`) estaba activo; 11D-4 activó
+posteriormente Matrices HPN. Los demás módulos futuros permanecen ocultos y no
+generan enlaces. No existen
 cuentas, notificaciones funcionales, datos simulados ni persistencia del shell.
 La auditoría estática de 11D-2 confirmó un solo router, una única fuente de
 navegación y ausencia de enlaces ocultos; corrigió el cierre del Drawer al
@@ -621,3 +622,40 @@ tema, densidad y versión de esquema. Las notificaciones son efímeras y la
 conectividad del navegador se distingue de la salud del backend. Timers,
 storage bloqueado, foco, lector de pantalla y responsive visual se validarán en
 11D-5; no se añadieron flujos jurídicos ni rutas.
+
+### Módulo frontend de Matrices HPN — Fase 11D-4
+
+El módulo feature-based `src/features/hpn-matrices` registra las rutas
+`/matrices-hpn` y `/matrices-hpn/:matrixId`. Consume el listado y detalle de
+matrices, y las operaciones reales de creación, actualización y borrado de
+matrices, nodos y relaciones. También presenta las fuentes vinculadas y permite
+desvincularlas. La vinculación de nuevas fuentes no se expone: el contrato
+requiere un identificador documental técnico y todavía no existe un selector
+frontend autorizado que lo resuelva sin mostrar UUID.
+
+TanStack Query mantiene la autoridad sobre el estado remoto, con keys por lista
+y detalle, cancelación en lecturas, invalidación selectiva y mutations sin
+actualización optimista. Las respuestas se validan mediante guards manuales;
+los errores incompatibles se convierten en mensajes seguros y no se muestran
+cuerpos, URLs ni identificadores. No se persisten matrices ni formularios en el
+navegador.
+
+El listado usa tarjetas responsive, paginación real y estados de carga, vacío,
+error y desconexión. El detalle presenta los once contadores estructurales sin
+agregados superpuestos, nodos, fuentes y relaciones. El contenido de las
+matrices archivadas queda en solo lectura, aunque el contrato permite eliminar
+la matriz completa mediante confirmación. Los formularios
+respetan los enums y límites vigentes, y las etiquetas aclaran que los estados
+y conteos no constituyen valoración jurídica. La navegación “Matrices HPN” está
+activa y los breadcrumbs de detalle no muestran el identificador.
+
+La auditoría estática contrastó el módulo con el contrato backend, incluidas
+las respuestas HTTP exactas, el tipo documental `otro`, las transiciones y la
+paginación. Los UUID permanecen en href, keys y requests cuando son necesarios,
+pero no se muestran como contenido o nombre accesible. ESLint, TypeScript
+estricto y el build Vite aprobaron 204 módulos; 11D-4 queda completada en
+implementación estática.
+
+La red jurídica, los endpoints de grafo y exportación, PyVis e iframe permanecen
+fuera de 11D-4. Las comprobaciones reales de navegador, teclado, foco,
+responsive, zoom y requests contra el backend se difieren a 11D-5.

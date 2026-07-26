@@ -55,7 +55,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Completada | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
 | 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Completada | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias estructurales verificables y revalidadas. |
 | 10 | Matriz HPN | Modelar relaciones entre hechos, pruebas y normas. | Completada | Fase 2 y Fase 9 | Relaciones revisables por el profesional. |
-| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A, 11B y alcance backend/seguridad de 11C completados; 11D-0 a 11D-3 completados en alcance estático | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
+| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A, 11B y alcance backend/seguridad de 11C completados; 11D-0 a 11D-4 completados en alcance estático | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
 | 12 | Simulación | Explorar escenarios preliminares sobre la red jurídica. | Pendiente | Fase 11 | Resultados explicables y sujetos a revisión profesional. |
 | 13 | OCR | Incorporar reconocimiento óptico para documentos que lo requieran. | Pendiente | Fase 3 | Flujo OCR controlado, medido y trazable. |
 | 14 | Búsqueda web controlada | Añadir fuentes web bajo controles explícitos. | Pendiente | Fase 9 | Origen, fecha y trazabilidad de cada fuente externa. |
@@ -176,17 +176,19 @@ La Fase 10 queda **Completada** tras la validación funcional integral HPN y la
 comprobación objetiva de procesos, listeners, archivos temporales, sidecars,
 persistencia, reinicio e integridad de la base original. La instrumentación del
 centinela de disposición es diagnóstica y no bloqueante.
-El estado `archived` es de solo lectura y distinto del borrado lógico. Una
+El contenido de una matriz `archived` es de solo lectura y distinto del borrado
+lógico; el contrato vigente todavía permite eliminar la matriz completa. Una
 fuente obsoleta no modifica automáticamente la revisión humana del nodo, pero
 impide que la matriz cumpla `valid_for_review`.
 
 ## Próximo paso autorizado
 
-**Próximo paso autorizado: Fase 11D-4 — Matriz HPN.** La Fase 11 permanece en
-desarrollo. 11A, 11B, el alcance backend/seguridad de 11C y 11D-0 a 11D-3 están
-completados en su alcance estático. La validación interactiva y visual
-acumulada y la integración real de PyVis en navegador quedan diferidas
-explícitamente a 11D-5.
+**Próximo paso autorizado: Fase 11D-5 — Red jurídica, integración PyVis y
+validación integral en navegador.** La Fase 11 permanece en desarrollo. 11A,
+11B, el alcance backend/seguridad de 11C y 11D-0 a 11D-4 están completados en
+su alcance estático. La validación interactiva y visual acumulada y la
+integración real de PyVis en navegador pertenecen a 11D-5, que permanece
+pendiente.
 
 La secuencia prevista de 11D es:
 
@@ -196,8 +198,8 @@ La secuencia prevista de 11D es:
 | 11D-1 | Design System y componentes base. | Completada en implementación estática; validación interactiva y visual diferida a 11D-5 |
 | 11D-2 | App Shell, navegación y layouts responsive; preparación estructural para documentos, recuperación y sistema. | Completada en implementación estática; validación interactiva y visual diferida a 11D-5 |
 | 11D-3 | Servicios compartidos, sesión local, errores, preferencias visuales y notificaciones en memoria. | Completada en implementación estática; validación interactiva diferida a 11D-5 |
-| 11D-4 | Matriz HPN. | Pendiente; siguiente bloque autorizado |
-| 11D-5 | Red jurídica, integración PyVis y validación integral en navegador. | Pendiente; no autorizado |
+| 11D-4 | Matriz HPN. | Completada en implementación estática; validación interactiva diferida a 11D-5 |
+| 11D-5 | Red jurídica, integración PyVis y validación integral en navegador. | Pendiente |
 
 Los alcances, exclusiones, entregables, dependencias, riesgos, pruebas y
 criterios de cierre de cada bloque se definen en

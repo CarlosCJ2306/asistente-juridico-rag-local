@@ -213,9 +213,9 @@ red, almacenamiento del navegador, HTML interpretado, telemetría, colores
 fuera de tokens, rutas antiguas, clases CSS inexistentes ni ciclos evidentes.
 
 11D-1 queda completada en implementación estática. Esto no equivale a una
-validación interactiva o visual. 11D-2 y 11D-3 están completadas en alcance
-estático; 11D-4 es el siguiente bloque autorizado y la Fase 11 continúa en
-desarrollo.
+validación interactiva o visual. 11D-2 a 11D-4 están completadas en alcance
+estático; 11D-4 consume únicamente la API pública del sistema de diseño. La
+Fase 11 continúa en desarrollo.
 
 ## Consumo desde el App Shell
 
@@ -251,14 +251,28 @@ Permanecen fuera de 11D-1:
   11D-2 sin incorporarse al núcleo visual;
 - cliente API compartido y notificaciones globales, implementados después en
   11D-3 sin incorporarse al núcleo visual;
-- componentes de documentos, recuperación, chat, citas, HPN y red jurídica;
+- componentes de documentos, recuperación, chat, citas y red jurídica; los
+  componentes HPN se implementaron posteriormente dentro de su feature en
+  11D-4, sin incorporarse al núcleo visual;
 - iframe PyVis y alternativa textual del grafo;
 - autenticación, cuentas, permisos y persistencia de sesión;
 - pantalla de preferencias; 11D-3 solo incorpora persistencia allowlisted de
   tema y densidad.
 
-Los elementos todavía pendientes requieren 11D-4, 11D-5 o una autorización
-futura.
+Los elementos todavía pendientes requieren 11D-5 o una autorización futura.
+
+## Consumo desde Matrices HPN
+
+11D-4 reutiliza exclusivamente exports públicos: layouts, `PageHeader`,
+`AsyncContent`, estados, tarjetas, badges, formularios, botones, diálogos y
+primitivas de composición. `ProfessionalReviewNotice` se consume desde los
+componentes de producto. El núcleo no importa la feature ni incorpora enums,
+reglas o estilos HPN.
+
+Los estilos propios de la feature usan CSS Modules y tokens semánticos. Las
+acciones mantienen texto, wrap y targets del Design System; los estados añaden
+etiquetas además de color. La comprobación real de foco, diálogo, reflow, zoom,
+responsive y lector de pantalla permanece diferida a 11D-5.
 
 ## Límites con componentes de producto y features
 

@@ -1,5 +1,6 @@
 export { apiClient } from "./client";
 export {
+  createInvalidResponseError,
   isAppError,
   isRequestCancelledError,
   toAppError,

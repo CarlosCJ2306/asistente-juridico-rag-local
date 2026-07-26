@@ -65,6 +65,10 @@ export function createConfigurationError(): ApplicationError {
   return new ApplicationError({ category: "unavailable", code: "API_CONFIGURATION_INVALID", retryable: false, severity: "error" });
 }
 
+export function createInvalidResponseError(): ApplicationError {
+  return new ApplicationError({ category: "server", code: "API_RESPONSE_INVALID", retryable: false, severity: "error" });
+}
+
 function statusDefinition(status: number): ErrorDefinition {
   if (status === 400 || status === 422) return { category: "validation", code: "REQUEST_VALIDATION_ERROR", retryable: false, severity: "warning" };
   if (status === 401) return { category: "unauthorized", code: "REQUEST_UNAUTHORIZED", retryable: false, severity: "warning" };
@@ -84,7 +88,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 export function extractSafeBackendCode(value: unknown): string | undefined {
   const body = isRecord(value) ? value : undefined;
   const detail = isRecord(body?.detail) ? body.detail : undefined;
-  const candidate = body?.error_code ?? detail?.error_code;
+  const candidate = body?.error_code
+    ?? (typeof body?.detail === "string" ? body.detail : detail?.error_code);
   return typeof candidate === "string" && SAFE_BACKEND_CODE.test(candidate) ? candidate : undefined;
 }
 

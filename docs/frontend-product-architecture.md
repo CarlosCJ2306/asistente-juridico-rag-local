@@ -1,13 +1,13 @@
 # Arquitectura de producto frontend — Fase 11D-0
 
-**Estado:** 11D-0 a 11D-3 completadas en su alcance estático.
+**Estado:** 11D-0 a 11D-4 completadas en su alcance estático; 11D-5 pendiente.
 
 **Alcance vigente:** definir la arquitectura de producto, experiencia de uso,
 sistema de diseño y responsividad antes de iniciar cambios en React. Los bloques
 11A y 11B están completados. El bloque 11C está completado en su alcance de
 backend y seguridad; su integración real en navegador se verificará en 11D-5.
-La Fase 11 continúa en desarrollo. 11D-4 es el siguiente bloque autorizado. La
-validación interactiva y visual acumulada se mantiene diferida a 11D-5.
+La Fase 11 continúa en desarrollo. La validación interactiva y visual acumulada
+se mantiene diferida a 11D-5.
 
 ## 1. Principios de producto
 
@@ -465,11 +465,13 @@ Drawer móvil, un único `<main>` y `Outlet` de React Router. La configuración
 tipada de navegación es la única fuente para sidebar, navegación móvil, título
 de sección y breadcrumbs seguros.
 
-La única ruta funcional activa continúa siendo `/`, cuya consulta de salud se
+Durante 11D-2 la única ruta funcional activa era `/`, cuya consulta de salud se
 preservó. Documentos, Búsqueda, Chat jurídico, Matrices HPN, Red jurídica,
 Notificaciones, Estado del sistema y Configuración están declarados como
-reservas ocultas: no se renderizan ni generan enlaces. No hay rutas planeadas
-visibles. La ruta comodín presenta un 404 seguro sin repetir el pathname.
+reservas ocultas en ese bloque: no se renderizaban ni generaban enlaces. 11D-4
+activó posteriormente Matrices HPN; las demás reservas continúan ocultas. No
+hay rutas planeadas visibles. La ruta comodín presenta un 404 seguro sin
+repetir el pathname.
 
 `ContentLayout`, `FullWidthLayout` y `SplitPanelLayout` construyen sobre las
 primitivas del Design System. El último se apila por defecto y cambia a una de
@@ -505,5 +507,37 @@ Las notificaciones tienen IDs efímeros, deduplicación, límites y timers con
 cleanup, sin persistencia. El indicador offline distingue conectividad del
 navegador de salud del backend. No se añadieron rutas ni funciones de dominio.
 La interacción real, timers, bloqueo de storage, foco, lector de pantalla y
-responsive visual continúan diferidos a 11D-5; 11D-4 es el siguiente bloque
-autorizado.
+responsive visual continúan diferidos a 11D-5. 11D-4 fue implementada después
+de este bloque.
+
+## 20. Estado de implementación de 11D-4
+
+11D-4 está completada en implementación estática. La ruta `/matrices-hpn` ofrece listado
+paginado y creación; `/matrices-hpn/:matrixId` ofrece detalle, actualización y
+borrado. Dentro del detalle se administran nodos y relaciones conforme a los
+cuatro tipos dirigidos del backend, se presentan estados de revisión y fuentes
+vinculadas, y se permite su desvinculación. `archived` bloquea la modificación
+del contenido, nodos, relaciones y fuentes; la eliminación de la matriz completa
+sigue disponible conforme al contrato backend.
+
+La feature mantiene tipos y guards propios, API sobre el cliente compartido,
+keys y hooks de TanStack Query, componentes y páginas. Las respuestas se
+rechazan íntegramente cuando no cumplen el contrato mínimo. No hay optimistic
+updates, estado remoto duplicado, almacenamiento del navegador, datos simulados
+ni contenido HPN en notificaciones.
+
+La creación de vínculos de fuente se omite deliberadamente: aunque existe el
+endpoint backend, requiere `document_id` y `chunk_index`; no existe todavía un
+selector documental frontend autorizado y mostrar o pedir un UUID violaría la
+arquitectura de privacidad. La consulta de validación separada tampoco se
+duplica porque el detalle devuelve `validation_summary`.
+
+Matrices HPN permanece en navegación activa. Red jurídica permanece oculta y no se
+registran rutas de grafo, exportación o PyVis. ESLint, TypeScript y build Vite
+son las garantías estáticas de este bloque; interacción, teclado, foco,
+responsive real, zoom, lector de pantalla y comunicación con backend se
+validarán en 11D-5. La auditoría estática comprobó además códigos HTTP exactos,
+el enum documental completo, paginación estable, mutations controladas y los
+once contadores backend sin agregación superpuesta. Los identificadores HPN
+solo permanecen en href, keys y requests técnicos; no se muestran como
+contenido o nombre accesible.

@@ -37,8 +37,12 @@ export function getBreadcrumbs(pathname: string): ReadonlyArray<BreadcrumbItem> 
   if (!activeItem) return [];
   const currentItem = { id: activeItem.id, label: activeItem.label, current: true };
   if (activeItem.route === "/") return [currentItem];
+  const isDetail = activeItem.matchStrategy === "prefix" && withoutQueryOrHash(pathname) !== activeItem.route;
   return [
     { id: "home", label: "Inicio", route: "/", current: false },
-    currentItem,
+    ...(isDetail ? [
+      { id: activeItem.id, label: activeItem.label, route: activeItem.route, current: false },
+      { id: `${activeItem.id}-detail`, label: activeItem.detailLabel ?? "Detalle", current: true },
+    ] : [currentItem]),
   ];
 }

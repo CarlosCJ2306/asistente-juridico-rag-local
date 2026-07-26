@@ -17,7 +17,7 @@ export const navigationSections: ReadonlyArray<NavigationSection> = [
     id: "analysis",
     label: "Análisis",
     items: [
-      { id: "hpn", label: "Matrices HPN", route: "/hpn", icon: NavigationIcon, availability: "hidden", matchStrategy: "prefix" },
+      { id: "hpn", label: "Matrices HPN", route: "/matrices-hpn", icon: NavigationIcon, availability: "active", matchStrategy: "prefix", detailLabel: "Detalle" },
       { id: "legal-network", label: "Red jurídica", route: "/legal-network", icon: NavigationIcon, availability: "hidden", matchStrategy: "prefix" },
     ],
   },

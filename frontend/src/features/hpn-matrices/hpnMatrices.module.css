@@ -1,0 +1,133 @@
+.matrixList,
+.nodeList,
+.relationList,
+.sourceList {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.matrixCard,
+.sectionCard,
+.itemCard {
+  min-width: 0;
+}
+
+.titleLink,
+.secondaryLink,
+.backLink {
+  color: var(--color-action-text);
+  text-underline-offset: 0.2em;
+}
+
+.titleLink,
+.itemHeader h3 {
+  overflow-wrap: anywhere;
+}
+
+.titleLink:focus-visible,
+.secondaryLink:focus-visible,
+.backLink:focus-visible {
+  outline: 0.1875rem solid var(--color-focus-ring);
+  outline-offset: var(--space-1);
+}
+
+.secondaryLink,
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--size-touch-target);
+  font-weight: var(--font-weight-semibold);
+}
+
+.clampedText {
+  display: -webkit-box;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+}
+
+.formError {
+  margin: 0;
+  color: var(--color-status-danger);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-medium);
+}
+
+.sectionHeader,
+.itemHeader,
+.summaryGrid,
+.metadataGrid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.sectionHeader,
+.itemHeader {
+  align-items: start;
+}
+
+.sectionDescription,
+.statement,
+.rationale,
+.sourceName {
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.summaryGrid,
+.metadataGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 10rem), 1fr));
+}
+
+.summaryItem,
+.metadataItem {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-subtle);
+}
+
+.summaryValue {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-bold);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.readOnlyNotice {
+  padding: var(--space-3);
+  border-left: var(--space-1) solid var(--color-status-warning);
+  background: var(--color-status-warning-surface);
+  color: var(--color-status-warning);
+}
+
+.sourceItem {
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-md);
+}
+
+@media (min-width: 48rem) {
+  .sectionHeader,
+  .itemHeader {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+}

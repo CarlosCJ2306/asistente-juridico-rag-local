@@ -14,6 +14,7 @@ export interface NavigationItemConfig {
   readonly availability: NavigationAvailability;
   readonly matchStrategy: NavigationMatchStrategy;
   readonly description?: string;
+  readonly detailLabel?: string;
 }
 
 export interface NavigationSection {

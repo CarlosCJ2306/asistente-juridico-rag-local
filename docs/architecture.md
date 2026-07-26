@@ -337,8 +337,9 @@ estructura, estados y disponibilidad de fuentes, pero no corrección jurídica,
 verdad, suficiencia probatoria o probabilidad. El dominio NetworkX de solo
 lectura está completado en 11A y su API JSON de solo lectura en 11B. La
 exportación PyVis de 11C está completada en su alcance de backend y seguridad;
-la integración real en navegador se verificará en 11D-5. El frontend
-profesional permanece pendiente.
+la integración real en navegador se verificará en 11D-5. El módulo frontend
+de Matrices HPN está completado en alcance estático; el frontend de red
+permanece pendiente.
 
 `archived` representa una matriz activa de solo lectura, incluida en listados;
 el borrado lógico usa `deleted_at` y es independiente. Los cambios de título o
@@ -436,8 +437,8 @@ La API pública y su política de extensión se documentan en
 estática de 11D-1 está completada tras auditar dependencias, contratos tipados,
 tokens, contraste calculado, responsividad estructural, accesibilidad estática,
 seguridad y CSS. La interacción y visualización real se comprobarán en 11D-5.
-11D-2 y 11D-3 están completadas en alcance estático; 11D-4 es el siguiente
-bloque autorizado y la Fase 11 continúa en desarrollo.
+11D-2, 11D-3 y 11D-4 están completadas en alcance estático, y la Fase 11
+continúa en desarrollo.
 
 ### App Shell — Fase 11D-2
 
@@ -453,8 +454,9 @@ AppTopbar + MainContent + Router Outlet
 
 El shell usa un único `<main>` y mantiene exclusivamente dos estados locales:
 sidebar compacta y Drawer abierto. La ruta `/` y su consulta de salud se
-conservan; la configuración marca el resto de módulos como ocultos para evitar
-enlaces o páginas ficticias. Títulos y breadcrumbs proceden de labels cerrados,
+conservan; desde 11D-4 también están activas las rutas de Matrices HPN. La
+configuración mantiene ocultos los demás módulos para evitar enlaces o páginas
+ficticias. Títulos y breadcrumbs proceden de labels cerrados,
 nunca del pathname mostrado al usuario.
 
 `ContentLayout`, `FullWidthLayout` y `SplitPanelLayout` componen primitivas del
@@ -493,6 +495,47 @@ y son la única información persistida en navegador, mediante una clave
 versionada que rechaza propiedades adicionales. Las notificaciones permanecen
 en memoria, con límites, deduplicación y cleanup de timers. El límite global de
 render y el indicador offline no registran ni muestran datos técnicos. No se
-añadieron rutas o funcionalidades jurídicas. 11D-3 queda completada en
-implementación estática, 11D-4 es el siguiente bloque autorizado y las
+añadieron rutas o funcionalidades jurídicas en 11D-3. Este bloque queda
+completado en implementación estática; 11D-4 se implementó posteriormente y las
 comprobaciones interactivas se difieren a 11D-5.
+
+### Matrices HPN — Fase 11D-4
+
+```text
+router /matrices-hpn
+  ↓
+pages → hooks TanStack Query → API de feature → cliente API compartido
+  ↓                                   ↓
+Design System                    /api/hpn/matrices
+```
+
+La feature `hpn-matrices` contiene tipos cerrados, guards de respuestas, keys
+de consulta, adaptadores HTTP, mutations, formularios y páginas. El router solo
+importa sus dos páginas públicas. Las lecturas transmiten `AbortSignal`; las
+mutations se confirman en el backend antes de invalidar de forma selectiva el
+listado y el detalle. No existe copia del dominio en Context, persistencia en
+el navegador ni cliente HTTP alternativo.
+
+El detalle consume la proyección HPN vigente: matriz, nodos, snapshots públicos
+de fuentes, relaciones y resumen de validación. Los IDs se usan únicamente para
+href internos, keys, rutas y llamadas técnicas; no se muestran como contenido
+o nombre accesible. La UI no expone payloads, rutas locales ni errores libres.
+El contenido de una matriz `archived` se muestra en solo lectura, pero la
+eliminación lógica de la matriz completa permanece disponible porque el
+backend la autoriza; los estados
+`stale` y `unavailable` permanecen visibles como advertencias, sin reparación
+automática ni atribución de valor jurídico.
+
+Se implementan CRUD de matrices, nodos y relaciones, además de desvinculación
+de fuentes. No se ofrece vinculación de una nueva fuente porque el endpoint
+vigente exige `document_id` y `chunk_index`, y 11D-4 no autoriza un módulo o
+selector documental que pueda resolverlos sin exponer campos técnicos. Tampoco
+se consumen los endpoints de grafo, validación separada o exportación: el
+detalle ya incluye el resumen estructural y la red pertenece a 11D-5.
+
+La auditoría estática de 11D-4 exige los códigos HTTP de éxito exactos, cubre
+el enum documental completo, evita PATCH vacíos y distingue nodos homónimos
+sin UUID. El resumen presenta los once contadores backend por separado, sin
+crear un total de alertas porque algunas categorías se superponen. ESLint,
+TypeScript estricto y build Vite aprobaron 204 módulos. La interacción real en
+navegador permanece diferida a 11D-5.
