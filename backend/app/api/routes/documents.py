@@ -2,14 +2,21 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Response, UploadFile
 from fastapi.responses import ORJSONResponse
+from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.models.document import DocumentStatus, DocumentType
+from app.database.models.document import (
+    DocumentStatus,
+    DocumentType,
+    KnowledgeLayer,
+    SourceKind,
+)
 from app.database.repositories.document_chunk_repository import DocumentChunkRepository
 from app.database.repositories.document_page_repository import DocumentPageRepository
 from app.database.repositories.document_repository import DocumentRepository, DuplicateDocumentError
@@ -18,6 +25,7 @@ from app.schemas.document import (
     DocumentListFilters,
     DocumentPage,
     DocumentRead,
+    DocumentUploadGovernance,
     ExtractedChunkRead,
     ExtractedChunksPage,
     ExtractedPageRead,
@@ -56,11 +64,26 @@ async def upload_document(
     file: Annotated[UploadFile, File(...)],
     document_type: Annotated[DocumentType, Form(...)],
     session: Annotated[AsyncSession, Depends(get_db_session)],
+    display_name: Annotated[str | None, Form()] = None,
+    knowledge_layer: Annotated[KnowledgeLayer, Form()] = KnowledgeLayer.PRIVATE_LIBRARY,
+    source_kind: Annotated[SourceKind, Form()] = SourceKind.LOCAL_UPLOAD,
+    expires_at: Annotated[datetime | None, Form()] = None,
 ) -> DocumentRead | ORJSONResponse:
     """Carga un PDF en temporal, lo valida y lo registra de forma atómica."""
 
     try:
-        return await _service(session).upload_pdf(file, document_type)
+        governance = DocumentUploadGovernance(
+            display_name=display_name,
+            knowledge_layer=knowledge_layer,
+            source_kind=source_kind,
+            expires_at=expires_at,
+        )
+        return await _service(session).upload_pdf(file, document_type, governance)
+    except ValidationError as exc:
+        raise HTTPException(
+            status_code=422,
+            detail="DOCUMENT_GOVERNANCE_INVALID",
+        ) from exc
     except DuplicateDocumentError as exc:
         content = {"detail": "El documento ya está registrado"}
         if exc.existing_document_id is not None:

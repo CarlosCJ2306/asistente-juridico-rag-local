@@ -6,9 +6,17 @@ from datetime import datetime
 from pathlib import Path, PureWindowsPath
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from app.database.models.document import DocumentStatus, DocumentType
+from app.database.models.document import (
+    DocumentStatus,
+    DocumentType,
+    IndexStatus,
+    KnowledgeLayer,
+    LegalValidityStatus,
+    ReviewStatus,
+    SourceKind,
+)
 
 
 class DocumentCreate(BaseModel):
@@ -17,6 +25,7 @@ class DocumentCreate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     original_filename: str = Field(min_length=1, max_length=255)
+    display_name: str = Field(default="", max_length=255)
     stored_filename: str = Field(min_length=1, max_length=255)
     relative_path: str = Field(min_length=1, max_length=1024)
     document_type: DocumentType
@@ -25,6 +34,23 @@ class DocumentCreate(BaseModel):
     size_bytes: int = Field(ge=0)
     sha256: str = Field(min_length=64, max_length=64)
     status: DocumentStatus = DocumentStatus.REGISTERED
+    knowledge_layer: KnowledgeLayer = KnowledgeLayer.PRIVATE_LIBRARY
+    source_kind: SourceKind = SourceKind.LOCAL_UPLOAD
+    review_status: ReviewStatus = ReviewStatus.NOT_REQUIRED
+    legal_validity_status: LegalValidityStatus = LegalValidityStatus.UNKNOWN
+    index_status: IndexStatus = IndexStatus.NOT_REQUESTED
+    issuing_entity: str | None = Field(default=None, max_length=255)
+    jurisdiction: str | None = Field(default=None, max_length=120)
+    legal_area: str | None = Field(default=None, max_length=120)
+    canonical_source_url: str | None = Field(default=None, max_length=2048)
+    published_at: datetime | None = None
+    source_accessed_at: datetime | None = None
+    version_label: str | None = Field(default=None, max_length=120)
+    expires_at: datetime | None = None
+    archived_at: datetime | None = None
+    archive_reason: str | None = Field(default=None, max_length=500)
+    rejection_reason: str | None = Field(default=None, max_length=500)
+    supersedes_document_id: UUID | None = None
     error_code: str | None = Field(default=None, max_length=64)
     error_message: str | None = Field(default=None, max_length=500)
 
@@ -57,27 +83,122 @@ class DocumentCreate(BaseModel):
             )
         return normalized
 
+    @field_validator(
+        "issuing_entity",
+        "jurisdiction",
+        "legal_area",
+        "canonical_source_url",
+        "version_label",
+        "archive_reason",
+        "rejection_reason",
+    )
+    @classmethod
+    def normalize_optional_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        return normalized or None
+
+    @field_validator(
+        "published_at",
+        "source_accessed_at",
+        "expires_at",
+        "archived_at",
+    )
+    @classmethod
+    def require_aware_datetime(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.utcoffset() is None:
+            raise ValueError("Las fechas documentales deben incluir zona horaria")
+        return value
+
+    @model_validator(mode="after")
+    def validate_governance(self) -> "DocumentCreate":
+        self.display_name = self.display_name.strip() or self.original_filename
+        if self.knowledge_layer is KnowledgeLayer.TEMPORARY and self.expires_at is None:
+            raise ValueError("Los documentos temporales requieren expires_at")
+        if (
+            self.published_at is not None
+            and self.source_accessed_at is not None
+            and self.source_accessed_at < self.published_at
+        ):
+            raise ValueError("source_accessed_at no puede preceder published_at")
+        return self
+
+
+class DocumentUploadGovernance(BaseModel):
+    """Gobernanza permitida en la carga pública ordinaria."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    display_name: str | None = Field(default=None, min_length=1, max_length=255)
+    knowledge_layer: KnowledgeLayer = KnowledgeLayer.PRIVATE_LIBRARY
+    source_kind: SourceKind = SourceKind.LOCAL_UPLOAD
+    expires_at: datetime | None = None
+
+    @field_validator("display_name")
+    @classmethod
+    def normalize_display_name(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized:
+            raise ValueError("display_name no puede estar vacío")
+        return normalized
+
+    @field_validator("expires_at")
+    @classmethod
+    def validate_expiration_timezone(cls, value: datetime | None) -> datetime | None:
+        if value is not None and value.utcoffset() is None:
+            raise ValueError("expires_at debe incluir zona horaria")
+        return value
+
+    @model_validator(mode="after")
+    def validate_public_scope(self) -> "DocumentUploadGovernance":
+        if self.knowledge_layer not in {
+            KnowledgeLayer.PRIVATE_LIBRARY,
+            KnowledgeLayer.TEMPORARY,
+        }:
+            raise ValueError("La capa solicitada está reservada")
+        if self.source_kind is not SourceKind.LOCAL_UPLOAD:
+            raise ValueError("La procedencia solicitada está reservada")
+        if self.knowledge_layer is KnowledgeLayer.TEMPORARY:
+            if self.expires_at is None:
+                raise ValueError("Los documentos temporales requieren expires_at")
+        elif self.expires_at is not None:
+            raise ValueError("expires_at solo se admite para documentos temporales")
+        return self
+
 
 class DocumentRead(BaseModel):
-    """Lectura segura sin rutas absolutas ni mensajes internos de error."""
+    """Contrato público sin metadatos privados de almacenamiento."""
 
     model_config = ConfigDict(from_attributes=True)
 
     id: UUID
+    display_name: str
     original_filename: str
-    stored_filename: str
-    relative_path: str
     document_type: DocumentType
     mime_type: str
     extension: str
     size_bytes: int
-    sha256: str
     status: DocumentStatus
-    error_code: str | None
+    knowledge_layer: KnowledgeLayer
+    source_kind: SourceKind
+    review_status: ReviewStatus
+    legal_validity_status: LegalValidityStatus
+    index_status: IndexStatus
+    issuing_entity: str | None
+    jurisdiction: str | None
+    legal_area: str | None
+    canonical_source_url: str | None
+    published_at: datetime | None
+    source_accessed_at: datetime | None
+    version_label: str | None
+    expires_at: datetime | None
+    archived_at: datetime | None
+    supersedes_document_id: UUID | None
     created_at: datetime
     updated_at: datetime
-    deleted_at: datetime | None
-    is_deleted: bool
 
 
 class DocumentStatusRead(BaseModel):

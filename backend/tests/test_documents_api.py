@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 from pathlib import Path
 
 import pytest
@@ -64,9 +63,13 @@ def _upload(client: TestClient, content: bytes = PDF_CONTENT, **overrides):
     filename = overrides.get("filename", "sentencia.pdf")
     content_type = overrides.get("content_type", "application/pdf")
     document_type = overrides.get("document_type", "expediente")
+    data = {"document_type": document_type}
+    for field in ("display_name", "knowledge_layer", "source_kind", "expires_at"):
+        if field in overrides:
+            data[field] = overrides[field]
     return client.post(
         "/api/documents",
-        data={"document_type": document_type},
+        data=data,
         files={"file": (filename, content, content_type)},
     )
 
@@ -79,11 +82,17 @@ def test_upload_registers_pdf_in_category_and_returns_safe_metadata(document_cli
     assert response.status_code == 201
     body = response.json()
     assert body["original_filename"] == "sentencia.pdf"
+    assert body["display_name"] == "sentencia.pdf"
     assert body["status"] == "pending_extraction"
-    assert body["relative_path"].startswith("storage/documents/expedientes/")
-    assert body["sha256"] == hashlib.sha256(PDF_CONTENT).hexdigest()
-    assert not Path(body["relative_path"]).is_absolute()
-    assert (project_root / body["relative_path"]).read_bytes() == PDF_CONTENT
+    assert body["knowledge_layer"] == "private_library"
+    assert body["source_kind"] == "local_upload"
+    assert body["review_status"] == "not_required"
+    assert body["legal_validity_status"] == "unknown"
+    assert body["index_status"] == "not_requested"
+    assert {"stored_filename", "relative_path", "sha256"}.isdisjoint(body)
+    stored = list((project_root / "storage" / "documents" / "expedientes").glob("*.pdf"))
+    assert len(stored) == 1
+    assert stored[0].read_bytes() == PDF_CONTENT
     assert not list((project_root / "storage" / "temp" / "uploads").glob("*.part"))
 
 
@@ -119,7 +128,7 @@ def test_duplicate_is_rejected_even_after_logical_deletion(document_client) -> N
     client, project_root = document_client
     created = _upload(client)
     body = created.json()
-    physical_path = project_root / body["relative_path"]
+    physical_path = next((project_root / "storage" / "documents").rglob("*.pdf"))
 
     duplicate = _upload(client)
     assert duplicate.status_code == 409
@@ -132,6 +141,53 @@ def test_duplicate_is_rejected_even_after_logical_deletion(document_client) -> N
     assert client.delete(f"/api/documents/{body['id']}").status_code == 204
     assert physical_path.exists()
     assert _upload(client).status_code == 409
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("knowledge_layer", "managed_corpus"),
+        ("knowledge_layer", "web_verified"),
+        ("source_kind", "managed_import"),
+        ("source_kind", "web_import"),
+    ],
+)
+def test_public_upload_rejects_reserved_governance(document_client, field, value) -> None:
+    client, _ = document_client
+
+    response = _upload(client, **{field: value})
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "DOCUMENT_GOVERNANCE_INVALID"
+
+
+def test_temporary_upload_requires_expiration(document_client) -> None:
+    client, _ = document_client
+
+    missing = _upload(client, knowledge_layer="temporary")
+    accepted = _upload(
+        client,
+        b"%PDF-1.7\ntemporal",
+        knowledge_layer="temporary",
+        expires_at="2026-07-27T00:00:00Z",
+        display_name="Consulta temporal",
+    )
+
+    assert missing.status_code == 422
+    assert accepted.status_code == 201
+    assert accepted.json()["knowledge_layer"] == "temporary"
+    assert accepted.json()["expires_at"] == "2026-07-27T00:00:00Z"
+
+
+def test_list_and_detail_never_expose_private_storage_fields(document_client) -> None:
+    client, _ = document_client
+    created = _upload(client).json()
+
+    listed = client.get("/api/documents").json()["items"][0]
+    detailed = client.get(f"/api/documents/{created['id']}").json()
+
+    for payload in (created, listed, detailed):
+        assert {"stored_filename", "relative_path", "sha256"}.isdisjoint(payload)
 
 
 def test_list_get_filters_pagination_and_logical_delete(document_client) -> None:

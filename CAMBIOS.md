@@ -1,5 +1,18 @@
 # Historial técnico de cambios
 
+## 2026-07-26 — Fase 12A-0A: Fundamentos de gobernanza documental
+
+- **Añadido:** capas de conocimiento, procedencia, revisión, vigencia,
+  indexación, metadatos editoriales y relación opcional entre versiones.
+- **Añadido:** migración aditiva `20260726_05`, validada mediante
+  upgrade, downgrade y nuevo upgrade sobre SQLite temporal.
+- **Seguridad:** listado, detalle y carga documental ya no exponen nombre
+  almacenado, ruta relativa, SHA-256 ni mensajes técnicos internos.
+- **Validaciones:** pruebas documentales y de migración, Ruff y mypy aprobados.
+- **Pendiente:** políticas completas de ciclo de vida y elegibilidad en
+  12A-0B; integración con recuperación e índices en 12A-0C.
+- **Estado:** implementada.
+
 ## 2026-07-26 — Reorganización documental
 
 - Se consolidaron las fuentes canónicas de producto, seguridad, calidad, arquitectura, instalación y plan activo.

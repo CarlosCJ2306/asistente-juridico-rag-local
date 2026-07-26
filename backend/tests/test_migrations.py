@@ -245,3 +245,144 @@ def test_fts5_triggers_handle_document_change_and_cascade_without_duplicates(tmp
         assert connection.execute("SELECT COUNT(*) FROM document_chunks_fts").fetchone()[0] == 0
         assert connection.execute("SELECT COUNT(*) FROM document_chunks").fetchone()[0] == 0
         assert connection.execute("SELECT COUNT(*) FROM documents WHERE id=?", (first_id,)).fetchone()[0] == 1
+
+
+def test_document_governance_migration_round_trip_is_additive(tmp_path: Path) -> None:
+    database_file = tmp_path / "document_governance.db"
+    _run_migration(database_file, "20260725_04")
+    document_id, values = _document_row(status="extracted")
+    chunk_id = uuid4().hex
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute(
+            "INSERT INTO documents VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            values,
+        )
+        connection.execute(
+            "INSERT INTO document_chunks VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                chunk_id,
+                document_id,
+                1,
+                "Contenido sintético",
+                19,
+                2,
+                1,
+                1,
+                "2026-07-26 00:00:00",
+            ),
+        )
+        connection.commit()
+
+    _run_migration(database_file, "head")
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        row = connection.execute(
+            "SELECT display_name, knowledge_layer, source_kind, review_status, "
+            "legal_validity_status, index_status, status, sha256, relative_path "
+            "FROM documents WHERE id=?",
+            (document_id,),
+        ).fetchone()
+        assert row == (
+            "original.pdf",
+            "private_library",
+            "local_upload",
+            "not_required",
+            "unknown",
+            "not_requested",
+            "extracted",
+            values[8],
+            values[3],
+        )
+        columns = {
+            item[1]: item for item in connection.execute("PRAGMA table_info('documents')")
+        }
+        assert columns["display_name"][3] == 1
+        assert columns["knowledge_layer"][3] == 1
+        indexes = {
+            item[1] for item in connection.execute("PRAGMA index_list('documents')")
+        }
+        assert {
+            "ix_documents_knowledge_layer_deleted",
+            "ix_documents_review_status",
+            "ix_documents_legal_validity_status",
+            "ix_documents_index_status",
+            "ix_documents_expires_at",
+            "ix_documents_supersedes_document_id",
+        } <= indexes
+        foreign_keys = connection.execute("PRAGMA foreign_key_list('documents')").fetchall()
+        assert any(
+            item[2] == "documents"
+            and item[3] == "supersedes_document_id"
+            and item[4] == "id"
+            for item in foreign_keys
+        )
+        replacement_id = uuid4().hex
+        connection.execute(
+            "INSERT INTO documents ("
+            "id, original_filename, stored_filename, relative_path, document_type, "
+            "mime_type, extension, size_bytes, sha256, status, error_code, error_message, "
+            "created_at, updated_at, deleted_at, is_deleted, display_name, "
+            "supersedes_document_id"
+            ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                replacement_id,
+                "replacement.pdf",
+                "replacement.pdf",
+                "storage/documents/otros/replacement.pdf",
+                "otro",
+                "application/pdf",
+                ".pdf",
+                10,
+                "f" * 64,
+                "registered",
+                None,
+                None,
+                "2026-07-26 00:00:00",
+                "2026-07-26 00:00:00",
+                None,
+                0,
+                "Versión nueva",
+                document_id,
+            ),
+        )
+        connection.commit()
+        assert connection.execute(
+            "SELECT supersedes_document_id FROM documents WHERE id=?",
+            (replacement_id,),
+        ).fetchone()[0] == document_id
+        with pytest.raises(sqlite3.IntegrityError, match="DOCUMENT_SUPERSEDES_SELF"):
+            connection.execute(
+                "UPDATE documents SET supersedes_document_id=id WHERE id=?",
+                (document_id,),
+            )
+        connection.rollback()
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "UPDATE documents SET knowledge_layer='invalid' WHERE id=?",
+                (document_id,),
+            )
+        connection.rollback()
+        assert connection.execute(
+            "SELECT COUNT(*) FROM document_chunks_fts WHERE chunk_id=?",
+            (chunk_id,),
+        ).fetchone()[0] == 1
+
+    _downgrade_migration(database_file, "20260725_04")
+    with sqlite3.connect(database_file) as connection:
+        columns = {
+            item[1] for item in connection.execute("PRAGMA table_info('documents')")
+        }
+        assert "knowledge_layer" not in columns
+        assert "supersedes_document_id" not in columns
+        assert connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 2
+        assert connection.execute("SELECT COUNT(*) FROM document_chunks").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM document_chunks_fts").fetchone()[0] == 1
+
+    _run_migration(database_file, "head")
+    with sqlite3.connect(database_file) as connection:
+        assert connection.execute(
+            "SELECT display_name, knowledge_layer FROM documents WHERE id=?",
+            (document_id,),
+        ).fetchone() == ("original.pdf", "private_library")
+        assert connection.execute("SELECT COUNT(*) FROM document_chunks").fetchone()[0] == 1

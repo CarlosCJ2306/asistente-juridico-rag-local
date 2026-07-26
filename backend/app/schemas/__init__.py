@@ -6,6 +6,7 @@ from app.schemas.document import (
     DocumentPage,
     DocumentRead,
     DocumentStatusRead,
+    DocumentUploadGovernance,
 )
 
 
@@ -15,4 +16,5 @@ __all__ = [
     "DocumentPage",
     "DocumentRead",
     "DocumentStatusRead",
+    "DocumentUploadGovernance",
 ]

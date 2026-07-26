@@ -1,7 +1,16 @@
 """Modelos de persistencia disponibles."""
 
 from app.database.models.document_chunk import DocumentChunk
-from app.database.models.document import Document, DocumentStatus, DocumentType
+from app.database.models.document import (
+    Document,
+    DocumentStatus,
+    DocumentType,
+    IndexStatus,
+    KnowledgeLayer,
+    LegalValidityStatus,
+    ReviewStatus,
+    SourceKind,
+)
 from app.database.models.document_page import DocumentPage
 from app.database.models.hpn import (
     HpnMatrix,
@@ -17,6 +26,7 @@ from app.database.models.hpn import (
 
 __all__ = [
     "Document", "DocumentChunk", "DocumentPage", "DocumentStatus", "DocumentType",
+    "IndexStatus", "KnowledgeLayer", "LegalValidityStatus", "ReviewStatus", "SourceKind",
     "HpnMatrix", "HpnMatrixStatus", "HpnNode", "HpnNodeSource", "HpnNodeType",
     "HpnRelation", "HpnRelationType", "HpnReviewStatus",
 ]

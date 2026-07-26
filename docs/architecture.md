@@ -7,9 +7,17 @@ El sistema es local. FastAPI expone servicios documentales, recuperación, Chat 
 ## Backend y persistencia
 
 - `documents`, `document_pages` y `document_chunks` almacenan metadatos, páginas y fragmentos trazables.
+- `documents` distingue capa de conocimiento, procedencia, revisión editorial,
+  vigencia jurídica y estado de indexación, y permite enlazar una versión con
+  el documento que sustituye. Estos ejes no se mezclan con el estado técnico
+  de extracción.
 - El servicio documental valida PDF, escribe temporalmente, evita traversal y registra metadatos de forma controlada.
 - PyMuPDF reconstruye texto por palabras y líneas; el limpiador y el chunker conservan orden y rangos de página.
 - Alembic mantiene el esquema explícitamente. FastAPI no crea tablas ni ejecuta migraciones al iniciar.
+
+Las políticas completas de transiciones, aprobación y expiración pertenecen a
+12A-0B. Su aplicación a FTS5, ChromaDB, selección de corpus y Chat RAG
+pertenece a 12A-0C; los índices actuales todavía no usan esos campos.
 
 ## Recuperación e IA local
 

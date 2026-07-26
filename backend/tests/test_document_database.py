@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
@@ -14,7 +15,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.config import Settings
 from app.core.paths import resolve_database_file
 from app.database.base import Base
-from app.database.models.document import DocumentStatus, DocumentType
+from app.database.models.document import (
+    DocumentStatus,
+    DocumentType,
+    IndexStatus,
+    KnowledgeLayer,
+    LegalValidityStatus,
+    ReviewStatus,
+    SourceKind,
+)
 from app.database.repositories.document_repository import (
     DocumentRepository,
     DuplicateDocumentError,
@@ -25,6 +34,7 @@ from app.schemas.document import (
     DocumentCreate,
     DocumentListFilters,
     DocumentRead,
+    DocumentUploadGovernance,
 )
 
 
@@ -114,6 +124,26 @@ async def test_create_and_find_document(temporary_session: AsyncSession) -> None
     assert created.updated_at.tzinfo is not None
     assert await repository.get_by_id(created.id) == created
     assert await repository.get_by_sha256(created.sha256.upper()) == created
+    assert created.display_name == "original-a.pdf"
+    assert created.knowledge_layer is KnowledgeLayer.PRIVATE_LIBRARY
+    assert created.source_kind is SourceKind.LOCAL_UPLOAD
+    assert created.review_status is ReviewStatus.NOT_REQUIRED
+    assert created.legal_validity_status is LegalValidityStatus.UNKNOWN
+    assert created.index_status is IndexStatus.NOT_REQUESTED
+
+
+@pytest.mark.asyncio
+async def test_document_version_can_reference_previous_document(
+    temporary_session: AsyncSession,
+) -> None:
+    repository = DocumentRepository(temporary_session)
+    previous = await repository.create(document_data("version-1"))
+    replacement_data = document_data("version-2")
+    replacement_data.supersedes_document_id = previous.id
+
+    replacement = await repository.create(replacement_data)
+
+    assert replacement.supersedes_document_id == previous.id
 
 
 @pytest.mark.asyncio
@@ -171,7 +201,7 @@ async def test_list_filters_pagination_and_soft_delete(
     assert await repository.count(DocumentListFilters(include_deleted=True)) == 3
 
 
-def test_document_schema_rejects_unsafe_paths_and_long_filenames() -> None:
+def test_document_schema_rejects_unsafe_paths_long_names_and_invalid_dates() -> None:
     unsafe_path_data = document_data("f").model_dump()
     unsafe_path_data["relative_path"] = "../sensitive.pdf"
     with pytest.raises(ValidationError, match="ruta relativa segura"):
@@ -182,15 +212,52 @@ def test_document_schema_rejects_unsafe_paths_and_long_filenames() -> None:
     with pytest.raises(ValidationError, match="at most 255 characters"):
         DocumentCreate(**long_filename_data)
 
+    temporary_data = document_data("temporary").model_dump()
+    temporary_data["knowledge_layer"] = KnowledgeLayer.TEMPORARY
+    with pytest.raises(ValidationError, match="requieren expires_at"):
+        DocumentCreate(**temporary_data)
+
+    incoherent_data = document_data("dates").model_dump()
+    incoherent_data["published_at"] = datetime(2026, 7, 27, tzinfo=timezone.utc)
+    incoherent_data["source_accessed_at"] = datetime(2026, 7, 26, tzinfo=timezone.utc)
+    with pytest.raises(ValidationError, match="no puede preceder"):
+        DocumentCreate(**incoherent_data)
+
+
+def test_public_upload_governance_limits_layers_sources_and_expiration() -> None:
+    with pytest.raises(ValidationError, match="capa solicitada"):
+        DocumentUploadGovernance(knowledge_layer=KnowledgeLayer.MANAGED_CORPUS)
+    with pytest.raises(ValidationError, match="procedencia solicitada"):
+        DocumentUploadGovernance(source_kind=SourceKind.MANAGED_IMPORT)
+    with pytest.raises(ValidationError, match="requieren expires_at"):
+        DocumentUploadGovernance(knowledge_layer=KnowledgeLayer.TEMPORARY)
+
+    temporary = DocumentUploadGovernance(
+        knowledge_layer=KnowledgeLayer.TEMPORARY,
+        expires_at=datetime(2026, 7, 27, tzinfo=timezone.utc),
+    )
+    assert temporary.expires_at is not None
+
 
 @pytest.mark.asyncio
-async def test_safe_serialization_never_exposes_absolute_path(
+async def test_public_serialization_excludes_private_storage_metadata(
     temporary_session: AsyncSession,
 ) -> None:
     repository = DocumentRepository(temporary_session)
     created = await repository.create(document_data("h"))
     serialized = DocumentRead.model_validate(created).model_dump(mode="json")
 
-    assert serialized["relative_path"] == "storage/documents/otros/h.pdf"
-    assert "error_message" not in serialized
+    assert serialized["display_name"] == "original-h.pdf"
+    for field in (
+        "stored_filename",
+        "relative_path",
+        "sha256",
+        "error_code",
+        "error_message",
+        "archive_reason",
+        "rejection_reason",
+    ):
+        assert field not in serialized
+    assert created.relative_path == "storage/documents/otros/h.pdf"
+    assert len(created.sha256) == 64
     assert str(created.id) in serialized["id"]

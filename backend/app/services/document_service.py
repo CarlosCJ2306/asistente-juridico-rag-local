@@ -19,7 +19,7 @@ from app.database.repositories.document_repository import (
     DocumentRepository,
     DuplicateDocumentError,
 )
-from app.schemas.document import DocumentCreate, DocumentRead
+from app.schemas.document import DocumentCreate, DocumentRead, DocumentUploadGovernance
 
 
 PDF_SIGNATURE = b"%PDF-"
@@ -76,6 +76,7 @@ class DocumentService:
         self,
         upload: UploadFile,
         document_type: DocumentType,
+        governance: DocumentUploadGovernance | None = None,
     ) -> DocumentRead:
         """Valida, almacena y registra un PDF; confirma solo tras moverlo con éxito."""
 
@@ -85,6 +86,9 @@ class DocumentService:
         storage_confirmed = False
         started_at = time.perf_counter()
         try:
+            governance = DocumentUploadGovernance.model_validate(
+                (governance or DocumentUploadGovernance()).model_dump()
+            )
             original_filename = self._normalize_original_filename(upload.filename)
             self._validate_declared_metadata(original_filename, upload.content_type)
             temporary_path, size_bytes, sha256 = await self._write_temporary_file(upload)
@@ -105,6 +109,7 @@ class DocumentService:
             document = await self.repository.create(
                 DocumentCreate(
                     original_filename=original_filename,
+                    display_name=governance.display_name or original_filename,
                     stored_filename=stored_filename,
                     relative_path=self._to_project_relative_path(final_path),
                     document_type=document_type,
@@ -113,6 +118,9 @@ class DocumentService:
                     size_bytes=size_bytes,
                     sha256=sha256,
                     status=DocumentStatus.PENDING_EXTRACTION,
+                    knowledge_layer=governance.knowledge_layer,
+                    source_kind=governance.source_kind,
+                    expires_at=governance.expires_at,
                 )
             )
 

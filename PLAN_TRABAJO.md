@@ -34,10 +34,22 @@ Las Matrices HPN manuales y la Red jurídica ya están implementadas. La bibliot
 
 ## Hoja de ruta activa
 
-### 12A-0 — Gobernanza y capas de conocimiento
+### 12A-0A — Fundamentos de gobernanza documental — Implementada
 
-- Definir corpus administrado, biblioteca privada y documentos temporales.
-- Establecer tratamiento de fuentes web verificadas, procedencia, vigencia, permisos y conservación.
+- Modelo y migración aditiva para capas de conocimiento, procedencia, revisión,
+  vigencia, indexación y versiones documentales.
+- Contrato público de documentos saneado, sin rutas, nombres almacenados ni
+  hashes.
+
+### 12A-0B — Políticas y ciclo de vida documental — Siguiente bloque
+
+- Definir transiciones controladas, elegibilidad, aprobación, archivo y
+  expiración sin mezclar estados técnicos, editoriales y jurídicos.
+
+### 12A-0C — Integración de gobernanza con recuperación — Pendiente
+
+- Aplicar las políticas aprobadas a FTS5, ChromaDB, selección de corpus y Chat
+  RAG; no forma parte de 12A-0A.
 
 ### 12A-1 — Biblioteca documental frontend
 
@@ -69,9 +81,12 @@ Flujo de revisión de matrices y relación controlada con la proyección de Red 
 
 ## Dependencias
 
-12A-0 define los límites de conocimiento para 12A-1, 12A-2, 12B, 12C y 12D. La biblioteca y la carga habilitan el procesamiento; el procesamiento e índices habilitan el Chat RAG; el Chat con fuentes y la gobernanza de evidencia preceden a propuestas HPN; la revisión de esas propuestas precede su trazabilidad hacia la Red jurídica.
+12A-0A establece el modelo persistente; 12A-0B es el próximo bloque autorizado
+y precede la integración 12A-0C. La biblioteca y la carga habilitan el
+procesamiento; el procesamiento e índices habilitan el Chat RAG; el Chat con
+fuentes y la gobernanza de evidencia preceden a propuestas HPN; la revisión de
+esas propuestas precede su trazabilidad hacia la Red jurídica.
 
 ## Criterios generales de finalización
 
 Cada bloque requiere contratos tipados, pruebas con datos sintéticos o temporales, privacidad de logs y respuestas, validaciones de calidad configuradas y documentación actualizada. Ningún bloque se marca completado sin validación funcional proporcional a su riesgo.
-

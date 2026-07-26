@@ -22,7 +22,13 @@ Las relaciones HPN y la Red jurídica son herramientas de organización y revisi
 
 ## Información no expuesta en frontend
 
-No se deben mostrar rutas absolutas, hashes internos, secretos, prompts, vectores, identificadores restringidos, contenido no autorizado o HTML no confiable. Las respuestas y errores deben usar contratos sanitizados.
+El contrato público ordinario de documentos no devuelve nombres almacenados,
+rutas relativas o absolutas, hashes ni mensajes técnicos internos. Esos datos
+permanecen disponibles únicamente para los servicios internos que coordinan
+almacenamiento, duplicados y extracción.
+
+Tampoco se deben mostrar secretos, prompts, vectores, identificadores
+restringidos, contenido no autorizado o HTML no confiable. Las respuestas y
+errores deben usar contratos sanitizados.
 
 La política técnica de logs está en [logging.md](logging.md).
-
