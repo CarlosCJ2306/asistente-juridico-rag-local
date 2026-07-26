@@ -15,6 +15,14 @@ class HpnError(RuntimeError):
         self.code = code
 
 
+class GraphError(RuntimeError):
+    """Error estable de la proyección estructural HPN."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
 async def unhandled_exception_handler(
     request: Request,
     exception: Exception,

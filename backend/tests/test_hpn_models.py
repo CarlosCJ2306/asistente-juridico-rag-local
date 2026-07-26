@@ -19,12 +19,28 @@ def test_hpn_settings_defaults_and_boolean_rejection() -> None:
     configured = Settings(_env_file=None)
     assert configured.hpn_max_nodes_per_matrix == 500
     assert configured.hpn_max_relations_per_matrix == 2000
+    assert configured.graph_max_nodes == 300
+    assert configured.graph_max_edges == 1000
+    assert configured.graph_max_label_length == 80
+    assert configured.graph_max_components_detail == 100
     with pytest.raises(ValidationError):
         Settings(_env_file=None, hpn_max_nodes_per_matrix=True)
     with pytest.raises(ValidationError):
         Settings(_env_file=None, hpn_max_sources_per_node=0)
     with pytest.raises(ValidationError):
         Settings(_env_file=None, hpn_matrix_title_max_length=201)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_nodes=True)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_edges=2001)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_components_detail=False)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_label_length=0)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_components_detail=301, graph_max_nodes=300)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_nodes=501, hpn_max_nodes_per_matrix=500)
 
 
 def test_hpn_schema_rejects_controls_empty_extra_and_boolean() -> None:
@@ -40,7 +56,9 @@ def test_hpn_schema_rejects_controls_empty_extra_and_boolean() -> None:
             display_order=True,
         )
     with pytest.raises(ValidationError):
-        HpnSourceCreate(document_id="00000000-0000-0000-0000-000000000001", chunk_index=True)
+        HpnSourceCreate(
+            document_id="00000000-0000-0000-0000-000000000001", chunk_index=True
+        )
     with pytest.raises(ValidationError):
         HpnSourceCreate(
             document_id="00000000-0000-0000-0000-000000000001",

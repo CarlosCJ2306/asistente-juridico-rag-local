@@ -331,7 +331,7 @@ necesarios para diagnóstico. Consulta [logging](docs/logging.md).
 │   │   ├── ingestion/    # Estructura futura, sin procesamiento
 │   │   ├── retrieval/    # Estructura futura, sin búsquedas
 │   │   ├── legal/        # Estructura futura, sin análisis
-│   │   ├── graph/        # Estructura futura, sin grafo
+│   │   ├── graph/        # Reserva para bloques visuales posteriores a 11A
 │   │   └── vector_store/ # Adaptador local y estado del índice ChromaDB
 │   └── tests/
 ├── frontend/             # React + TypeScript + Vite
@@ -346,10 +346,11 @@ necesarios para diagnóstico. Consulta [logging](docs/logging.md).
 
 Las Fases 0 a 9 están completadas. La Fase 9 implementa citas estructurales en
 `POST /api/chat/rag` y fue validada integralmente. La Matriz HPN manual de la
-Fase 10 está completada; la Fase 11 sigue
-pendiente. El proyecto continúa sin red jurídica, NetworkX, PyVis, simulación,
-reranking, historial persistente, OCR, autenticación, streaming, Docker ni
-despliegue.
+Fase 10 está completada. La Fase 11 está en desarrollo: el bloque 11A ya
+implementa y valida el dominio estructural de solo lectura con NetworkX,
+mientras 11B permanece como siguiente bloque. El proyecto continúa sin API de
+grafo, PyVis, HTML o frontend de red, simulación, reranking, historial
+persistente, OCR, autenticación, streaming, Docker ni despliegue.
 ### Cierre de la Fase 6
 
 La Fase 6 está **Completada** y validada: ChromaDB opera localmente y offline
@@ -544,6 +545,17 @@ Ejemplo sintético de creación:
 {"title":"Análisis manual sintético","description":"Espacio revisable"}
 ```
 
-La Fase 10 está completada. NetworkX, PyVis, visualización de grafos,
-simulación, generación automática de HPN y frontend no están implementados.
+La Fase 10 está completada. El servicio NetworkX de solo lectura de 11A está
+implementado y en validación; PyVis, API y visualización de grafos, simulación,
+generación automática de HPN y frontend no están implementados.
 La instrumentación del centinela de disposición es diagnóstica y no bloqueante.
+
+## Red jurídica — Fase 11 en desarrollo
+
+El bloque 11A construye una proyección HPN temporal y de solo lectura con
+NetworkX `MultiDiGraph`. SQLite continúa como fuente de verdad: no se persiste
+ningún grafo ni se usan cachés. Las métricas son exclusivamente estructurales;
+no representan conclusiones jurídicas, relevancia ni causalidad.
+
+Todavía no existen API JSON, PyVis, HTML ni frontend de red. El siguiente
+bloque previsto es 11B — contratos y API JSON.

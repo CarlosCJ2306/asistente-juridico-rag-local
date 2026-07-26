@@ -334,8 +334,9 @@ snapshot nueva asocie un chunk con un documento distinto de su propietario.
 HPN es estrictamente manual: los nodos y relaciones son afirmaciones
 revisables del profesional, no conclusiones del sistema. La validación comprueba
 estructura, estados y disponibilidad de fuentes, pero no corrección jurídica,
-verdad, suficiencia probatoria o probabilidad. NetworkX, PyVis y la red visual
-permanecen reservados para la Fase 11.
+verdad, suficiencia probatoria o probabilidad. El dominio NetworkX de solo
+lectura está implementado en 11A; PyVis, la API y la red visual permanecen para
+los bloques posteriores de la Fase 11.
 
 `archived` representa una matriz activa de solo lectura, incluida en listados;
 el borrado lógico usa `deleted_at` y es independiente. Los cambios de título o
@@ -343,3 +344,24 @@ descripción y toda modificación estructural de una matriz `reviewed` la
 devuelven a `in_review` dentro de la misma transacción. Un nodo `reviewed` no
 cambia automáticamente si su fuente queda obsoleta: el estado de fuente y
 `valid_for_review=false` exponen el problema para revisión humana.
+## Red jurídica — Fase 11A
+
+```text
+SQLite / HPN vigente
+        ↓ lectura agrupada
+HpnService.detail()
+        ↓ DTOs seguros
+NetworkX MultiDiGraph temporal
+        ↓
+proyección estructural determinista
+```
+
+La proyección se construye bajo demanda, no se persiste y no modifica la
+matriz, sus fuentes ni SQLite. Antes de delegar el cálculo al hilo, el detalle
+HPN se reduce a DTOs inmutables que excluyen `statement`, `rationale` y toda
+referencia documental; el hilo no recibe ORM, sesiones, engines ni conexiones.
+Incluye solo nodos HPN y relaciones activas; las fuentes se resumen por estado.
+`structural_warning_count` cuenta exclusivamente grafo vacío, componentes
+desconectados y ciclos dirigidos; no mezcla avisos de revisión o fuentes. El
+total de componentes nunca se trunca por el límite reservado para metadata
+detallada futura. PyVis, API y frontend quedan fuera de 11A.

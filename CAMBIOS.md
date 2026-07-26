@@ -362,3 +362,15 @@ fuentes utilizadas por las respuestas RAG.
   su ausencia genera una advertencia y no invalida la liberaciÃ³n objetiva.
 - **Estado:** Fase 10 completada. Fase 11 — Red jurÃ­dica — queda como Ãºnico
   siguiente paso pendiente.
+## 2026-07-25 — Fase 11A: Dominio NetworkX
+
+- **Añadido:** proyección estructural HPN bajo demanda mediante `MultiDiGraph`.
+- **Seguridad:** nodos, aristas y resúmenes sin statements, rationales, texto
+  documental, fingerprints ni identificadores internos de chunks.
+- **Auditoría 11A:** el hilo recibe DTOs mínimos e inmutables, las fuentes
+  sintéticas duplicadas se deduplican por identidad, los warnings usan códigos
+  cerrados y los errores internos de importación no se confunden con ausencia
+  de NetworkX.
+- **Alcance:** sin API, PyVis, HTML, frontend, caché ni persistencia gráfica.
+- **Estado:** Fase 11 en desarrollo; bloque 11A en validación. Próximo bloque:
+  11B — contratos y API JSON.

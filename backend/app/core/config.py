@@ -114,6 +114,11 @@ class Settings(BaseSettings):
     hpn_max_sources_per_node: int = Field(default=20, gt=0, le=100)
     hpn_source_name_max_length: int = Field(default=255, gt=0, le=255)
 
+    graph_max_nodes: int = Field(default=300, gt=0, le=5000)
+    graph_max_edges: int = Field(default=1000, gt=0, le=20000)
+    graph_max_label_length: int = Field(default=80, gt=0, le=200)
+    graph_max_components_detail: int = Field(default=100, gt=0, le=5000)
+
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
         env_file_encoding="utf-8",
@@ -217,6 +222,10 @@ class Settings(BaseSettings):
         "hpn_max_relations_per_matrix",
         "hpn_max_sources_per_node",
         "hpn_source_name_max_length",
+        "graph_max_nodes",
+        "graph_max_edges",
+        "graph_max_label_length",
+        "graph_max_components_detail",
         mode="before",
     )
     @classmethod
@@ -260,6 +269,14 @@ class Settings(BaseSettings):
             raise ValueError("RAG_TOKEN_BUDGET_INVALID")
         if self.rag_context_max_tokens >= self.local_llm_context_size:
             raise ValueError("RAG_CONTEXT_MAX_TOKENS debe ser menor que LOCAL_LLM_CONTEXT_SIZE")
+        if self.graph_max_nodes > self.hpn_max_nodes_per_matrix:
+            raise ValueError("GRAPH_CONFIGURATION_INVALID")
+        if self.graph_max_edges > self.hpn_max_relations_per_matrix:
+            raise ValueError("GRAPH_CONFIGURATION_INVALID")
+        if self.graph_max_label_length > self.hpn_node_title_max_length:
+            raise ValueError("GRAPH_CONFIGURATION_INVALID")
+        if self.graph_max_components_detail > self.graph_max_nodes:
+            raise ValueError("GRAPH_CONFIGURATION_INVALID")
         return self
 
     @property
