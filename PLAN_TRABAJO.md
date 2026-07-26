@@ -35,8 +35,8 @@ conclusión requiere revisión y criterio de un profesional competente.
 - Embeddings locales completados: `multilingual-e5-small`, reutilizados por el
   índice semántico reconstruible.
 - Extracción documental con PyMuPDF completada.
-- Dominio estructural de red jurídica implementado en 11A con NetworkX;
-  contratos API, PyVis y visualización permanecen en bloques posteriores.
+- Dominio estructural de red jurídica y API JSON de solo lectura implementados
+  en 11A y 11B; PyVis y visualización permanecen en bloques posteriores.
 
 ## Fases
 
@@ -53,7 +53,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Completada | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
 | 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Completada | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias estructurales verificables y revalidadas. |
 | 10 | Matriz HPN | Modelar relaciones entre hechos, pruebas y normas. | Completada | Fase 2 y Fase 9 | Relaciones revisables por el profesional. |
-| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A implementada y en validación | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
+| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A completada; 11B implementada y en validación | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
 | 12 | Simulación | Explorar escenarios preliminares sobre la red jurídica. | Pendiente | Fase 11 | Resultados explicables y sujetos a revisión profesional. |
 | 13 | OCR | Incorporar reconocimiento óptico para documentos que lo requieran. | Pendiente | Fase 3 | Flujo OCR controlado, medido y trazable. |
 | 14 | Búsqueda web controlada | Añadir fuentes web bajo controles explícitos. | Pendiente | Fase 9 | Origen, fecha y trazabilidad de cada fuente externa. |
@@ -180,6 +180,8 @@ impide que la matriz cumpla `valid_for_review`.
 
 ## Próximo paso autorizado
 
-Fase 11B — Contratos y API JSON para la proyección estructural. La Fase 11
-permanece en desarrollo; 11A implementa únicamente el dominio NetworkX de solo
-lectura, sin PyVis, API, frontend, caché ni persistencia gráfica.
+Fase 11C — Exportación PyVis segura. La Fase 11 permanece en desarrollo; 11A
+está completada y 11B implementa la API JSON en validación. El dominio NetworkX
+es de solo lectura y la API expone únicamente
+`GET /api/hpn/matrices/{matrix_id}/graph`. PyVis, HTML, frontend, caché y
+persistencia gráfica continúan fuera del alcance.

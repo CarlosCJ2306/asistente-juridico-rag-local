@@ -102,7 +102,12 @@ class HpnGraphService:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def project(self, matrix_id: UUID) -> HpnGraphProjection:
+    async def project(
+        self,
+        matrix_id: UUID,
+        *,
+        request_id: str | None = None,
+    ) -> HpnGraphProjection:
         """Carga HPN una vez y delega la construcción CPU a un hilo seguro."""
 
         started = time.perf_counter()
@@ -121,6 +126,7 @@ class HpnGraphService:
                 "Proyección HPN rechazada",
                 operation="hpn_graph_project",
                 error_code=exc.code,
+                request_id=request_id,
             )
             raise
         except Exception as exc:
@@ -128,6 +134,7 @@ class HpnGraphService:
                 "Proyección HPN fallida",
                 operation="hpn_graph_project",
                 error_code="GRAPH_BUILD_FAILED",
+                request_id=request_id,
             )
             raise GraphError("GRAPH_BUILD_FAILED") from exc
         log_info(
@@ -138,6 +145,7 @@ class HpnGraphService:
             edge_count=projection.summary.edge_count,
             warning_count=len(projection.warnings),
             duration_ms=round((time.perf_counter() - started) * 1000, 2),
+            request_id=request_id,
         )
         return projection
 

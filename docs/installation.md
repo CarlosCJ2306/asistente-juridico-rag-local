@@ -298,10 +298,12 @@ solo a esa copia, valida CRUD, fuentes, fingerprint, estados, relaciones,
 revisión, borrado lógico y persistencia tras reinicio, y comprueba que la base
 original conserva sus conteos. No carga Qwen o embeddings ni reconstruye FTS5
 o ChromaDB.
-## Dependencias de red jurídica — Fase 11A
+## Dependencias de red jurídica — Fase 11A y 11B
 
 NetworkX se utiliza bajo demanda para construir una proyección estructural HPN
 en memoria. La aplicación no debe importar ni requerir la dependencia hasta
-invocar el servicio. PyVis, HTML y exportación no forman parte de este bloque.
+invocar el servicio. La API JSON de solo lectura disponible es
+`GET /api/hpn/matrices/{matrix_id}/graph`; no carga modelos ni genera archivos.
+PyVis, HTML y exportación no forman parte de este bloque.
 
 La proyección no crea archivos ni modifica SQLite, FTS5 o ChromaDB.

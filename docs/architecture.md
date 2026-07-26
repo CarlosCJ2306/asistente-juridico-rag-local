@@ -335,8 +335,8 @@ HPN es estrictamente manual: los nodos y relaciones son afirmaciones
 revisables del profesional, no conclusiones del sistema. La validación comprueba
 estructura, estados y disponibilidad de fuentes, pero no corrección jurídica,
 verdad, suficiencia probatoria o probabilidad. El dominio NetworkX de solo
-lectura está implementado en 11A; PyVis, la API y la red visual permanecen para
-los bloques posteriores de la Fase 11.
+lectura está completado en 11A y su API JSON de solo lectura en 11B; PyVis y
+la red visual permanecen para los bloques posteriores de la Fase 11.
 
 `archived` representa una matriz activa de solo lectura, incluida en listados;
 el borrado lógico usa `deleted_at` y es independiente. Los cambios de título o
@@ -364,4 +364,7 @@ Incluye solo nodos HPN y relaciones activas; las fuentes se resumen por estado.
 `structural_warning_count` cuenta exclusivamente grafo vacío, componentes
 desconectados y ciclos dirigidos; no mezcla avisos de revisión o fuentes. El
 total de componentes nunca se trunca por el límite reservado para metadata
-detallada futura. PyVis, API y frontend quedan fuera de 11A.
+detallada futura. 11B expone `GET /api/hpn/matrices/{matrix_id}/graph` como
+JSON tipado de solo lectura y delega la construcción únicamente en
+`HpnGraphService`; no devuelve objetos NetworkX ni contenido HPN restringido.
+PyVis, HTML, exportación y frontend continúan fuera del alcance.

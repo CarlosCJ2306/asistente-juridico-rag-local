@@ -374,3 +374,20 @@ fuentes utilizadas por las respuestas RAG.
 - **Alcance:** sin API, PyVis, HTML, frontend, caché ni persistencia gráfica.
 - **Estado:** Fase 11 en desarrollo; bloque 11A en validación. Próximo bloque:
   11B — contratos y API JSON.
+
+## 2026-07-25 — Fase 11B: Contratos y API JSON
+
+- **Añadido:** `GET /api/hpn/matrices/{matrix_id}/graph`, de solo lectura y
+  tipado con `HpnGraphProjection`.
+- **Integración:** delegación única en `HpnGraphService`, sin duplicar la
+  construcción NetworkX ni abrir sesiones adicionales.
+- **Errores:** mapeo seguro de errores estructurales a HTTP 409, 413, 500 y
+  503; los errores HPN conservan su semántica existente.
+- **Auditoría 11B:** los códigos de error desconocidos se reducen a
+  `GRAPH_BUILD_FAILED`; se verificaron una sola construcción, una sola llamada
+  a `HpnService.detail()`, registro único de ruta, privacidad recursiva y
+  reutilización segura de `request_id`.
+- **Alcance:** sin PyVis, HTML, exportación, frontend, caché ni persistencia
+  gráfica.
+- **Estado:** Fase 11 en desarrollo; 11A completada y 11B implementada en
+  validación. Próximo bloque: 11C — exportación PyVis segura.

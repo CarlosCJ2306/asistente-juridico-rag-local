@@ -30,7 +30,7 @@ from app.services.hpn_service import HpnService
 router = APIRouter(prefix="/hpn", tags=["hpn"])
 
 
-def _http_error(error: HpnError) -> HTTPException:
+def hpn_http_error(error: HpnError) -> HTTPException:
     if error.code.endswith("_NOT_FOUND"):
         status = 404
     elif error.code in {
@@ -59,7 +59,7 @@ async def _call(operation):
     try:
         return await operation
     except HpnError as exc:
-        raise _http_error(exc) from exc
+        raise hpn_http_error(exc) from exc
 
 
 @router.post("/matrices", response_model=HpnMatrixRead, status_code=201)
@@ -76,7 +76,9 @@ async def list_matrices(
     page: Annotated[int, Query(ge=1)] = 1,
     page_size: Annotated[int, Query(ge=1, le=100)] = 20,
 ) -> HpnMatrixList:
-    return await _call(HpnService(session).list_matrices(page=page, page_size=page_size))
+    return await _call(
+        HpnService(session).list_matrices(page=page, page_size=page_size)
+    )
 
 
 @router.get("/matrices/{matrix_id}", response_model=HpnMatrixDetail)
@@ -156,7 +158,9 @@ async def add_source(
     return await _call(HpnService(session).add_source(matrix_id, node_id, payload))
 
 
-@router.delete("/matrices/{matrix_id}/nodes/{node_id}/sources/{source_id}", status_code=204)
+@router.delete(
+    "/matrices/{matrix_id}/nodes/{node_id}/sources/{source_id}", status_code=204
+)
 async def delete_source(
     matrix_id: UUID,
     node_id: UUID,
@@ -167,7 +171,9 @@ async def delete_source(
     return Response(status_code=204)
 
 
-@router.post("/matrices/{matrix_id}/relations", response_model=HpnRelationRead, status_code=201)
+@router.post(
+    "/matrices/{matrix_id}/relations", response_model=HpnRelationRead, status_code=201
+)
 async def create_relation(
     matrix_id: UUID,
     payload: HpnRelationCreate,
@@ -185,7 +191,9 @@ async def update_relation(
     payload: HpnRelationUpdate,
     session: Annotated[AsyncSession, Depends(get_db_session)],
 ) -> HpnRelationRead:
-    return await _call(HpnService(session).update_relation(matrix_id, relation_id, payload))
+    return await _call(
+        HpnService(session).update_relation(matrix_id, relation_id, payload)
+    )
 
 
 @router.delete("/matrices/{matrix_id}/relations/{relation_id}", status_code=204)
