@@ -7,6 +7,7 @@ import os
 import threading
 import time
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any
 
 from app.ai.model_manager import DEFAULT_LLM_MODEL_ID, ModelManager
@@ -18,6 +19,14 @@ LlamaFactory = Callable[..., Any]
 SYSTEM_MESSAGE = (
     "Eres un asistente preciso. Sigue exactamente las instrucciones del usuario."
 )
+
+
+@dataclass(frozen=True)
+class LLMGenerationMetrics:
+    """Metadatos agregados seguros de la última generación local."""
+
+    finish_reason: str
+    generated_token_count: int | None
 
 
 class LocalLLMError(RuntimeError):
@@ -85,6 +94,7 @@ class LocalLLM:
         self._model_id = model_id
         self._llama_factory = llama_factory or _default_llama_factory
         self._llm: Any | None = None
+        self._last_generation_metrics: LLMGenerationMetrics | None = None
         self._lock = threading.RLock()
         self._generation_lock = threading.Lock()
         self._n_threads = _reasonable_thread_count(settings.local_llm_threads)
@@ -305,9 +315,12 @@ class LocalLLM:
                 if seed is not None:
                     options["seed"] = seed
                 started_at = time.perf_counter()
+                self._last_generation_metrics = None
                 try:
                     result = self._llm.create_chat_completion(**options)
                     generated_text = self._extract_chat_content(result)
+                    generation_metrics = self._extract_generation_metrics(result)
+                    self._last_generation_metrics = generation_metrics
                 except LLMGenerationError:
                     raise
                 except Exception as exc:
@@ -318,6 +331,8 @@ class LocalLLM:
                 generation_duration_ms=round((time.perf_counter() - started_at) * 1000, 2),
                 input_length=input_length,
                 output_length=len(generated_text),
+                finish_reason=generation_metrics.finish_reason,
+                generated_count=generation_metrics.generated_token_count,
             )
             return generated_text
         except LocalLLMError as exc:
@@ -363,6 +378,36 @@ class LocalLLM:
             raise LLMGenerationError("La respuesta conversacional está vacía")
         return content
 
+    @staticmethod
+    def _extract_generation_metrics(response: Any) -> LLMGenerationMetrics:
+        """Normaliza finish_reason y usa solo usage.completion_tokens fiable."""
+
+        finish_reason = "unknown"
+        generated_token_count: int | None = None
+        if isinstance(response, dict):
+            choices = response.get("choices")
+            if isinstance(choices, list) and choices and isinstance(choices[0], dict):
+                raw_reason = choices[0].get("finish_reason")
+                if raw_reason in {"stop", "length"}:
+                    finish_reason = raw_reason
+            usage = response.get("usage")
+            if isinstance(usage, dict):
+                raw_count = usage.get("completion_tokens")
+                if (
+                    isinstance(raw_count, int)
+                    and not isinstance(raw_count, bool)
+                    and raw_count >= 0
+                ):
+                    generated_token_count = raw_count
+        return LLMGenerationMetrics(finish_reason, generated_token_count)
+
+    @property
+    def last_generation_metrics(self) -> LLMGenerationMetrics | None:
+        """Expone únicamente metadatos agregados; nunca texto o tokens."""
+
+        with self._lock:
+            return self._last_generation_metrics
+
     def unload(self) -> None:
         """Cierra el recurso cuando es posible y libera la referencia."""
 
@@ -371,6 +416,7 @@ class LocalLLM:
                 return
             loaded_model = self._llm
             self._llm = None
+            self._last_generation_metrics = None
             close_method = getattr(loaded_model, "close", None)
             if callable(close_method):
                 try:

@@ -6,9 +6,11 @@ import html
 import re
 import time
 import unicodedata
+from collections.abc import Callable
+from contextlib import AbstractAsyncContextManager
 
 from fastapi.concurrency import run_in_threadpool
-from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.ai.local_llm import (
     LLMGenerationBusyError,
@@ -23,6 +25,13 @@ from app.database.repositories.semantic_chunk_repository import SemanticChunkRep
 from app.schemas.hybrid_search import HybridSearchRequest
 from app.schemas.rag_chat import RagChatRequest, RagChatResponse
 from app.services.hybrid_search_service import HybridSearchService
+from app.services.rag_citation_service import (
+    ActiveChunkReader,
+    CITATION_ERROR_STAGES,
+    CITATION_REASON_CODES,
+    RagCitationError,
+    RagCitationService,
+)
 from app.services.rag_context_service import RagContextService
 from app.services.rag_prompt_service import (
     INSUFFICIENT_CONTEXT_ANSWER,
@@ -32,9 +41,37 @@ from app.services.rag_prompt_service import (
 
 
 class RagChatError(RuntimeError):
-    def __init__(self, code: str) -> None:
+    def __init__(
+        self,
+        code: str,
+        *,
+        reason_code: str | None = None,
+        stage: str | None = None,
+        total_sources: int = 0,
+        substantive_elements: int = 0,
+        structural_errors: int = 0,
+    ) -> None:
         super().__init__(code)
         self.code = code
+        self.error_code = code
+        self.reason_code = (
+            reason_code if reason_code in CITATION_REASON_CODES else None
+        )
+        self.stage = stage if stage in CITATION_ERROR_STAGES else None
+        self.total_sources = max(0, total_sources)
+        self.substantive_elements = max(0, substantive_elements)
+        self.structural_errors = max(0, structural_errors)
+
+    @classmethod
+    def from_citation(cls, error: RagCitationError) -> "RagChatError":
+        return cls(
+            error.code,
+            reason_code=error.reason_code,
+            stage=error.stage,
+            total_sources=error.total_sources,
+            substantive_elements=error.substantive_elements,
+            structural_errors=error.structural_errors,
+        )
 
 
 class RagChatService:
@@ -47,6 +84,13 @@ class RagChatService:
         hybrid_service: HybridSearchService | None = None,
         context_service: RagContextService | None = None,
         local_llm: LocalLLM | None = None,
+        citation_service: RagCitationService | None = None,
+        citation_session_factory: (
+            Callable[[], AbstractAsyncContextManager[AsyncSession]] | None
+        ) = None,
+        citation_repository_factory: (
+            Callable[[AsyncSession], ActiveChunkReader] | None
+        ) = None,
     ) -> None:
         self.session = session
         self.hybrid_service = hybrid_service or HybridSearchService(session)
@@ -54,6 +98,27 @@ class RagChatService:
             SemanticChunkRepository(session)
         )
         self.local_llm = local_llm or get_local_llm()
+        self.citation_service = citation_service or RagCitationService()
+        self.citation_repository_factory = (
+            citation_repository_factory or SemanticChunkRepository
+        )
+        self.citation_session_factory: (
+            Callable[[], AbstractAsyncContextManager[AsyncSession]] | None
+        ) = citation_session_factory
+        if self.citation_session_factory is None:
+            bind = getattr(session, "bind", None)
+            if bind is not None:
+                session_maker = async_sessionmaker(
+                    bind=bind,
+                    class_=AsyncSession,
+                    expire_on_commit=False,
+                    autoflush=False,
+                )
+
+                def create_citation_session() -> AbstractAsyncContextManager[AsyncSession]:
+                    return session_maker()
+
+                self.citation_session_factory = create_citation_session
 
     async def chat(
         self, request: RagChatRequest, *, request_id: str | None = None
@@ -87,6 +152,9 @@ class RagChatService:
             )
             chunks = await self.context_service.get_valid_chunks(hybrid.items, request)
             await self.session.rollback()
+            close_session = getattr(self.session, "close", None)
+            if callable(close_session):
+                await close_session()
         except RagChatError:
             raise
         except Exception:
@@ -109,7 +177,17 @@ class RagChatService:
                 response = self._insufficient(hybrid.returned)
                 self._log_success(response, request, request_id, started_at, retrieval_ms, 0.0)
                 return response
-            messages = prompt_service.build_messages(request.question, selected)
+            registry = self.citation_service.build_registry(selected.source_chunks)
+            if len(registry.sources) != selected.chunks:
+                raise RagChatError("RAG_CITATION_METADATA_INVALID")
+            messages = prompt_service.build_messages(
+                request.question,
+                selected,
+                registry.markers,
+            )
+        except RagCitationError as exc:
+            self._log_citation_failure(exc, request, request_id, started_at)
+            raise RagChatError.from_citation(exc) from exc
         except RagPromptError as exc:
             if exc.code == "RAG_TOKEN_BUDGET_INVALID":
                 response = self._insufficient(hybrid.returned)
@@ -145,6 +223,19 @@ class RagChatService:
             raw_answer,
             forbidden_fragments=(messages[0]["content"], messages[1]["content"]),
         )
+        try:
+            used_sources = self.citation_service.validate_answer(answer, registry)
+            if self.citation_session_factory is None:
+                raise RagCitationError("RAG_CITATION_METADATA_INVALID")
+            async with self.citation_session_factory() as citation_session:
+                citations = await self.citation_service.revalidate_sources(
+                    used_sources,
+                    registry,
+                    self.citation_repository_factory(citation_session),
+                )
+        except RagCitationError as exc:
+            self._log_citation_failure(exc, request, request_id, started_at)
+            raise RagChatError.from_citation(exc) from exc
         response = RagChatResponse(
             status="answered",
             answer=answer,
@@ -152,6 +243,8 @@ class RagChatService:
             context_chunks=selected.chunks,
             context_tokens=selected.tokens,
             requires_professional_review=True,
+            citation_count=len(citations),
+            citations=citations,
         )
         self._log_success(
             response, request, request_id, started_at, retrieval_ms, generation_ms
@@ -181,7 +274,6 @@ class RagChatService:
             raise RagChatError("RAG_OUTPUT_INVALID")
         if "<<<evidencia_no_confiable" in lowered or "<|im_start|>" in lowered:
             raise RagChatError("RAG_OUTPUT_INVALID")
-        cleaned = re.sub(r"\[Fuente\s+\d+\]", "", cleaned, flags=re.IGNORECASE).strip()
         escaped = html.escape(cleaned, quote=True)
         if not escaped:
             raise RagChatError("RAG_OUTPUT_INVALID")
@@ -196,6 +288,8 @@ class RagChatService:
             context_chunks=0,
             context_tokens=0,
             requires_professional_review=True,
+            citation_count=0,
+            citations=[],
         )
 
     @staticmethod
@@ -230,10 +324,31 @@ class RagChatService:
             retrieved_chunks=response.retrieved_chunks,
             context_chunks=response.context_chunks,
             context_tokens=response.context_tokens,
+            citation_count=response.citation_count,
             max_new_tokens=settings.rag_max_new_tokens,
             status=response.status,
             retrieval_duration_ms=retrieval_ms,
             generation_duration_ms=generation_ms,
+            duration_ms=round((time.perf_counter() - started_at) * 1000, 2),
+        )
+
+    @staticmethod
+    def _log_citation_failure(
+        error: RagCitationError,
+        request: RagChatRequest,
+        request_id: str | None,
+        started_at: float,
+    ) -> None:
+        log_error(
+            "Falló la validación de citas del chat RAG",
+            operation="rag_chat_citations",
+            request_id=request_id,
+            error_code=error.code,
+            reason_code=error.reason_code,
+            stage=error.stage,
+            total_sources=error.total_sources,
+            substantive_elements=error.substantive_elements,
+            structural_errors=error.structural_errors,
             duration_ms=round((time.perf_counter() - started_at) * 1000, 2),
         )
 

@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from pathlib import Path
 
+from sqlalchemy import event
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker, create_async_engine
 
 from app.core.Log import log_info
@@ -44,7 +45,19 @@ class DatabaseSessionManager:
                 build_database_url(self.database_file),
                 future=True,
             )
+            event.listen(self._engine.sync_engine, "connect", self._enable_sqlite_foreign_keys)
         return self._engine
+
+    @staticmethod
+    def _enable_sqlite_foreign_keys(dbapi_connection: object, connection_record: object) -> None:
+        """Activa integridad referencial en cada conexión SQLite."""
+
+        del connection_record
+        cursor = dbapi_connection.cursor()  # type: ignore[attr-defined]
+        try:
+            cursor.execute("PRAGMA foreign_keys=ON")
+        finally:
+            cursor.close()
 
     def get_session_factory(self) -> async_sessionmaker[AsyncSession]:
         """Obtiene la fábrica de sesiones, inicializando el engine si hace falta."""
@@ -61,10 +74,11 @@ class DatabaseSessionManager:
     async def dispose(self) -> None:
         """Libera el engine cuando fue creado explícitamente por el consumidor."""
 
-        if self._engine is not None:
-            await self._engine.dispose()
-            self._engine = None
-            self._session_factory = None
+        engine = self._engine
+        self._engine = None
+        self._session_factory = None
+        if engine is not None:
+            await engine.dispose()
 
 
 database_session_manager = DatabaseSessionManager()

@@ -23,6 +23,7 @@ class ActiveChunk:
     text: str
     start_page: int
     end_page: int
+    document_name: str = ""
 
 
 @dataclass(frozen=True)
@@ -62,7 +63,11 @@ class SemanticChunkRepository:
     @staticmethod
     def _active_statement():
         return (
-            select(DocumentChunk, Document.document_type)
+            select(
+                DocumentChunk,
+                Document.document_type,
+                Document.original_filename,
+            )
             .join(Document, Document.id == DocumentChunk.document_id)
             .where(Document.is_deleted.is_(False))
         )
@@ -88,7 +93,10 @@ class SemanticChunkRepository:
             .limit(limit)
         )
         rows = (await self.session.execute(statement)).all()
-        return [self._to_active(chunk, document_type) for chunk, document_type in rows]
+        return [
+            self._to_active(chunk, document_type, document_name)
+            for chunk, document_type, document_name in rows
+        ]
 
     async def get_active_by_ids(self, chunk_ids: list[UUID]) -> dict[UUID, ActiveChunk]:
         if not chunk_ids:
@@ -96,8 +104,8 @@ class SemanticChunkRepository:
         statement = self._active_statement().where(DocumentChunk.id.in_(chunk_ids))
         rows = (await self.session.execute(statement)).all()
         return {
-            chunk.id: self._to_active(chunk, document_type)
-            for chunk, document_type in rows
+            chunk.id: self._to_active(chunk, document_type, document_name)
+            for chunk, document_type, document_name in rows
         }
 
     async def source_snapshot(self, *, batch_size: int) -> ActiveSourceSnapshot:
@@ -120,7 +128,11 @@ class SemanticChunkRepository:
         )
 
     @staticmethod
-    def _to_active(chunk: DocumentChunk, document_type: DocumentType) -> ActiveChunk:
+    def _to_active(
+        chunk: DocumentChunk,
+        document_type: DocumentType,
+        document_name: str,
+    ) -> ActiveChunk:
         return ActiveChunk(
             chunk_id=chunk.id,
             document_id=chunk.document_id,
@@ -129,4 +141,5 @@ class SemanticChunkRepository:
             text=chunk.text,
             start_page=chunk.start_page,
             end_page=chunk.end_page,
+            document_name=document_name,
         )

@@ -19,7 +19,15 @@ if str(BACKEND_ROOT) not in sys.path:
 
 from app.core.config import settings  # noqa: E402
 from app.database.base import Base  # noqa: E402
-from app.database.models import Document, DocumentChunk, DocumentPage  # noqa: F401, E402
+from app.database.models import (  # noqa: F401, E402
+    Document,
+    DocumentChunk,
+    DocumentPage,
+    HpnMatrix,
+    HpnNode,
+    HpnNodeSource,
+    HpnRelation,
+)
 from app.database.session import build_database_url  # noqa: E402
 
 
@@ -64,9 +72,11 @@ async def run_migrations_online() -> None:
         config.get_main_option("sqlalchemy.url"),
         poolclass=pool.NullPool,
     )
-    async with connectable.connect() as connection:
-        await connection.run_sync(do_run_migrations)
-    await connectable.dispose()
+    try:
+        async with connectable.connect() as connection:
+            await connection.run_sync(do_run_migrations)
+    finally:
+        await connectable.dispose()
 
 
 if context.is_offline_mode():

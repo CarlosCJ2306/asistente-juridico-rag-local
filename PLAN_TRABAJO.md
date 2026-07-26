@@ -34,7 +34,7 @@ conclusión requiere revisión y criterio de un profesional competente.
   `llama-cpp-python`.
 - Embeddings locales completados: `multilingual-e5-small`, reutilizados por el
   índice semántico reconstruible.
-- Extracción documental prevista: PyMuPDF.
+- Extracción documental con PyMuPDF completada.
 - Red jurídica y visualización futuras: NetworkX y PyVis.
 
 ## Fases
@@ -50,8 +50,8 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 6 | Búsqueda semántica | Crear el índice semántico local reconstruible. | Completada | Fase 4, ChromaDB | Recuperación semántica local evaluada. |
 | 7 | Recuperación híbrida | Combinar resultados textuales y semánticos. | Completada | Fase 5 y Fase 6 | Ranking híbrido medible y trazable. |
 | 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Completada | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
-| 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Pendiente | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias verificables. |
-| 10 | Matriz HPN | Modelar relaciones entre hechos, pruebas y normas. | Pendiente | Fase 2 y Fase 9 | Relaciones revisables por el profesional. |
+| 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Completada | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias estructurales verificables y revalidadas. |
+| 10 | Matriz HPN | Modelar relaciones entre hechos, pruebas y normas. | Completada | Fase 2 y Fase 9 | Relaciones revisables por el profesional. |
 | 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | Pendiente | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
 | 12 | Simulación | Explorar escenarios preliminares sobre la red jurídica. | Pendiente | Fase 11 | Resultados explicables y sujetos a revisión profesional. |
 | 13 | OCR | Incorporar reconocimiento óptico para documentos que lo requieran. | Pendiente | Fase 3 | Flujo OCR controlado, medido y trazable. |
@@ -136,6 +136,48 @@ el puerto quedó libre y no quedaron procesos, handles ni tareas propias.
 El validador fue aprobado con código 0: 281 pruebas, Ruff sin errores y mypy
 sin errores en 76 archivos.
 
+## Cierre de la Fase 9 — Citas y trazabilidad estructural
+
+La Fase 9 está **Completada** tras la validación integral real. Los chunks realmente incluidos en el contexto reciben
+marcadores efímeros y deterministas `[F1]..[Fn]`. La salida se valida con un
+parser cerrado, cobertura por elemento sustantivo y una nueva lectura de
+SQLite posterior a la generación. La metadata pública proviene siempre de
+SQLite y no del modelo.
+
+`POST /api/chat/rag` conserva su contrato y añade `citation_count` y
+`citations`. Las referencias identifican documento, tipo, chunk y páginas,
+sin exponer texto, rutas, hashes, scores ni identificadores internos de chunk.
+La trazabilidad confirma qué fuente del contexto fue citada; no demuestra por
+sí sola veracidad jurídica, entailment completo ni suficiencia semántica.
+
+La validación integral real fue aprobada con código 0: 443 pruebas, Ruff sin
+errores y mypy sin errores en 77 archivos. Se validaron Chat RAG HTTP 200,
+correspondencia exacta, revalidación SQLite, `insufficient_context` sin Qwen,
+persistencia tras reinicio, privacidad y conteos SQLite sin cambios (1 / 28 /
+44 / 44). Ambos modelos terminaron `unloaded` y no quedaron procesos propios.
+
+## Fase 10 — Matriz HPN manual y revisable
+
+La implementación permite registrar matrices, hechos, pruebas, normas,
+fuentes documentales y relaciones dirigidas. Los elementos se introducen y
+revisan manualmente; el sistema no determina hechos probados, normas aplicables,
+fuerza probatoria ni decisiones jurídicas.
+
+SQLite conserva matrices, nodos, snapshots mínimos de fuentes y relaciones.
+Las fuentes se resuelven por documento y número de chunk, se identifican
+internamente por `chunk_id` y se comparan mediante un fingerprint SHA-256 no
+reversible. Su estado público es `valid`, `stale` o `unavailable`; una lectura
+no actualiza ni sustituye automáticamente la snapshot.
+
+La Fase 10 queda **Completada** tras la validación funcional integral HPN y la
+comprobación objetiva de procesos, listeners, archivos temporales, sidecars,
+persistencia, reinicio e integridad de la base original. La instrumentación del
+centinela de disposición es diagnóstica y no bloqueante.
+El estado `archived` es de solo lectura y distinto del borrado lógico. Una
+fuente obsoleta no modifica automáticamente la revisión humana del nodo, pero
+impide que la matriz cumpla `valid_for_review`.
+
 ## Próximo paso autorizado
 
-Fase 9 — Citas y trazabilidad de las fuentes utilizadas por las respuestas RAG.
+Fase 11 — Red jurídica con NetworkX y PyVis. La Fase 11 permanece pendiente y
+no forma parte de esta implementación.

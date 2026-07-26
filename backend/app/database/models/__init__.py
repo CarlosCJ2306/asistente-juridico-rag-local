@@ -3,6 +3,20 @@
 from app.database.models.document_chunk import DocumentChunk
 from app.database.models.document import Document, DocumentStatus, DocumentType
 from app.database.models.document_page import DocumentPage
+from app.database.models.hpn import (
+    HpnMatrix,
+    HpnMatrixStatus,
+    HpnNode,
+    HpnNodeSource,
+    HpnNodeType,
+    HpnRelation,
+    HpnRelationType,
+    HpnReviewStatus,
+)
 
 
-__all__ = ["Document", "DocumentChunk", "DocumentPage", "DocumentStatus", "DocumentType"]
+__all__ = [
+    "Document", "DocumentChunk", "DocumentPage", "DocumentStatus", "DocumentType",
+    "HpnMatrix", "HpnMatrixStatus", "HpnNode", "HpnNodeSource", "HpnNodeType",
+    "HpnRelation", "HpnRelationType", "HpnReviewStatus",
+]

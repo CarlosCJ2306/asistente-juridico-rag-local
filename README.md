@@ -4,8 +4,8 @@ Aplicación local que, en fases posteriores, permitirá consultar documentos
 jurídicos mediante recuperación aumentada por generación (RAG). El estado
 actual incorpora la gestión y carga diferida del modelo generativo local y la
 carga controlada de PDF y extracción local. La Fase 4 incorpora el adaptador
-local de embeddings, recuperación híbrida y Chat RAG completado; la siguiente
-fase autorizada corresponde a citas y trazabilidad.
+local de embeddings, recuperación híbrida y Chat RAG completado. La Fase 9
+incorpora citas estructurales y está completada.
 
 > **Advertencia profesional:** esta aplicación será una herramienta de apoyo.
 > No toma decisiones jurídicas definitivas ni sustituye el análisis, la
@@ -29,11 +29,11 @@ fase autorizada corresponde a citas y trazabilidad.
   archivos estrictamente locales, CPU, lotes, dimensión 384 y vectores
   normalizados. La validación confirmó prefijos `query:` y `passage:`, carga y
   descarga mediante los endpoints previstos y ausencia de fallback a Internet.
-  La Fase 6 reutiliza este servicio para el índice vectorial local; su
-  validación real permanece pendiente.
-- **RAG futuro:** ingestión, segmentación jurídica, recuperación híbrida,
-  construcción de contexto y presentación de fuentes. Todos estos módulos son
-  únicamente estructura documental en el estado actual.
+  La Fase 6 reutiliza este servicio para el índice vectorial local y su
+  validación real está completada.
+- **Chat RAG local:** las Fases 7 y 8 completaron recuperación híbrida y
+  generación con contexto controlado. La Fase 9 añade citas estructurales y
+  está completada tras validación integral real.
 - **Búsqueda textual (Fase 5 completada):** SQLite FTS5 recupera chunks
   activos con BM25, filtros y trazabilidad. No usa embeddings ni búsqueda
   semántica.
@@ -117,6 +117,7 @@ Los endpoints disponibles son:
 - `GET http://localhost:8000/api/search/semantic/status`
 - `POST http://localhost:8000/api/search/semantic/rebuild`
 - `POST http://localhost:8000/api/search/semantic`
+- `POST http://localhost:8000/api/chat/rag`
 - `POST http://localhost:8000/api/documents`
 - `GET http://localhost:8000/api/documents`
 - `POST http://localhost:8000/api/documents/{document_id}/extract`
@@ -215,8 +216,8 @@ backend.
 `POST /api/search/text` admite los modos `all_terms`, `any_term` y `phrase`,
 además de filtros opcionales por documento, tipo y rango de páginas. Devuelve
 resultados trazables con ranking BM25 —menor valor es mejor— y snippets seguros;
-no devuelve la consulta, texto completo, rutas, hashes ni vectores. La búsqueda
-híbrida, el reranking y RAG siguen sin estar implementados.
+no devuelve la consulta, texto completo, rutas, hashes ni vectores. Este
+endpoint no ejecuta búsqueda híbrida, reranking ni RAG por sí mismo.
 
 El rango de páginas usa contención completa: `min_page` exige que el chunk
 comience en esa página o después, y `max_page` que termine en esa página o
@@ -281,8 +282,8 @@ Respuesta sintética:
 
 Los filtros de páginas exigen contención completa. Los resultados se validan
 contra SQLite y pueden ser menos que `top_k` cuando el índice esté desactualizado.
-El almacenamiento bajo `storage/vector/` está ignorado. La búsqueda híbrida,
-el reranking y RAG permanecen fuera de alcance.
+El almacenamiento bajo `storage/vector/` está ignorado. Este endpoint no
+ejecuta búsqueda híbrida, reranking ni RAG por sí mismo.
 
 El estado detecta obsolescencia mediante un fingerprint SHA-256 determinista
 de los chunks activos y sus metadatos relevantes; el archivo guarda únicamente
@@ -343,15 +344,12 @@ necesarios para diagnóstico. Consulta [logging](docs/logging.md).
 
 ## Estado actual y próximas fases
 
-Las fases completadas incluyen el esqueleto, configuración central, logging
-seguro, salud del backend, frontend inicial, gestión del LLM Qwen3 y la Fase 2
-de persistencia y carga controlada de documentos. La
-inferencia solo está disponible mediante el script manual después de instalar
-dependencias y descargar el modelo; no existe todavía un endpoint de prompts.
-
-Las Fases 5 y 6 están completadas y validadas. La Fase 7 implementa y valida la recuperación híbrida RRF. El proyecto sigue
-sin reranking, RAG, inferencia jurídica basada en recuperación, OCR,
-autenticación, streaming, Docker ni despliegue.
+Las Fases 0 a 9 están completadas. La Fase 9 implementa citas estructurales en
+`POST /api/chat/rag` y fue validada integralmente. La Matriz HPN manual de la
+Fase 10 está completada; la Fase 11 sigue
+pendiente. El proyecto continúa sin red jurídica, NetworkX, PyVis, simulación,
+reranking, historial persistente, OCR, autenticación, streaming, Docker ni
+despliegue.
 ### Cierre de la Fase 6
 
 La Fase 6 está **Completada** y validada: ChromaDB opera localmente y offline
@@ -369,8 +367,9 @@ registros FTS5. El validador integral terminó aprobado con código 0; hubo 146
 pruebas aprobadas, Ruff sin errores y mypy sin errores en 70 archivos.
 
 La Fase 7 implementa recuperación híbrida combinando FTS5 y búsqueda semántica
-y está completada. Siguen pendientes reranking, RAG, generación con
-contexto recuperado, citas finales e inferencia jurídica basada en recuperación.
+y está completada. La generación con contexto fue completada en la Fase 8 y
+las citas estructurales de la Fase 9 están completadas; el reranking sigue
+pendiente.
 ## Recuperación híbrida local
 
 La Fase 7 implementa `POST /api/search/hybrid`. Requiere FTS5 listo, índice
@@ -403,8 +402,8 @@ generación con contexto recuperado ni citas finales.
 La Fase 7 está **Completada**: la recuperación híbrida local combina FTS5 y ChromaDB mediante RRF determinista ponderado por rangos. SQLite sigue siendo la fuente de verdad y ambos índices son derivados. Se validaron filtros, deduplicación, trazabilidad, snippets desde SQLite y persistencia tras reinicio.
 
 La **Fase 8 — Chat RAG local y construcción controlada de contexto recuperado**
-está completada. Aún no existen citas finales, reranking ni historial
-conversacional persistente.
+está completada. La Fase 9 añade citas estructurales y está completada; el
+reranking y el historial conversacional persistente no existen todavía.
 ## Chat RAG local — Fase 8 completada
 
 `POST /api/chat/rag` recibe una pregunta y filtros controlados. El servicio
@@ -427,16 +426,35 @@ Request sintético:
 {"question":"Pregunta sintética","text_match_mode":"any_term","top_k":8,"document_types":["jurisprudencia"]}
 ```
 
-Response sintético:
+Respuesta sintética con el contrato aditivo de Fase 9:
 
 ```json
-{"status":"answered","answer":"Respuesta local controlada.","retrieved_chunks":5,"context_chunks":4,"context_tokens":1480,"requires_professional_review":true}
+{
+  "status": "answered",
+  "answer": "Respuesta local controlada [F1]",
+  "retrieved_chunks": 5,
+  "context_chunks": 3,
+  "context_tokens": 1480,
+  "requires_professional_review": true,
+  "citation_count": 1,
+  "citations": [
+    {
+      "marker": "[F1]",
+      "document_id": "00000000-0000-0000-0000-000000000001",
+      "document_name": "documento-sintetico.pdf",
+      "document_type": "jurisprudencia",
+      "chunk_index": 1,
+      "start_page": 1,
+      "end_page": 2
+    }
+  ]
+}
 ```
 
 Cuando no existe evidencia utilizable, devuelve `insufficient_context` con
 HTTP 200 y no llama a Qwen. El flujo no conserva historial y exige revisión
-profesional. Las citas finales, las referencias visibles, el reranking y el
-historial persistente siguen pendientes.
+profesional. En Fase 9 también devuelve `citation_count: 0` y `citations: []`.
+El reranking y el historial persistente siguen pendientes.
 
 Qwen y embeddings deben estar cargados explícitamente. Si Qwen está
 `unloaded`, el endpoint devuelve HTTP 503 con `RAG_LLM_NOT_LOADED` y no intenta
@@ -460,7 +478,72 @@ Los conteos SQLite permanecieron en 1 / 28 / 44 / 44. El validador terminó con
 código 0; hubo 281 pruebas aprobadas, Ruff sin errores y mypy sin errores en
 76 archivos.
 
-La Fase 9 queda como único siguiente paso autorizado: citas y trazabilidad de
-las fuentes utilizadas por las respuestas RAG. Todavía no existen citas
-finales visibles, reranking, historial persistente ni decisiones jurídicas
-automatizadas.
+## Citas estructurales — Fase 9 completada
+
+Los chunks realmente seleccionados para el contexto reciben markers
+deterministas `[F1]`, `[F2]`, etc. El modelo solo puede producir esos markers;
+el servidor construye las referencias públicas desde SQLite, las ordena por
+primera aparición y vuelve a validar cada fuente después de generar.
+El prompt enumera explícitamente solo los markers del registro interno final,
+incluye un único ejemplo estructural y repite las reglas obligatorias después
+de la evidencia. Este refuerzo compacto mejora el cumplimiento del modelo
+pequeño y se contabiliza íntegramente dentro del presupuesto de tokens.
+
+Cada cita incluye el marker, el identificador documental, el nombre de
+presentación sanitizado, el tipo documental, el índice de chunk y el rango de
+páginas. No incluye el identificador interno del chunk, rutas, hashes, texto,
+snippets, scores, vectores ni prompt. Un marker inventado, una respuesta sin
+citas o un párrafo sustantivo sin fuente producen un error controlado.
+El parser cerrado continúa rechazando esos casos: no se añaden markers a la
+salida, no existe reparación automática y no se realiza una segunda generación.
+
+La revalidación aplica una política estricta: cualquier cambio en la fuente,
+incluido `original_filename`, invalida la respuesta completa. El nombre visible
+se obtiene de ese campo vigente, se reduce a basename y se neutraliza; nunca se
+usa `stored_filename`.
+
+La trazabilidad es estructural: confirma qué fuente incluida en el contexto
+fue citada. No certifica automáticamente veracidad jurídica, entailment ni
+ suficiencia semántica. La Fase 9 está completada; no incluye
+reranking, historial persistente ni decisiones jurídicas automatizadas.
+
+La validación integral posterior fue aprobada con código 0: 443 pruebas,
+Ruff sin errores y mypy sin errores en 82 archivos. La Fase 10 queda
+siguiente paso autorizado: Fase 11 — Red jurídica.
+
+## Matriz HPN manual — Fase 10 completada
+
+La Matriz HPN es un espacio de trabajo local para que un profesional registre
+manualmente hechos, pruebas y normas, vincule fuentes documentales y cree
+relaciones revisables. No extrae elementos con IA, no asigna fuerza probatoria
+y no toma decisiones jurídicas.
+
+Los tipos de nodo son `fact`, `evidence` y `norm`. Las relaciones permitidas
+son `evidence_supports_fact`, `evidence_contradicts_fact`,
+`norm_applies_to_fact` y `norm_limits_fact`. Cada fuente se localiza mediante
+`document_id` y `chunk_index`; la respuesta pública informa si está `valid`,
+`stale` o `unavailable`, sin exponer texto, rutas, fingerprints ni el
+identificador interno del chunk.
+
+La API local incluye CRUD de matrices, nodos, fuentes y relaciones bajo
+`/api/hpn/matrices`, además de
+`GET /api/hpn/matrices/{matrix_id}/validation`. Una matriz solo puede quedar
+`reviewed` cuando su estructura, revisiones y fuentes vigentes están completas;
+cualquier modificación posterior la devuelve a `in_review`.
+
+El estado `archived` es explícito, permanece visible en listados y detalle y
+deja la matriz en solo lectura; no equivale a `deleted_at`. El borrado lógico
+es una operación separada. Si una fuente de un nodo ya revisado cambia, el nodo
+conserva temporalmente `reviewed` para no falsificar una decisión humana, pero
+la fuente aparece `stale` o `unavailable` y la matriz deja de ser válida para
+revisión hasta una intervención profesional.
+
+Ejemplo sintético de creación:
+
+```json
+{"title":"Análisis manual sintético","description":"Espacio revisable"}
+```
+
+La Fase 10 está completada. NetworkX, PyVis, visualización de grafos,
+simulación, generación automática de HPN y frontend no están implementados.
+La instrumentación del centinela de disposición es diagnóstica y no bloqueante.

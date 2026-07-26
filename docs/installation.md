@@ -247,3 +247,54 @@ El presupuesto validado fue context_size 4096, max_new_tokens 512,
 safety_margin 128, context_tokens 1728 y prompt_tokens dentro de 3456.
 No se incluyen citas finales, reranking ni historial persistente; el próximo
 paso autorizado es la Fase 9 de citas y trazabilidad.
+
+## Cierre de validación de la Fase 9
+
+La validación integral real requirió FTS5 disponible, ChromaDB en estado
+`ready`, modelos locales instalados y inicialmente `unloaded`, operación
+offline y un solo worker de Uvicorn. No debe ejecutar migraciones ni rebuilds.
+
+El script preparado es:
+
+```bat
+python scripts\validate_phase9_end_to_end.py
+```
+
+El validador comprobará Chat RAG `answered`, markers, correspondencia exacta
+con `citations`, metadata vigente desde SQLite, páginas, chunk, cobertura por
+elemento sustantivo, `insufficient_context`, privacidad y persistencia tras
+reinicio. También comparará los conteos SQLite y liberará ambos modelos y los
+puertos al finalizar.
+
+Los informes locales se escribirán atómicamente bajo
+`local_validation_reports/` y permanecerán ignorados. No almacenarán pregunta,
+respuesta, marker concreto, identificadores, nombres documentales, páginas,
+prompt, contexto, texto, vectores ni rutas. El validador está preparado, pero
+no se ejecuta durante la implementación de la Fase 9. La validación integral
+fue aprobada con código 0 y dio paso a la Fase 10 — Matriz HPN, actualmente
+implementada y completada. La instrumentación del centinela de disposición es
+diagnóstica y no bloqueante.
+
+## Migración y validación de la Fase 10
+
+La revisión `20260725_04` crea exclusivamente las tablas de Matriz HPN. Su
+aplicación sobre la base local requiere respaldo y autorización explícita:
+
+```bat
+cd backend
+python -m alembic upgrade head
+python -m alembic current
+```
+
+Durante la implementación no se ejecutó esa migración sobre la base real. El
+validador futuro se ejecuta desde la raíz:
+
+```bat
+python scripts\validate_phase10_end_to_end.py
+```
+
+El validador usa una copia temporal y aislada de SQLite, aplica la migración
+solo a esa copia, valida CRUD, fuentes, fingerprint, estados, relaciones,
+revisión, borrado lógico y persistencia tras reinicio, y comprueba que la base
+original conserva sus conteos. No carga Qwen o embeddings ni reconstruye FTS5
+o ChromaDB.

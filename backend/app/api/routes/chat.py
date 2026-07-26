@@ -9,6 +9,7 @@ from app.database.repositories.text_search_repository import TextSearchRepositor
 from app.database.session import get_db_session
 from app.schemas.rag_chat import RagChatRequest, RagChatResponse
 from app.services.hybrid_search_service import HybridSearchError
+from app.services.rag_citation_service import CITATION_REASON_CODES
 from app.services.rag_chat_service import RagChatError, RagChatService
 from app.services.semantic_index_service import SemanticServiceError
 
@@ -18,7 +19,7 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 def _rag_http_error(error: Exception) -> HTTPException:
     code = getattr(error, "code", "RAG_GENERATION_ERROR")
-    if code == "RAG_GENERATION_BUSY":
+    if code in {"RAG_GENERATION_BUSY", "RAG_CITATION_SOURCE_STALE"}:
         status_code = 409
     elif code in {
         "RAG_LLM_NOT_LOADED",
@@ -36,7 +37,17 @@ def _rag_http_error(error: Exception) -> HTTPException:
         status_code = 503
     else:
         status_code = 500
-    return HTTPException(status_code=status_code, detail=code)
+    reason_code = getattr(error, "reason_code", None)
+    stage = getattr(error, "stage", None)
+    if reason_code in CITATION_REASON_CODES and stage == "citation_validation":
+        detail: str | dict[str, str] = {
+            "error_code": code,
+            "reason_code": reason_code,
+            "stage": stage,
+        }
+    else:
+        detail = code
+    return HTTPException(status_code=status_code, detail=detail)
 
 
 @router.post("/rag", response_model=RagChatResponse)

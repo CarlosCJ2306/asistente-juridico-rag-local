@@ -184,6 +184,48 @@ def test_generation_logs_only_safe_metadata(
     local_llm.unload()
 
 
+@pytest.mark.parametrize(
+    ("raw_reason", "usage", "expected_reason", "expected_count"),
+    [
+        ("stop", {"completion_tokens": 7}, "stop", 7),
+        ("length", {"completion_tokens": 9}, "length", 9),
+        ("tool_calls", {"completion_tokens": 4}, "unknown", 4),
+        (None, None, "unknown", None),
+        ("stop", {"completion_tokens": True}, "stop", None),
+        ("stop", {"completion_tokens": -1}, "stop", None),
+    ],
+)
+def test_generation_keeps_only_safe_aggregate_metrics(
+    model_project_factory,
+    raw_reason,
+    usage,
+    expected_reason,
+    expected_count,
+) -> None:
+    manager, model_path = model_project_factory()
+    model_path.parent.mkdir(parents=True)
+    model_path.write_bytes(b"GGUFcontenido-valido")
+    choice = {
+        "message": {"content": "RESPUESTA SINTÉTICA"},
+        "finish_reason": raw_reason,
+    }
+    response = {"choices": [choice]}
+    if usage is not None:
+        response["usage"] = usage
+    local_llm = local_llm_module.LocalLLM(
+        manager,
+        llama_factory=Mock(return_value=FakeLlama(response)),
+    )
+    local_llm.load()
+    local_llm.generate("Prompt controlado")
+    metrics = local_llm.last_generation_metrics
+    assert metrics is not None
+    assert metrics.finish_reason == expected_reason
+    assert metrics.generated_token_count == expected_count
+    local_llm.unload()
+    assert local_llm.last_generation_metrics is None
+
+
 def test_qwen_tokenizer_counts_truncates_and_preserves_unicode(model_project_factory) -> None:
     manager, model_path = model_project_factory()
     model_path.parent.mkdir(parents=True)

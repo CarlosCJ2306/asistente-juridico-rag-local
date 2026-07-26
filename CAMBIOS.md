@@ -272,3 +272,93 @@ relevantes por fase. Las categorías usadas son: **Añadido**, **Modificado**,
 
 La siguiente fase autorizada es la Fase 9 — Citas y trazabilidad de las
 fuentes utilizadas por las respuestas RAG.
+
+## 2026-07-25 — Fase 9: Citas visibles y trazabilidad estructural
+
+- **Añadido:** registro efímero de fuentes seleccionadas para contexto con
+  markers deterministas `[F1]..[Fn]`, sin persistencia ni control desde HTTP.
+- **Modificado:** el prompt incorpora evidencia marcada e instrucciones fijas
+  para que Qwen utilice únicamente markers permitidos.
+- **Seguridad:** neutralización de markers inyectados en documentos y pregunta,
+  parser cerrado, rechazo de formatos ambiguos, fuentes inventadas, enlaces y
+  respuestas sin cobertura por elemento sustantivo.
+- **Añadido:** revalidación posterior a la generación mediante una sesión
+  SQLite nueva, con comprobación de documento activo, chunk, metadata, nombre
+  de presentación y contenido vigente.
+- **API:** ampliación aditiva de `POST /api/chat/rag` con `citation_count` y
+  `citations`; `insufficient_context` devuelve cero citas y no invoca Qwen.
+- **Privacidad:** nombres sanitizados y metadata pública limitada; no se
+  exponen rutas, nombres almacenados, hashes, texto, snippets, prompts, scores,
+  vectores ni identificadores internos de chunk.
+- **Errores:** `RAG_CITATION_OUTPUT_INVALID`,
+  `RAG_CITATION_SOURCE_STALE` y `RAG_CITATION_METADATA_INVALID` con respuestas
+  controladas.
+- **Pruebas:** cobertura sintética de configuración, registro, nombres,
+  prompt, inyección, presupuesto, parser, cobertura, respuesta pública,
+  revalidación, errores, API, sesiones y logging.
+- **Validador:** `validate_phase9_end_to_end.py` preparado con informe atómico
+  sanitizado; no fue ejecutado durante la implementación.
+- **Estado:** en validación. No se afirma todavía validación real de Chat RAG
+  con citas ni correspondencia sobre los datos locales.
+- **Alcance:** no incluye reranking, historial persistente, frontend, HPN,
+  red jurídica, simulación, OCR ni búsqueda web.
+
+## 2026-07-25 — Cierre de la Fase 9
+
+- **Estado:** Fase 9 completada tras validación integral real; código de salida
+  0.
+- **Citas:** markers efímeros `[F1]..[Fn]`, parser cerrado, cobertura por
+  elemento sustantivo, correspondencia exacta y revalidación estricta en
+  SQLite. La metadata pública procede únicamente de SQLite y no incluye texto,
+  rutas, hashes, scores, vectores ni identificadores internos.
+- **Privacidad y seguridad:** registro de fuentes por solicitud no persistido
+  ni registrado; evidencia no confiable; sin reparación automática ni segunda
+  generación; revisión profesional obligatoria.
+- **Validación:** Chat RAG `answered` HTTP 200, `insufficient_context` HTTP
+  200 sin Qwen, persistencia de índices tras reinicio, conteos SQLite sin
+  cambios (1 / 28 / 44 / 44), modelos `unloaded` y puertos liberados.
+- **Calidad:** 443 pruebas aprobadas, Ruff sin errores y mypy sin errores en
+  77 archivos.
+- **Alcance pendiente:** Fase 10 — Matriz HPN. También permanecen pendientes
+  reranking, historial persistente, frontend de chat, red jurídica,
+  simulación, OCR y búsqueda web.
+
+## 2026-07-25 — Fase 10: Matriz HPN manual y revisable
+
+- Se agregó la migración `20260725_04` con las tablas `hpn_matrices`,
+  `hpn_nodes`, `hpn_node_sources` y `hpn_relations`, restricciones e índices.
+- Se implementaron matrices, nodos `fact`, `evidence` y `norm`, estados de
+  revisión cerrados, relaciones dirigidas compatibles y borrado lógico.
+- Las fuentes se resuelven contra SQLite por `document_id` y `chunk_index`;
+  conservan una snapshot mínima y un fingerprint SHA-256 sin almacenar texto.
+- Las lecturas clasifican fuentes como `valid`, `stale` o `unavailable` sin
+  reemplazarlas ni actualizar su snapshot automáticamente.
+- Se incorporó validación estructural antes de marcar una matriz `reviewed` y
+  retorno explícito a `in_review` después de modificarla.
+- Se expuso una API CRUD tipada bajo `/api/hpn`, sin campos internos, rutas,
+  hashes, chunks, scores, vectores ni contenido de otros nodos.
+- Se agregaron pruebas sintéticas con SQLite temporal y se preparó
+  `validate_phase10_end_to_end.py` para una validación futura sobre una copia
+  aislada. El validador no fue ejecutado y la migración no fue aplicada a la
+  base real.
+- **Auditoría:** se reforzaron las claves foráneas de las snapshots, el enum de
+  tipo documental, los límites coherentes, la activación de claves foráneas en
+  SQLite y la verificación aislada de la cascada lógica. Triggers locales de
+  INSERT y UPDATE impiden asociar un chunk con un documento que no le pertenece.
+- **Consistencia:** `archived` es un estado visible de solo lectura distinto de
+  `deleted_at`; una fuente posterior `stale` o `unavailable` no modifica la
+  revisión humana del nodo, pero impide `valid_for_review`.
+- **Privacidad:** la sanitización de nombres se comparte con citas y las rutas
+  registradas se reducen a plantillas seguras, sin identificadores completos.
+- No se incorporaron IA automática, NetworkX, PyVis, simulación ni frontend.
+## 2026-07-25 — Cierre de Fase 10
+
+- **ValidaciÃ³n:** la funcionalidad HPN, persistencia, reinicio, limpieza
+  objetiva e integridad de la base original quedaron aprobados en la Ãºltima
+  ejecuciÃ³n integral.
+- **Resultados previos:** 526 pruebas aprobadas, Ruff limpio y mypy limpio en
+  82 archivos.
+- **DisposiciÃ³n:** el centinela se conserva como instrumentaciÃ³n diagnÃ³stica;
+  su ausencia genera una advertencia y no invalida la liberaciÃ³n objetiva.
+- **Estado:** Fase 10 completada. Fase 11 — Red jurÃ­dica — queda como Ãºnico
+  siguiente paso pendiente.

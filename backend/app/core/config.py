@@ -101,6 +101,18 @@ class Settings(BaseSettings):
     rag_temperature: float = Field(default=0.1, ge=0, le=2)
     rag_top_p: float = Field(default=0.9, gt=0, le=1)
     rag_repeat_penalty: float = Field(default=1.05, gt=0, le=2)
+    rag_citation_max_sources: int = Field(default=8, gt=0)
+    rag_source_name_max_length: int = Field(default=255, gt=0, le=500)
+
+    hpn_matrix_title_max_length: int = Field(default=200, gt=0, le=200)
+    hpn_matrix_description_max_length: int = Field(default=4000, gt=0, le=20000)
+    hpn_node_title_max_length: int = Field(default=200, gt=0, le=200)
+    hpn_node_statement_max_length: int = Field(default=8000, gt=0, le=50000)
+    hpn_relation_rationale_max_length: int = Field(default=4000, gt=0, le=20000)
+    hpn_max_nodes_per_matrix: int = Field(default=500, gt=0, le=5000)
+    hpn_max_relations_per_matrix: int = Field(default=2000, gt=0, le=20000)
+    hpn_max_sources_per_node: int = Field(default=20, gt=0, le=100)
+    hpn_source_name_max_length: int = Field(default=255, gt=0, le=255)
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -194,6 +206,17 @@ class Settings(BaseSettings):
         "rag_temperature",
         "rag_top_p",
         "rag_repeat_penalty",
+        "rag_citation_max_sources",
+        "rag_source_name_max_length",
+        "hpn_matrix_title_max_length",
+        "hpn_matrix_description_max_length",
+        "hpn_node_title_max_length",
+        "hpn_node_statement_max_length",
+        "hpn_relation_rationale_max_length",
+        "hpn_max_nodes_per_matrix",
+        "hpn_max_relations_per_matrix",
+        "hpn_max_sources_per_node",
+        "hpn_source_name_max_length",
         mode="before",
     )
     @classmethod
@@ -228,6 +251,10 @@ class Settings(BaseSettings):
             raise ValueError("RAG_TOP_K_MAX no puede superar HYBRID_TOP_K_MAX")
         if self.rag_context_max_chunks > self.rag_top_k_max:
             raise ValueError("RAG_CONTEXT_MAX_CHUNKS no puede superar RAG_TOP_K_MAX")
+        if self.rag_citation_max_sources > self.rag_context_max_chunks:
+            raise ValueError(
+                "RAG_CITATION_MAX_SOURCES no puede superar RAG_CONTEXT_MAX_CHUNKS"
+            )
         reserved = self.rag_max_new_tokens + self.rag_token_safety_margin
         if reserved >= self.local_llm_context_size:
             raise ValueError("RAG_TOKEN_BUDGET_INVALID")

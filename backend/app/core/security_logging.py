@@ -1,6 +1,7 @@
 """Reducción de riesgo al incorporar contexto estructurado en los logs."""
 
 from collections.abc import Mapping, Sequence
+import re
 from typing import Any
 
 
@@ -8,6 +9,9 @@ SENSITIVE_KEYS = frozenset(
     {"password", "token", "authorization", "cookie", "secret", "api_key"}
 )
 MASKED_VALUE = "***REDACTED***"
+UUID_PATH_PATTERN = re.compile(
+    r"(?i)(?<![0-9a-f])[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}(?![0-9a-f])"
+)
 
 
 def is_sensitive_key(key: str) -> bool:
@@ -22,6 +26,12 @@ def mask_sensitive_value(value: Any) -> str:
 
     del value
     return MASKED_VALUE
+
+
+def sanitize_path(path: str) -> str:
+    """Neutraliza identificadores UUID incluidos en rutas operativas."""
+
+    return UUID_PATH_PATTERN.sub("{uuid}", path)
 
 
 def sanitize_log_data(data: Any) -> Any:

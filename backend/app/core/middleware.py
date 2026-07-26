@@ -7,6 +7,17 @@ from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 
 from app.core.Log import log_exception, log_info
+from app.core.security_logging import sanitize_path
+
+
+def _safe_route_path(request: Request) -> str:
+    """Usa la plantilla de ruta o neutraliza UUID sin registrar parámetros."""
+
+    route = request.scope.get("route")
+    template = getattr(route, "path", None)
+    if isinstance(template, str) and template.startswith("/"):
+        return template
+    return sanitize_path(request.url.path)
 
 
 class RequestLoggingMiddleware(BaseHTTPMiddleware):
@@ -28,7 +39,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
             log_exception(
                 "Error no controlado durante la solicitud",
                 method=request.method,
-                path=request.url.path,
+                path=_safe_route_path(request),
                 request_id=request_id,
                 duration_ms=duration_ms,
                 exception_type=type(exc).__name__,
@@ -40,7 +51,7 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
         log_info(
             "Solicitud HTTP completada",
             method=request.method,
-            path=request.url.path,
+            path=_safe_route_path(request),
             status_code=response.status_code,
             duration_ms=duration_ms,
             request_id=request_id,

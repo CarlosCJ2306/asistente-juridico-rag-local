@@ -258,6 +258,88 @@ Se validaron `answered` e `insufficient_context`, la persistencia de FTS5 y
 ChromaDB tras reinicio sin rebuild, los conteos SQLite 1 / 28 / 44 / 44, el
 estado final `unloaded`, la liberación del puerto y la ausencia de procesos
 propios pendientes. El validador terminó con código 0, con 281 pruebas, Ruff
-limpio y mypy sin errores en 76 archivos. La Fase 9 queda autorizada para
-citas y trazabilidad; no existen aún citas visibles, reranking ni historial
-persistente.
+limpio y mypy sin errores en 76 archivos. La Fase 9 está completada; la Matriz
+HPN de la Fase 10 está implementada y completada. Permanecen pendientes el
+reranking, el historial persistente y la red jurídica de la Fase 11.
+
+## Citas y trazabilidad estructural — Fase 9 completada
+
+```text
+chunks seleccionados
+       ↓
+registro interno [F1]..[Fn]
+       ↓
+prompt con evidencia marcada
+       ↓
+Qwen produce únicamente markers
+       ↓
+parser cerrado y cobertura por elemento
+       ↓
+revalidación en una sesión SQLite nueva
+       ↓
+answer + citations estructuradas
+```
+
+El registro de fuentes se construye en el servidor, conserva el orden final
+del contexto y existe solo durante la petición. Los markers forman parte del
+presupuesto de tokens. Los markers que aparezcan dentro de documentos o de la
+pregunta se neutralizan sin alterar las referencias jurídicas ordinarias.
+Tras seleccionar definitivamente los chunks, el prompt enumera únicamente los
+markers del registro interno, añade un ejemplo estructural breve y coloca un
+recordatorio obligatorio después del último bloque de evidencia. Todo este
+overhead se cuenta con la plantilla GGUF antes de generar, lo que puede reducir
+determinísticamente la evidencia seleccionada sin reducir el margen de seguridad.
+
+Qwen no produce metadata pública: documento, nombre de presentación, tipo,
+chunk y páginas proceden de SQLite después de una revalidación posterior a la
+generación. La sesión de recuperación se cierra antes de invocar el modelo y
+la comprobación final usa una operación nueva. Si una fuente cambia, la
+respuesta no se entrega.
+
+La política de obsolescencia es estricta: cambios en documento, tipo, índice
+de chunk, páginas, texto u `original_filename`, así como cualquier eliminación,
+producen `RAG_CITATION_SOURCE_STALE`. No se sustituye una fuente ni se devuelve
+una respuesta parcial. El nombre público usa `original_filename`, reducido a
+basename, con controles y NUL eliminados, markers neutralizados, HTML escapado
+y longitud limitada; `stored_filename` nunca se utiliza.
+
+SQLite continúa como fuente de verdad y las citas no se persisten. La
+trazabilidad estructural demuestra que un marker corresponde a una fuente
+incluida en el contexto, pero no evalúa automáticamente entailment, veracidad
+jurídica ni suficiencia semántica. No existe reranking, historial persistente
+ni una segunda generación para reparar citas.
+Una salida sin markers sigue siendo inválida: no existe reparación automática,
+inyección posterior de citas ni reintento de generación.
+
+## Matriz HPN manual — Fase 10 completada
+
+```text
+matriz
+  ├── hechos
+  ├── pruebas
+  │     └── fuentes documentales
+  ├── normas
+  │     └── fuentes documentales
+  └── relaciones dirigidas
+```
+
+SQLite sigue siendo la fuente de verdad. Las snapshots HPN guardan únicamente
+metadata mínima y un fingerprint SHA-256 para detectar cambios; no reemplazan
+documentos o chunks y no almacenan su texto. La resolución vigente clasifica
+las fuentes como `valid`, `stale` o `unavailable` sin modificarlas.
+
+Las claves foráneas y triggers propios de la migración HPN impiden que una
+snapshot nueva asocie un chunk con un documento distinto de su propietario.
+
+HPN es estrictamente manual: los nodos y relaciones son afirmaciones
+revisables del profesional, no conclusiones del sistema. La validación comprueba
+estructura, estados y disponibilidad de fuentes, pero no corrección jurídica,
+verdad, suficiencia probatoria o probabilidad. NetworkX, PyVis y la red visual
+permanecen reservados para la Fase 11.
+
+`archived` representa una matriz activa de solo lectura, incluida en listados;
+el borrado lógico usa `deleted_at` y es independiente. Los cambios de título o
+descripción y toda modificación estructural de una matriz `reviewed` la
+devuelven a `in_review` dentro de la misma transacción. Un nodo `reviewed` no
+cambia automáticamente si su fuente queda obsoleta: el estado de fuente y
+`valid_for_review=false` exponen el problema para revisión humana.

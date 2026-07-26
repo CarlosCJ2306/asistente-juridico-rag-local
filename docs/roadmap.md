@@ -90,9 +90,30 @@ rebuild posterior y el modelo terminó `unloaded`; el validador integral fue
 aprobado con código 0, junto con 146 pruebas, Ruff y mypy en 70 archivos.
 
 Las Fases 7 y 8 están completadas con recuperación híbrida RRF y Chat RAG
-local stateless. El reranking, las citas finales y la inferencia jurídica
-automática siguen pendientes.
+local stateless. El reranking y la inferencia jurídica automática siguen
+pendientes.
 
-## Fase 9 — pendiente y autorizada
+## Fase 9 — completada: citas y trazabilidad estructural
 
-Citas finales y trazabilidad visible para las respuestas RAG.
+- Registro efímero y determinista `[F1]..[Fn]` para chunks del contexto.
+- Parser cerrado, cobertura por elemento sustantivo y rechazo de markers
+  desconocidos.
+- Metadata pública construida y revalidada desde SQLite después de generar.
+- Contrato aditivo con `citation_count` y `citations`.
+- Validación integral real aprobada: 443 pruebas, Ruff sin errores y mypy sin
+  errores en 77 archivos; correspondencia, revalidación SQLite, privacidad y
+  persistencia tras reinicio confirmadas.
+
+## Fase 10 — en validación: Matriz HPN manual y revisable
+
+- Persistencia de matrices, nodos, fuentes y relaciones dirigidas.
+- Fuentes resueltas contra SQLite con snapshot mínima, fingerprint y estados
+  `valid`, `stale` y `unavailable`.
+- Revisión humana obligatoria, validación estructural y borrado lógico.
+- API CRUD tipada y pruebas con SQLite temporal.
+- Validador integral preparado para una copia aislada; todavía no ejecutado.
+
+## Fase 11 — pendiente
+
+Red jurídica y visualización local mediante NetworkX y PyVis. No forma parte
+de la Fase 10.

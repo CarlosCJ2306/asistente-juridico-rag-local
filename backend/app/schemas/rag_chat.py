@@ -1,8 +1,9 @@
-"""Contratos públicos del chat RAG local sin historial ni citas finales."""
+"""Contratos públicos del chat RAG local con citas estructurales."""
 
 from __future__ import annotations
 
 import unicodedata
+import re
 from typing import Literal
 from uuid import UUID
 
@@ -70,8 +71,35 @@ class RagChatRequest(BaseModel):
         return self
 
 
+class RagCitation(BaseModel):
+    """Referencia pública construida exclusivamente desde SQLite."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    marker: str = Field(pattern=r"^\[F[1-9]\d*\]$", max_length=16)
+    document_id: UUID
+    document_name: str = Field(min_length=1, max_length=settings.rag_source_name_max_length)
+    document_type: DocumentType
+    chunk_index: int = Field(ge=1)
+    start_page: int = Field(ge=1)
+    end_page: int = Field(ge=1)
+
+    @field_validator("chunk_index", "start_page", "end_page", mode="before")
+    @classmethod
+    def reject_boolean_citation_integers(cls, value: object) -> object:
+        if isinstance(value, bool):
+            raise ValueError("RAG_CITATION_METADATA_INVALID")
+        return value
+
+    @model_validator(mode="after")
+    def validate_pages(self) -> "RagCitation":
+        if self.end_page < self.start_page:
+            raise ValueError("RAG_CITATION_METADATA_INVALID")
+        return self
+
+
 class RagChatResponse(BaseModel):
-    """Respuesta sin identificadores, contexto, scores ni referencias finales."""
+    """Respuesta sin prompt, contexto, scores ni identificadores de chunk."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -81,13 +109,40 @@ class RagChatResponse(BaseModel):
     context_chunks: int = Field(ge=0, le=settings.rag_context_max_chunks)
     context_tokens: int = Field(ge=0, le=settings.rag_context_max_tokens)
     requires_professional_review: Literal[True] = True
+    citation_count: int = Field(ge=0, le=settings.rag_citation_max_sources)
+    citations: list[RagCitation] = Field(
+        default_factory=list,
+        max_length=settings.rag_citation_max_sources,
+    )
 
     @model_validator(mode="after")
     def validate_counts(self) -> "RagChatResponse":
         if self.context_chunks > self.retrieved_chunks:
             raise ValueError("RAG_RESPONSE_COUNT_INVALID")
+        if self.citation_count != len(self.citations):
+            raise ValueError("RAG_CITATION_COUNT_INVALID")
+        if self.citation_count > self.context_chunks:
+            raise ValueError("RAG_CITATION_COUNT_INVALID")
+        markers = [citation.marker for citation in self.citations]
+        if len(markers) != len(set(markers)):
+            raise ValueError("RAG_CITATION_DUPLICATE")
+        source_identities = [
+            (citation.document_id, citation.chunk_index)
+            for citation in self.citations
+        ]
+        if len(source_identities) != len(set(source_identities)):
+            raise ValueError("RAG_CITATION_DUPLICATE")
         if self.status == "insufficient_context" and (
-            self.context_chunks != 0 or self.context_tokens != 0
+            self.context_chunks != 0
+            or self.context_tokens != 0
+            or self.citation_count != 0
+            or self.citations
         ):
             raise ValueError("RAG_INSUFFICIENT_CONTEXT_INVALID")
+        if self.status == "answered" and self.citation_count == 0:
+            raise ValueError("RAG_CITATION_OUTPUT_INVALID")
+        if self.status == "answered":
+            answer_markers = re.findall(r"\[F[1-9]\d*\]", self.answer)
+            if list(dict.fromkeys(answer_markers)) != markers:
+                raise ValueError("RAG_CITATION_OUTPUT_INVALID")
         return self
