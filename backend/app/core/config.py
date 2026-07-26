@@ -118,6 +118,9 @@ class Settings(BaseSettings):
     graph_max_edges: int = Field(default=1000, gt=0, le=20000)
     graph_max_label_length: int = Field(default=80, gt=0, le=200)
     graph_max_components_detail: int = Field(default=100, gt=0, le=5000)
+    graph_max_html_bytes: int = Field(default=5_242_880, gt=0, le=20_971_520)
+    graph_max_tooltip_length: int = Field(default=240, gt=0, le=1000)
+    graph_render_concurrency: int = Field(default=1, gt=0, le=8)
 
     model_config = SettingsConfigDict(
         env_file=PROJECT_ROOT / ".env",
@@ -226,6 +229,9 @@ class Settings(BaseSettings):
         "graph_max_edges",
         "graph_max_label_length",
         "graph_max_components_detail",
+        "graph_max_html_bytes",
+        "graph_max_tooltip_length",
+        "graph_render_concurrency",
         mode="before",
     )
     @classmethod

@@ -1,0 +1,18 @@
+.async { min-width: 0; }
+.asyncLoading { display: flex; align-items: center; gap: var(--space-3); min-height: var(--size-touch-target); color: var(--color-text-secondary); }
+
+.pageHeader { min-width: 0; container-type: inline-size; }
+.pageHeaderContent { display: grid; gap: var(--space-5); min-width: 0; }
+.pageHeaderMain { min-width: 0; }
+.pageHeaderBreadcrumbs { margin-bottom: var(--space-3); }
+.pageHeaderTitle { margin: 0; color: var(--color-text-primary); font-size: var(--font-size-2xl); line-height: var(--line-height-tight); overflow-wrap: anywhere; }
+.pageHeaderDescription { max-width: var(--content-width-reading); margin: var(--space-2) 0 0; color: var(--color-text-secondary); line-height: var(--line-height-relaxed); overflow-wrap: anywhere; }
+.pageHeaderMetadata { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); margin-top: var(--space-3); color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.pageHeaderActions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3); }
+@container (min-width: 48rem) {
+  .pageHeaderContent { grid-template-columns: minmax(0, 1fr) auto; align-items: start; }
+  .pageHeaderActions { justify-content: flex-end; }
+}
+@container (max-width: 29.99rem) {
+  .pageHeaderActions > * { flex: 1 1 100%; }
+}

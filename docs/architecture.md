@@ -335,8 +335,10 @@ HPN es estrictamente manual: los nodos y relaciones son afirmaciones
 revisables del profesional, no conclusiones del sistema. La validación comprueba
 estructura, estados y disponibilidad de fuentes, pero no corrección jurídica,
 verdad, suficiencia probatoria o probabilidad. El dominio NetworkX de solo
-lectura está completado en 11A y su API JSON de solo lectura en 11B; PyVis y
-la red visual permanecen para los bloques posteriores de la Fase 11.
+lectura está completado en 11A y su API JSON de solo lectura en 11B. La
+exportación PyVis de 11C está completada en su alcance de backend y seguridad;
+la integración real en navegador se verificará en 11D-5. El frontend
+profesional permanece pendiente.
 
 `archived` representa una matriz activa de solo lectura, incluida en listados;
 el borrado lógico usa `deleted_at` y es independiente. Los cambios de título o
@@ -367,4 +369,71 @@ total de componentes nunca se trunca por el límite reservado para metadata
 detallada futura. 11B expone `GET /api/hpn/matrices/{matrix_id}/graph` como
 JSON tipado de solo lectura y delega la construcción únicamente en
 `HpnGraphService`; no devuelve objetos NetworkX ni contenido HPN restringido.
-PyVis, HTML, exportación y frontend continúan fuera del alcance.
+
+## Red jurídica — Fase 11C
+
+```text
+HpnGraphProjection única
+        ↓ reducción sin identificadores
+VisualGraph inmutable + aliases efímeros
+        ↓ hilo con capacidad limitada
+PyVis nuevo por respuesta + recursos locales
+        ↓ plantilla Jinja controlada
+HTML en memoria + validación de tamaño y seguridad
+```
+
+El renderer no vuelve a consultar SQLite, no reconstruye NetworkX y no
+persiste proyecciones ni HTML. PyVis se usa para materializar nodos, aristas y
+opciones visuales cerradas; la plantilla pública es propia del proyecto. Los
+recursos de vis-network se leen del paquete local y se incorporan inline, sin
+CDN ni fallback remoto.
+
+Antes de incorporarlos, el renderer elimina metadata remota, el source map y
+la rama heredada de compatibilidad que construía scripts. Después normaliza
+entidades y escapes para auditar esquemas ocultos. El CSS solo admite los PNG
+`data:` incluidos por el paquete; no admite imports, fuentes remotas ni otros
+esquemas. El único URI técnico conservado es el namespace SVG utilizado por
+`createElementNS`, que no representa una solicitud de red.
+
+El HTML solo contiene aliases `n-####` y `e-####`, labels reducidas, estados
+cerrados, conteos y advertencias fijas. Una CSP con nonce por respuesta limita
+scripts y estilos inline controlados y deshabilita conexiones, objetos,
+formularios y navegación no requerida. La página es de solo lectura,
+compatible con un futuro iframe restringido y exige revisión profesional. No
+existe todavía frontend, caché ni persistencia gráfica.
+
+La versión fijada de vis-network asigna el contenido de los tooltips con
+`innerText` y no crea bloques `<style>` dinámicos ni usa `eval`, `new Function`
+o `document.write`; el renderer falla de forma cerrada si esas propiedades del
+bundle cambian. Las relaciones paralelas se separan mediante curvaturas fijas
+y deterministas, sin aceptar estilos desde los datos HPN.
+
+## Arquitectura frontend — Fases 11D-0 y 11D-1
+
+11D-0 define documentalmente una arquitectura feature-based, un shell
+responsive para móvil, tableta, escritorio y pantalla amplia, y un sistema de
+diseño por capas de tokens, primitivas, patrones y componentes de dominio. La
+propuesta separa estado remoto, formularios, UI, preferencias, sesión local y
+notificaciones; prohíbe persistir contenido jurídico en el navegador y exige
+una alternativa textual accesible al grafo.
+
+La integración futura de PyVis deberá usar un iframe restringido, operación
+offline y controles fuera del documento embebido. El documento rector,
+incluidos los criterios de cierre y la secuencia 11D-0 a 11D-5, es
+[`frontend-product-architecture.md`](frontend-product-architecture.md).
+
+11D-0 está completada. 11D-1 implementa un núcleo visual sin lógica de dominio:
+tokens CSS semánticos, temas light/dark/system, densidad comfortable/compact,
+primitivas, layout-primitives por contenedor, composites accesibles y patrones
+genéricos de carga y encabezado. `ProfessionalReviewNotice` se sitúa en
+`src/components` por conocer el producto jurídico, mientras `design-system`
+permanece agnóstico del dominio. Su única integración global es la carga de
+tokens y la adaptación de los estilos iniciales existentes. No hay App Shell,
+rutas nuevas, llamadas API ni almacenamiento.
+
+La API pública y su política de extensión se documentan en
+[`frontend-design-system.md`](frontend-design-system.md). La implementación
+estática de 11D-1 está completada tras auditar dependencias, contratos tipados,
+tokens, contraste calculado, responsividad estructural, accesibilidad estática,
+seguridad y CSS. La interacción y visualización real se comprobarán en 11D-5;
+11D-2 es el siguiente bloque autorizado y la Fase 11 continúa en desarrollo.

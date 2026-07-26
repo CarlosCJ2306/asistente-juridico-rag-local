@@ -23,6 +23,9 @@ def test_hpn_settings_defaults_and_boolean_rejection() -> None:
     assert configured.graph_max_edges == 1000
     assert configured.graph_max_label_length == 80
     assert configured.graph_max_components_detail == 100
+    assert configured.graph_max_html_bytes == 5_242_880
+    assert configured.graph_max_tooltip_length == 240
+    assert configured.graph_render_concurrency == 1
     with pytest.raises(ValidationError):
         Settings(_env_file=None, hpn_max_nodes_per_matrix=True)
     with pytest.raises(ValidationError):
@@ -35,6 +38,20 @@ def test_hpn_settings_defaults_and_boolean_rejection() -> None:
         Settings(_env_file=None, graph_max_edges=2001)
     with pytest.raises(ValidationError):
         Settings(_env_file=None, graph_max_components_detail=False)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_html_bytes=True)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_html_bytes=-1)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_html_bytes=20_971_521)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_max_tooltip_length=1001)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_render_concurrency=True)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_render_concurrency=0)
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, graph_render_concurrency=9)
     with pytest.raises(ValidationError):
         Settings(_env_file=None, graph_max_label_length=0)
     with pytest.raises(ValidationError):

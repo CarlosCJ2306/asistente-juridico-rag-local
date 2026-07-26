@@ -1,0 +1,7 @@
+:root {
+  --layer-base: 0;
+  --layer-sticky: 10;
+  --layer-overlay: 100;
+  --layer-dialog: 110;
+  --layer-tooltip: 120;
+}

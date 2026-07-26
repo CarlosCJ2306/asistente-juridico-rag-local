@@ -1,0 +1,14 @@
+:root {
+  --breakpoint-mobile-small: 360px;
+  --breakpoint-mobile: 480px;
+  --breakpoint-tablet: 768px;
+  --breakpoint-desktop: 1024px;
+  --breakpoint-wide: 1440px;
+  --container-compact: 24rem;
+  --container-medium: 40rem;
+  --container-expanded: 64rem;
+}
+
+/* Las custom properties documentan el contrato. CSS no permite usarlas en
+   condiciones @media/@container, por lo que cada umbral literal debe remitir
+   a esta escala y permanecer centralizado en el sistema de diseño. */

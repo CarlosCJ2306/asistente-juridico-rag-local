@@ -1,0 +1,8 @@
+.review { display: flex; align-items: flex-start; gap: var(--space-3); border: var(--border-width) solid var(--color-status-warning); border-radius: var(--radius-md); color: var(--color-text-primary); background: var(--color-status-warning-surface); }
+.reviewCompact { padding: var(--space-3); font-size: var(--font-size-sm); }
+.reviewFull { padding: var(--space-5); }
+.reviewIcon { width: var(--size-icon-md); height: var(--size-icon-md); color: var(--color-status-warning); flex: 0 0 auto; }
+.reviewContent { min-width: 0; }
+.reviewTitle { margin: 0; font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); }
+.reviewMessage { margin: var(--space-1) 0 0; line-height: var(--line-height-normal); overflow-wrap: anywhere; }
+.reviewAdditional { margin-top: var(--space-3); color: var(--color-text-secondary); }

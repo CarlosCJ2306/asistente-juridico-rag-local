@@ -1,0 +1,83 @@
+.card { border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-lg); color: var(--color-text-primary); background: var(--color-surface); overflow-wrap: anywhere; }
+.cardSm { padding: var(--space-4); }
+.cardMd { padding: var(--space-6); }
+.cardLg { padding: var(--space-8); }
+.cardElevated { box-shadow: var(--shadow-md); }
+.cardInteractive { transition: border-color var(--duration-fast) var(--easing-standard), box-shadow var(--duration-fast) var(--easing-standard); }
+.cardInteractive:focus-within { border-color: var(--color-focus-ring); box-shadow: var(--shadow-focus); }
+
+.alert { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: var(--space-3); padding: var(--space-4); border: var(--border-width) solid currentcolor; border-radius: var(--radius-md); overflow-wrap: anywhere; }
+.alertInfo { color: var(--color-status-info); background: var(--color-status-info-surface); }
+.alertSuccess { color: var(--color-status-success); background: var(--color-status-success-surface); }
+.alertWarning { color: var(--color-status-warning); background: var(--color-status-warning-surface); }
+.alertError { color: var(--color-status-danger); background: var(--color-status-danger-surface); }
+.alertIcon { width: var(--size-icon-md); height: var(--size-icon-md); margin-top: 0.1rem; }
+.alertContent { min-width: 0; }
+.alertVariantLabel { margin: 0 0 var(--space-1); color: inherit; font-size: var(--font-size-sm); font-weight: var(--font-weight-bold); }
+.alertTitle { margin: 0 0 var(--space-1); color: inherit; font-size: var(--font-size-md); font-weight: var(--font-weight-bold); }
+.alertBody { color: var(--color-text-primary); line-height: var(--line-height-normal); }
+.alertAction { align-self: start; }
+
+.dialog { --dialog-width: var(--modal-width-md); width: min(calc(100% - var(--space-8)), var(--dialog-width)); max-width: none; max-height: calc(100dvh - var(--space-8)); padding: 0; border: var(--border-width) solid var(--color-border); border-radius: var(--radius-lg); color: var(--color-text-primary); background: var(--color-surface-elevated); box-shadow: var(--shadow-lg); overflow: hidden; }
+.dialog::backdrop { background: var(--color-overlay); }
+.dialogSm { --dialog-width: var(--modal-width-sm); }
+.dialogMd { --dialog-width: var(--modal-width-md); }
+.dialogLg { --dialog-width: var(--modal-width-lg); }
+.dialogPanel { display: flex; max-height: inherit; flex-direction: column; }
+.dialogHeader { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); padding: var(--space-5) var(--space-6); border-bottom: var(--border-width) solid var(--color-border-subtle); }
+.dialogHeading { min-width: 0; }
+.dialogTitle { margin: 0; font-size: var(--font-size-xl); line-height: var(--line-height-tight); overflow-wrap: anywhere; }
+.dialogDescription { margin: var(--space-2) 0 0; color: var(--color-text-secondary); line-height: var(--line-height-normal); overflow-wrap: anywhere; }
+.dialogBody { min-height: 0; padding: var(--space-6); overflow: auto; overscroll-behavior: contain; }
+.dialogFooter { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-3); padding: var(--space-4) var(--space-6); border-top: var(--border-width) solid var(--color-border-subtle); }
+
+.drawer { position: fixed; width: var(--drawer-width); max-width: none; max-height: 100dvh; height: 100dvh; margin: 0; border-radius: 0; }
+.drawerStart { inset: 0 auto 0 0; border-width: 0 var(--border-width) 0 0; }
+.drawerEnd { inset: 0 0 0 auto; border-width: 0 0 0 var(--border-width); }
+.drawerBottom { inset: auto 0 0; width: 100%; height: min(75dvh, 40rem); border-width: var(--border-width) 0 0; border-radius: var(--radius-lg) var(--radius-lg) 0 0; }
+
+.tabs { min-width: 0; }
+.tabList { display: flex; max-width: 100%; gap: var(--space-1); border-bottom: var(--border-width) solid var(--color-border-subtle); overflow-x: auto; scrollbar-width: thin; }
+.tabListVertical { width: min(100%, 16rem); flex-direction: column; border-right: var(--border-width) solid var(--color-border-subtle); border-bottom: 0; overflow-x: visible; }
+.tab { min-width: max-content; min-height: var(--size-touch-target); padding: var(--space-2) var(--space-4); border: 0; border-bottom: var(--border-width-strong) solid transparent; color: var(--color-text-secondary); background: transparent; font: inherit; font-weight: var(--font-weight-semibold); cursor: pointer; }
+.tab:hover:not(:disabled) { color: var(--color-text-primary); background: var(--color-action-ghost-hover); }
+.tab:focus-visible { outline: var(--border-width-strong) solid var(--color-focus-ring); outline-offset: -2px; }
+.tabSelected { color: var(--color-action-text); border-bottom-color: currentcolor; }
+.tab:disabled { color: var(--color-text-disabled); cursor: not-allowed; }
+.tabPanel { padding-block: var(--space-5); outline: none; }
+.tabPanel:focus-visible { outline: var(--border-width-strong) solid var(--color-focus-ring); outline-offset: 2px; }
+
+.tooltipAnchor { position: relative; display: inline-flex; max-width: 100%; }
+.tooltip { position: absolute; z-index: var(--layer-tooltip); width: max-content; max-width: min(18rem, calc(100vw - var(--space-8))); padding: var(--space-2) var(--space-3); border-radius: var(--radius-sm); color: var(--color-surface); background: var(--color-text-primary); box-shadow: var(--shadow-md); font-size: var(--font-size-sm); line-height: var(--line-height-normal); overflow-wrap: anywhere; pointer-events: none; }
+.tooltipTop { bottom: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%); }
+.tooltipBottom { top: calc(100% + var(--space-2)); left: 50%; transform: translateX(-50%); }
+.tooltipStart { top: 50%; right: calc(100% + var(--space-2)); transform: translateY(-50%); }
+.tooltipEnd { top: 50%; left: calc(100% + var(--space-2)); transform: translateY(-50%); }
+
+.skeleton { display: block; min-height: 1rem; border-radius: var(--radius-sm); background: linear-gradient(90deg, var(--color-surface-subtle), var(--color-border-subtle), var(--color-surface-subtle)); background-size: 200% 100%; animation: shimmer 1.4s linear infinite; }
+@keyframes shimmer { to { background-position-x: -200%; } }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; background: var(--color-surface-subtle); } }
+
+.state { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-3); max-width: var(--content-width-reading); padding: var(--space-6); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-lg); background: var(--color-surface); }
+.stateCentered { align-items: center; margin-inline: auto; text-align: center; }
+.stateTitle { margin: 0; font-size: var(--font-size-xl); line-height: var(--line-height-tight); }
+.stateDescription { margin: 0; color: var(--color-text-secondary); line-height: var(--line-height-relaxed); overflow-wrap: anywhere; }
+.stateIcon { width: var(--size-icon-lg); height: var(--size-icon-lg); color: var(--color-text-secondary); }
+
+.field { display: flex; flex-direction: column; gap: var(--space-2); min-width: 0; }
+.fieldLabel { color: var(--color-text-primary); font-weight: var(--font-weight-semibold); line-height: var(--line-height-normal); }
+.fieldRequired { color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-regular); }
+.fieldDescription { margin: 0; color: var(--color-text-secondary); font-size: var(--font-size-sm); line-height: var(--line-height-normal); }
+.fieldMessage { display: flex; justify-content: space-between; gap: var(--space-3); min-height: 1.25rem; font-size: var(--font-size-sm); line-height: var(--line-height-normal); }
+.fieldError { color: var(--color-status-danger); }
+.fieldSuccess { color: var(--color-status-success); }
+.fieldCounter { margin-inline-start: auto; color: var(--color-text-secondary); white-space: nowrap; }
+
+@media (max-width: 479px) {
+  .dialog { width: 100%; max-width: none; max-height: 100dvh; height: 100dvh; border-width: 0; border-radius: 0; }
+  .dialogHeader, .dialogBody, .dialogFooter { padding-inline: var(--space-4); }
+  .drawer { width: min(90vw, var(--drawer-width)); border-width: 0 var(--border-width) 0 0; }
+  .drawerEnd { border-width: 0 0 0 var(--border-width); }
+  .drawerBottom { width: 100%; height: min(80dvh, 40rem); border-width: var(--border-width) 0 0; }
+  .tooltipStart, .tooltipEnd { top: calc(100% + var(--space-2)); right: auto; left: 0; transform: none; }
+}

@@ -1,0 +1,74 @@
+:root,
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-canvas: #111713;
+  --color-surface: #18211b;
+  --color-surface-subtle: #202b24;
+  --color-surface-elevated: #253129;
+  --color-surface-disabled: #202822;
+  --color-text-primary: #f2f6f3;
+  --color-text-secondary: #c0cbc3;
+  --color-text-disabled: #8c9a91;
+  --color-text-on-action: #ffffff;
+  --color-border: #67756c;
+  --color-border-subtle: #3d4b42;
+  --color-border-strong: #aab7ae;
+  --color-action-primary: #337e58;
+  --color-action-primary-hover: #2f7652;
+  --color-action-text: #83d6a8;
+  --color-action-secondary: #253129;
+  --color-action-secondary-hover: #303e35;
+  --color-action-ghost-hover: #29362e;
+  --color-action-danger: #bd5555;
+  --color-action-danger-hover: #b44d4d;
+  --color-focus-ring: #7db7eb;
+  --color-overlay: rgb(0 0 0 / 72%);
+  --color-status-info: #9cc9f2;
+  --color-status-info-surface: #1c354c;
+  --color-status-success: #83d6a8;
+  --color-status-success-surface: #163b28;
+  --color-status-warning: #f2cf6b;
+  --color-status-warning-surface: #45380f;
+  --color-status-danger: #f2a0a0;
+  --color-status-danger-surface: #4b2020;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-canvas: #111713;
+    --color-surface: #18211b;
+    --color-surface-subtle: #202b24;
+    --color-surface-elevated: #253129;
+    --color-surface-disabled: #202822;
+    --color-text-primary: #f2f6f3;
+    --color-text-secondary: #c0cbc3;
+    --color-text-disabled: #8c9a91;
+    --color-text-on-action: #ffffff;
+    --color-border: #67756c;
+    --color-border-subtle: #3d4b42;
+    --color-border-strong: #aab7ae;
+    --color-action-primary: #337e58;
+    --color-action-primary-hover: #2f7652;
+    --color-action-text: #83d6a8;
+    --color-action-secondary: #253129;
+    --color-action-secondary-hover: #303e35;
+    --color-action-ghost-hover: #29362e;
+    --color-action-danger: #bd5555;
+    --color-action-danger-hover: #b44d4d;
+    --color-focus-ring: #7db7eb;
+    --color-overlay: rgb(0 0 0 / 72%);
+    --color-status-info: #9cc9f2;
+    --color-status-info-surface: #1c354c;
+    --color-status-success: #83d6a8;
+    --color-status-success-surface: #163b28;
+    --color-status-warning: #f2cf6b;
+    --color-status-warning-surface: #45380f;
+    --color-status-danger: #f2a0a0;
+    --color-status-danger-surface: #4b2020;
+  }
+}

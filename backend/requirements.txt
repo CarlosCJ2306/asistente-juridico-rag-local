@@ -7,5 +7,5 @@ alembic
 python-multipart
 orjson
 pymupdf
-networkx
-pyvis
+networkx>=3.6,<4.0
+pyvis==0.3.2

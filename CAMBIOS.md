@@ -372,8 +372,7 @@ fuentes utilizadas por las respuestas RAG.
   cerrados y los errores internos de importación no se confunden con ausencia
   de NetworkX.
 - **Alcance:** sin API, PyVis, HTML, frontend, caché ni persistencia gráfica.
-- **Estado:** Fase 11 en desarrollo; bloque 11A en validación. Próximo bloque:
-  11B — contratos y API JSON.
+- **Estado:** bloque 11A completado dentro de la Fase 11 en desarrollo.
 
 ## 2026-07-25 — Fase 11B: Contratos y API JSON
 
@@ -389,5 +388,131 @@ fuentes utilizadas por las respuestas RAG.
   reutilización segura de `request_id`.
 - **Alcance:** sin PyVis, HTML, exportación, frontend, caché ni persistencia
   gráfica.
-- **Estado:** Fase 11 en desarrollo; 11A completada y 11B implementada en
-  validación. Próximo bloque: 11C — exportación PyVis segura.
+- **Estado:** bloques 11A y 11B completados dentro de la Fase 11 en desarrollo.
+
+## 2026-07-25 — Fase 11C: Exportación PyVis segura
+
+- **Añadido:** `GET /api/hpn/matrices/{matrix_id}/graph/export` genera una
+  visualización HTML completamente en memoria desde una única
+  `HpnGraphProjection`.
+- **Privacidad:** DTO visual inmutable con aliases efímeros deterministas, sin
+  UUID HPN, statements, rationales, referencias documentales, rutas ni objetos
+  NetworkX.
+- **Operación local:** PyVis 0.3.2 usa recursos vis-network locales embebidos,
+  sin CDN, red, archivos temporales o persistencia de HTML.
+- **Seguridad:** plantilla Jinja controlada, serialización JSON segura, estilos
+  y opciones cerrados, CSP con nonce criptográfico y cabeceras restrictivas.
+- **Límites:** tamaño del DTO y HTML, longitud de tooltip y concurrencia de
+  render configurables; PyVis se ejecuta fuera del event loop con capacidad
+  limitada.
+- **Estado:** Fase 11 continúa en desarrollo; 11C implementada y en validación.
+  Próximo bloque: 11D — frontend y accesibilidad.
+
+## 2026-07-26 — Auditoría de seguridad de Fase 11C
+
+- **Recursos offline:** se retiraron del bundle público la metadata con URLs,
+  `sourceMappingURL` y una rama heredada que construía scripts y utilizaba el
+  esquema `javascript:`. El namespace SVG requerido por vis-network se conserva
+  como dato técnico no navegable y se valida de forma cerrada.
+- **Validación fail-closed:** CSS y JavaScript locales se inspeccionan después
+  de normalizar entidades y escapes; CSS solo admite imágenes PNG `data:`
+  incluidas en el paquete y rechaza imports, fuentes y esquemas externos.
+- **Tooltips y XSS:** la versión fijada de vis-network debe conservar la
+  asignación mediante `innerText`; un cambio a interpretación HTML impide el
+  render. El DTO visual ya no conserva markup de tooltip precompuesto.
+- **Multiaristas:** las relaciones paralelas reciben curvaturas cerradas y
+  deterministas para evitar superposición visual sin alterar sus datos.
+- **Pruebas:** se amplió la cobertura de importación diferida, CSP y nonce,
+  serialización de secuencias problemáticas, límites UTF-8, event loops,
+  recursos locales, aliases, errores y ausencia de archivos residuales.
+- **Estado:** 11C permanece implementada y en validación; Fase 11 continúa en
+  desarrollo y 11D — frontend y accesibilidad — sigue como próximo bloque.
+
+## 2026-07-26 — Fase 11D-0: planificación de producto frontend
+
+- Se detuvo la implementación directa del frontend para definir primero una
+  arquitectura de producto, UX/UI, sistema de diseño y estrategia responsive.
+- Se creó el documento rector `docs/frontend-product-architecture.md` con la
+  arquitectura de información, shell, capas de componentes, reglas React,
+  estado asíncrono, sesión local, chat temporal, notificaciones, preferencias,
+  accesibilidad, privacidad e integración futura de la red jurídica.
+- La Fase 11 se dividió documentalmente en 11D-0 a 11D-5, con objetivo,
+  alcance, exclusiones, entregables, dependencias, riesgos, pruebas y criterio
+  de cierre para cada bloque.
+- 11A y 11B permanecen completadas. 11C queda completada en su alcance de
+  backend y seguridad; su integración real en navegador se verificará en
+  11D-5.
+- **Estado:** la Fase 11 continúa en desarrollo. 11D-0 es el único bloque
+  autorizado; 11D-1 no está autorizado todavía.
+- **Alcance:** cambio exclusivamente documental; no se implementaron páginas,
+  componentes, estilos, dependencias, autenticación ni almacenamiento de
+  contenido jurídico en el navegador.
+
+## 2026-07-26 — Fase 11D-1: Design System y componentes base
+
+- **Fundamentos:** tokens CSS semánticos para color, tipografía, espacio,
+  tamaños, radios, sombras, capas, movimiento, breakpoints y contenedores.
+- **Personalización:** temas light, dark y system, junto con densidad
+  comfortable y compact, sin persistir preferencias.
+- **Primitivas y layout:** botones, controles nativos, estados, tipografía,
+  superficies, Container, Stack, Inline, ResponsiveGrid y Cluster.
+- **Componentes:** Card, Alert, Modal y Drawer basados en `<dialog>`, Tabs con
+  patrón ARIA, Tooltip textual, Skeleton, EmptyState, ErrorState y FormField.
+- **Patrones:** AsyncContent con estados cerrados, PageHeader responsive y
+  ProfessionalReviewNotice con mensaje esencial invariable.
+- **Accesibilidad y seguridad:** foco visible, teclado, retorno de foco,
+  reduced motion, objetivos táctiles, texto React sin HTML interpretado y
+  ausencia de API, almacenamiento, telemetría o recursos remotos.
+- **Documentación:** se creó `docs/frontend-design-system.md` y se enlazó con
+  la arquitectura de producto.
+- **Validación disponible:** ESLint y build con TypeScript estricto aprobados.
+  El proyecto no declara Vitest ni React Testing Library, por lo que no se
+  instalaron dependencias ni se afirmaron pruebas de interacción inexistentes.
+- **Estado:** 11D-0 completada; 11D-1 implementada y en validación; 11D-2
+  pendiente. La Fase 11 continúa en desarrollo.
+- **Fuera de alcance:** App Shell, sidebar, topbar, páginas, cliente API
+  compartido, notificaciones globales, documentos, búsqueda, chat, HPN, red
+  jurídica, sesión real, cuentas, autenticación y backend.
+
+## 2026-07-26 — Corrección estructural de Fase 11D-1
+
+- **Ambigüedad resuelta:** los componentes genéricos compuestos del Design
+  System se trasladaron de `design-system/components` a
+  `design-system/composites`.
+- **Layout:** las primitivas Container, Stack, Inline, ResponsiveGrid y Cluster
+  pasaron de `design-system/layout` a `design-system/layout-primitives`; la
+  carpeta superior `src/layouts` queda reservada para composición futura.
+- **Utilidades internas:** `design-system/utils` se renombró a
+  `design-system/internal` y dejó de formar parte de cualquier API pública.
+- **Componente de producto:** `ProfessionalReviewNotice` se trasladó a
+  `src/components/ProfessionalReviewNotice`, con export público desde
+  `src/components`; el Design System ya no lo importa ni lo reexporta.
+- **Dependencias:** `components → design-system` es válida; la dirección
+  inversa y los imports desde `design-system/internal` fuera del núcleo quedan
+  prohibidos. Las features futuras consumirán componentes propios desde
+  `features/<feature>/components`.
+- **Compatibilidad:** se actualizaron imports, CSS Modules y exports reales;
+  no se dejaron aliases, reexports de rutas antiguas ni archivos duplicados.
+- **Estado:** 11D-0 completada; 11D-1 implementada y en validación; 11D-2
+  pendiente. La Fase 11 continúa en desarrollo.
+
+## 2026-07-26 — Auditoría estática de Fase 11D-1
+
+- **Contratos React:** `FormField`, `Alert`, `AsyncContent`, `Modal` y `Drawer`
+  impiden combinaciones incompatibles mediante tipos discriminados; los
+  controles conservan `aria-invalid` y los iconos fijan su semántica accesible.
+- **Interacción estructural:** `Tabs` conserva IDs ARIA estables y roving
+  tabindex ante reordenamientos; Modal y Drawer sincronizan el evento nativo de
+  cierre, restauran foco y exigen una razón accesible cuando bloquean el cierre.
+- **Responsive y temas:** se corrigieron la container query de `PageHeader`, el
+  tamaño grande de Modal, los objetivos de 44 px en densidad compacta y los
+  tokens de borde, acción y peligro que fallaban el contraste calculado.
+- **Seguridad y estructura:** sin rutas antiguas activas, ciclos evidentes,
+  llamadas de red, almacenamiento del navegador, HTML interpretado, colores
+  fuera de tokens ni referencias CSS inválidas.
+- **Validación:** ESLint, TypeScript estricto y build Vite aprobados. No existen
+  Vitest ni React Testing Library; teclado, foco, Escape, lector de pantalla,
+  responsive visual, zoom al 200 % y contraste renderizado se difieren a
+  11D-5.
+- **Estado:** 11D-1 completada en implementación estática; 11D-2 es el
+  siguiente bloque autorizado. La Fase 11 continúa en desarrollo.

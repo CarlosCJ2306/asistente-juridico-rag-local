@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Red jurídica estructural</title>
+  <style nonce="{{ nonce }}">
+__CONTROLLED_VIS_NETWORK_CSS__
+    :root { color-scheme: light; font-family: Arial, sans-serif; color: #0f172a; }
+    body { margin: 0; background: #f8fafc; }
+    main { display: grid; gap: 1rem; padding: 1rem; }
+    .notice { border: 2px solid #0f766e; background: #f0fdfa; padding: .75rem; }
+    .readonly { border-left: 4px solid #475569; padding-left: .75rem; }
+    .summary, .legend, .warnings { background: #fff; border: 1px solid #cbd5e1; padding: .75rem; }
+    .legend ul, .warnings ul { margin: .5rem 0 0; padding-left: 1.25rem; }
+    #legal-graph { width: 100%; height: 70vh; min-height: 420px; border: 1px solid #94a3b8; background: #fff; }
+    .empty { display: grid; min-height: 18rem; place-items: center; border: 1px solid #94a3b8; background: #fff; text-align: center; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <h1>Red jurídica estructural</h1>
+      <p class="notice"><strong>Visualización estructural de apoyo.</strong>
+        No constituye una decisión ni una conclusión jurídica.
+        Requiere revisión profesional.</p>
+      {% if read_only %}<p class="readonly">Matriz archivada: visualización de solo lectura.</p>{% endif %}
+    </header>
+    <section class="summary" aria-label="Resumen estructural">
+      <strong>Resumen:</strong>
+      {{ summary.node_count }} nodos; {{ summary.edge_count }} aristas;
+      {{ summary.disconnected_components }} componentes.
+    </section>
+    <section class="legend" aria-label="Leyenda estructural">
+      <strong>Leyenda de categorías estructurales</strong>
+      <ul>
+        <li>Nodos: hecho, prueba y norma.</li>
+        <li>Relaciones: apoyo, contradicción, aplicación y límite registrados manualmente.</li>
+        <li>Los colores y formas distinguen categorías; no expresan valor jurídico.</li>
+      </ul>
+    </section>
+    {% if warning_messages %}
+    <section class="warnings" aria-label="Advertencias estructurales">
+      <strong>Advertencias</strong>
+      <ul>{% for warning in warning_messages %}<li>{{ warning }}</li>{% endfor %}</ul>
+    </section>
+    {% endif %}
+    {% if is_empty %}
+    <section class="empty" aria-label="Red vacía"><p>La matriz no contiene nodos visibles.<br>0 nodos y 0 aristas.</p></section>
+    {% else %}
+    <div id="legal-graph" role="img" aria-label="Visualización interactiva de la red jurídica estructural"></div>
+    {% endif %}
+  </main>
+  {% if not is_empty %}
+  <script nonce="{{ nonce }}">
+__CONTROLLED_VIS_NETWORK_JS__
+  </script>
+  <script nonce="{{ nonce }}">
+    "use strict";
+    const graphData = {{ graph_data | tojson }};
+    const graphOptions = {{ graph_options | tojson }};
+    const container = document.getElementById("legal-graph");
+    const data = {nodes: new vis.DataSet(graphData.nodes), edges: new vis.DataSet(graphData.edges)};
+    const network = new vis.Network(container, data, graphOptions);
+  </script>
+  {% endif %}
+</body>
+</html>

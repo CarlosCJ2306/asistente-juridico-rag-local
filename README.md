@@ -346,10 +346,14 @@ necesarios para diagnóstico. Consulta [logging](docs/logging.md).
 
 Las Fases 0 a 9 están completadas. La Fase 9 implementa citas estructurales en
 `POST /api/chat/rag` y fue validada integralmente. La Matriz HPN manual de la
-Fase 10 está completada. La Fase 11 está en desarrollo: 11A está completada
-con el dominio estructural de solo lectura en NetworkX y 11B expone su API JSON
-en validación.
-El proyecto continúa sin PyVis, HTML, exportación o frontend de red,
+Fase 10 está completada. La Fase 11 está en desarrollo: 11A y 11B están
+completadas, y 11C está completada en su alcance de backend y seguridad para la
+exportación PyVis segura en memoria. La integración real en navegador se
+verificará en 11D-5. 11D-0 y la implementación estática de 11D-1 están
+completadas; su validación interactiva y visual se difiere a 11D-5. 11D-2 es
+el siguiente bloque autorizado. Todavía no existe App Shell
+ni una interfaz funcional de los dominios jurídicos.
+El proyecto continúa sin frontend de red,
 simulación, reranking, historial persistente, OCR, autenticación, streaming,
 Docker ni despliegue.
 ### Cierre de la Fase 6
@@ -546,9 +550,10 @@ Ejemplo sintético de creación:
 {"title":"Análisis manual sintético","description":"Espacio revisable"}
 ```
 
-La Fase 10 y el servicio NetworkX de solo lectura de 11A están completados. La
-API JSON de 11B está implementada y en validación; PyVis, visualización de
-grafos, simulación, generación automática de HPN y frontend no están
+La Fase 10, el servicio NetworkX de solo lectura de 11A y la API JSON de 11B
+están completados. La exportación PyVis de 11C está completada en su alcance de
+backend y seguridad; su integración real en navegador se verificará en 11D-5.
+Simulación, generación automática de HPN y frontend profesional no están
 implementados.
 La instrumentación del centinela de disposición es diagnóstica y no bloqueante.
 
@@ -561,6 +566,34 @@ no representan conclusiones jurídicas, relevancia ni causalidad.
 
 La API de solo lectura `GET /api/hpn/matrices/{matrix_id}/graph` devuelve una
 proyección estructural tipada y exige revisión profesional; no representa una
-conclusión jurídica automática. Todavía no existen PyVis, HTML, exportación ni
-frontend de red. El siguiente bloque previsto es 11C — exportación PyVis
-segura.
+conclusión jurídica automática.
+
+11C añade `GET /api/hpn/matrices/{matrix_id}/graph/export`. El endpoint genera
+HTML enteramente en memoria desde esa proyección, incorpora PyVis y
+vis-network desde recursos locales, no usa CDN ni guarda archivos. Los UUID
+HPN se sustituyen por aliases efímeros dentro de cada respuesta. Una plantilla
+controlada fija estilos, opciones, leyenda y advertencias; el HTML se entrega
+con CSP estricta basada en nonce, `no-store`, `nosniff` y política de permisos
+restrictiva. La matriz archivada se visualiza en modo de solo lectura y una
+matriz vacía devuelve una página segura sin inicializar vis-network.
+
+La auditoría de 11C valida el contenido real de los recursos embebidos, elimina
+metadata remota, source maps y ramas heredadas incompatibles con la política de
+scripts. Solo se permiten imágenes PNG `data:` incluidas en el CSS local. Los
+tooltips permanecen como texto mediante `innerText`; las multiaristas usan
+curvas deterministas y ninguna de estas categorías implica valoración jurídica.
+
+No existe todavía frontend de red. 11D-0 y la implementación estática de
+11D-1 están completadas; 11D-2 es el siguiente bloque autorizado. La
+validación interactiva y visual permanece diferida a 11D-5. Las decisiones
+rectoras y la secuencia completa se documentan en
+[`docs/frontend-product-architecture.md`](docs/frontend-product-architecture.md),
+y la API visual disponible en
+[`docs/frontend-design-system.md`](docs/frontend-design-system.md).
+
+11D-1 incorpora tokens semánticos, temas light/dark/system, densidad,
+primitivas, layouts, componentes accesibles y patrones como `AsyncContent`,
+`PageHeader`. `ProfessionalReviewNotice` se ubica en `src/components` como
+componente compartido del producto jurídico, construido sobre el Design System.
+No se añaden dependencias, páginas, navegación de producto, cliente API
+compartido, autenticación ni persistencia de preferencias.

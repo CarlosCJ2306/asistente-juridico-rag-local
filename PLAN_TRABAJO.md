@@ -1,6 +1,6 @@
 # Plan de trabajo — Asistente Jurídico RAG Local
 
-**Última actualización:** 2026-07-25
+**Última actualización:** 2026-07-26
 
 ## Objetivo general
 
@@ -35,8 +35,10 @@ conclusión requiere revisión y criterio de un profesional competente.
 - Embeddings locales completados: `multilingual-e5-small`, reutilizados por el
   índice semántico reconstruible.
 - Extracción documental con PyMuPDF completada.
-- Dominio estructural de red jurídica y API JSON de solo lectura implementados
-  en 11A y 11B; PyVis y visualización permanecen en bloques posteriores.
+- Dominio estructural NetworkX y API JSON de solo lectura completados en 11A y
+  11B; exportación PyVis segura, local y en memoria completada en su alcance de
+  backend y seguridad en 11C. La integración real en navegador se verificará
+  en 11D-5.
 
 ## Fases
 
@@ -53,7 +55,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Completada | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
 | 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Completada | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias estructurales verificables y revalidadas. |
 | 10 | Matriz HPN | Modelar relaciones entre hechos, pruebas y normas. | Completada | Fase 2 y Fase 9 | Relaciones revisables por el profesional. |
-| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A completada; 11B implementada y en validación | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
+| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A, 11B y alcance backend/seguridad de 11C completados; 11D-0 y alcance estático de 11D-1 completados | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
 | 12 | Simulación | Explorar escenarios preliminares sobre la red jurídica. | Pendiente | Fase 11 | Resultados explicables y sujetos a revisión profesional. |
 | 13 | OCR | Incorporar reconocimiento óptico para documentos que lo requieran. | Pendiente | Fase 3 | Flujo OCR controlado, medido y trazable. |
 | 14 | Búsqueda web controlada | Añadir fuentes web bajo controles explícitos. | Pendiente | Fase 9 | Origen, fecha y trazabilidad de cada fuente externa. |
@@ -180,8 +182,30 @@ impide que la matriz cumpla `valid_for_review`.
 
 ## Próximo paso autorizado
 
-Fase 11C — Exportación PyVis segura. La Fase 11 permanece en desarrollo; 11A
-está completada y 11B implementa la API JSON en validación. El dominio NetworkX
-es de solo lectura y la API expone únicamente
-`GET /api/hpn/matrices/{matrix_id}/graph`. PyVis, HTML, frontend, caché y
-persistencia gráfica continúan fuera del alcance.
+**Próximo paso autorizado: Fase 11D-2 — Documentos, recuperación y estado del
+sistema.** La Fase 11 permanece en desarrollo. 11A y 11B están completadas;
+11C está completada en su alcance de backend y seguridad; 11D-0 y la
+implementación estática de 11D-1 están completadas. La validación interactiva
+y visual de 11D-1 y la integración real de PyVis en navegador quedan diferidas
+explícitamente a 11D-5.
+
+La secuencia prevista de 11D es:
+
+| Bloque | Objetivo resumido | Estado |
+| --- | --- | --- |
+| 11D-0 | Arquitectura de producto, UX/UI, sistema de diseño y responsividad. | Completada |
+| 11D-1 | Design System y componentes base. | Completada en implementación estática; validación interactiva y visual diferida a 11D-5 |
+| 11D-2 | Documentos, recuperación y estado del sistema. | Pendiente; siguiente bloque autorizado |
+| 11D-3 | Chat RAG y citas. | Pendiente; no autorizado |
+| 11D-4 | Matriz HPN. | Pendiente; no autorizado |
+| 11D-5 | Red jurídica, integración PyVis y validación integral en navegador. | Pendiente; no autorizado |
+
+Los alcances, exclusiones, entregables, dependencias, riesgos, pruebas y
+criterios de cierre de cada bloque se definen en
+[`docs/frontend-product-architecture.md`](docs/frontend-product-architecture.md).
+
+La estructura de 11D-1 diferencia núcleo visual genérico (`design-system`),
+componentes compartidos del producto jurídico (`components`), features,
+layouts y utilidades neutrales. `ProfessionalReviewNotice` pertenece a
+`components`; `composites`, `layout-primitives` e `internal` pertenecen al
+núcleo y este último no se expone públicamente.

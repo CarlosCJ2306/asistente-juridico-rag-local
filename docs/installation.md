@@ -298,12 +298,24 @@ solo a esa copia, valida CRUD, fuentes, fingerprint, estados, relaciones,
 revisión, borrado lógico y persistencia tras reinicio, y comprueba que la base
 original conserva sus conteos. No carga Qwen o embeddings ni reconstruye FTS5
 o ChromaDB.
-## Dependencias de red jurídica — Fase 11A y 11B
+## Dependencias de red jurídica — Fase 11A, 11B y 11C
 
 NetworkX se utiliza bajo demanda para construir una proyección estructural HPN
 en memoria. La aplicación no debe importar ni requerir la dependencia hasta
 invocar el servicio. La API JSON de solo lectura disponible es
 `GET /api/hpn/matrices/{matrix_id}/graph`; no carga modelos ni genera archivos.
-PyVis, HTML y exportación no forman parte de este bloque.
+La exportación visual `GET /api/hpn/matrices/{matrix_id}/graph/export` importa
+PyVis de forma diferida y devuelve HTML en memoria. Las dependencias base fijan
+`networkx>=3.6,<4.0` y `pyvis==0.3.2`.
 
-La proyección no crea archivos ni modifica SQLite, FTS5 o ChromaDB.
+La proyección y la exportación no crean archivos ni modifican SQLite, FTS5 o
+ChromaDB. Los recursos de vis-network proceden del paquete local instalado, se
+incorporan inline y no usan CDN o descargas durante la petición. Los límites
+se configuran con `GRAPH_MAX_HTML_BYTES`, `GRAPH_MAX_TOOLTIP_LENGTH` y
+`GRAPH_RENDER_CONCURRENCY`. La Fase 11 continúa en desarrollo; el próximo
+bloque es 11D — frontend y accesibilidad.
+
+La validación del renderer inspecciona el JavaScript y CSS reales del paquete
+fijado. Un recurso ausente, un escape de la ruta del paquete, un source map, una
+referencia remota o un esquema no autorizado produce `GRAPH_RENDER_FAILED`; no
+se intenta descargar ni sustituir el recurso.

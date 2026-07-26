@@ -397,7 +397,7 @@ def test_graph_api_preserves_hpn_error_and_rejects_invalid_uuid(
     assert len(state["calls"]) == calls_before_invalid
 
 
-def test_graph_api_has_no_status_or_export_and_uses_route_template_logging(
+def test_graph_api_has_no_status_and_uses_route_template_logging(
     graph_api: tuple[TestClient, dict[str, Any]], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     client, _ = graph_api
@@ -410,7 +410,6 @@ def test_graph_api_has_no_status_or_export_and_uses_route_template_logging(
     matrix_id = str(_uuid(1))
     assert client.get(f"/api/hpn/matrices/{matrix_id}/graph").status_code == 200
     assert client.get(f"/api/hpn/matrices/{matrix_id}/graph/status").status_code == 404
-    assert client.get(f"/api/hpn/matrices/{matrix_id}/graph/export").status_code == 404
     assert matrix_id not in repr(captured)
     assert any(
         context.get("path") == "/api/hpn/matrices/{matrix_id}/graph"
@@ -564,7 +563,7 @@ def test_graph_api_openapi_is_typed_and_route_delegates_only_to_graph_service(
     assert "no representa conclusiones jurídicas automáticas" in description
     paths = client.get("/openapi.json").json()["paths"]
     assert "/api/hpn/matrices/{matrix_id}/graph/status" not in paths
-    assert "/api/hpn/matrices/{matrix_id}/graph/export" not in paths
+    assert "/api/hpn/matrices/{matrix_id}/graph/export" in paths
     serialized_operation = repr(operation).lower()
     assert "pyvis" not in serialized_operation
     assert "frontend" not in serialized_operation
