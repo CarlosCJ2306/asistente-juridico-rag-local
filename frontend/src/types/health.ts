@@ -1,4 +1,4 @@
 export interface HealthResponse {
-  status: "ok";
-  service: "asistente-juridico-backend";
+  readonly status: "ok";
+  readonly service: "asistente-juridico-backend";
 }

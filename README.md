@@ -350,9 +350,13 @@ Fase 10 está completada. La Fase 11 está en desarrollo: 11A y 11B están
 completadas, y 11C está completada en su alcance de backend y seguridad para la
 exportación PyVis segura en memoria. La integración real en navegador se
 verificará en 11D-5. 11D-0 y la implementación estática de 11D-1 están
-completadas; su validación interactiva y visual se difiere a 11D-5. 11D-2 es
-el siguiente bloque autorizado. Todavía no existe App Shell
-ni una interfaz funcional de los dominios jurídicos.
+completadas; su validación interactiva y visual se difiere a 11D-5. 11D-2
+implementa el App Shell, la navegación y los layouts responsive y está
+completada en alcance estático. 11D-3 implementa servicios compartidos,
+sesión local, errores seguros, preferencias visuales y notificaciones en
+memoria y está completada en alcance estático; 11D-4 es el siguiente bloque
+autorizado.
+Todavía no existe una interfaz funcional de los dominios jurídicos.
 El proyecto continúa sin frontend de red,
 simulación, reranking, historial persistente, OCR, autenticación, streaming,
 Docker ni despliegue.
@@ -583,9 +587,10 @@ scripts. Solo se permiten imágenes PNG `data:` incluidas en el CSS local. Los
 tooltips permanecen como texto mediante `innerText`; las multiaristas usan
 curvas deterministas y ninguna de estas categorías implica valoración jurídica.
 
-No existe todavía frontend de red. 11D-0 y la implementación estática de
-11D-1 están completadas; 11D-2 es el siguiente bloque autorizado. La
-validación interactiva y visual permanece diferida a 11D-5. Las decisiones
+No existe todavía frontend de red. 11D-0 a 11D-3 están completadas en alcance
+estático; 11D-4 es el siguiente bloque autorizado. La validación
+interactiva y visual permanece
+diferida a 11D-5. Las decisiones
 rectoras y la secuencia completa se documentan en
 [`docs/frontend-product-architecture.md`](docs/frontend-product-architecture.md),
 y la API visual disponible en
@@ -595,5 +600,24 @@ y la API visual disponible en
 primitivas, layouts, componentes accesibles y patrones como `AsyncContent`,
 `PageHeader`. `ProfessionalReviewNotice` se ubica en `src/components` como
 componente compartido del producto jurídico, construido sobre el Design System.
-No se añaden dependencias, páginas, navegación de producto, cliente API
-compartido, autenticación ni persistencia de preferencias.
+No se añaden dependencias, páginas ni navegación de producto en 11D-1.
+
+11D-2 añade una navegación central tipada, sidebar local colapsable, topbar,
+Drawer móvil, skip link, breadcrumbs estructurales, layouts de contenido y un
+404 seguro. Solo Inicio (`/`) está activo y conserva la comprobación real de
+salud; los módulos futuros permanecen ocultos y no generan enlaces. No existen
+cuentas, notificaciones funcionales, datos simulados ni persistencia del shell.
+La auditoría estática de 11D-2 confirmó un solo router, una única fuente de
+navegación y ausencia de enlaces ocultos; corrigió el cierre del Drawer al
+entrar en escritorio, el reflow con zoom, breadcrumbs, ayuda compacta y
+landmarks neutrales. No se validó interacción real en navegador.
+
+11D-3 centraliza el cliente API nativo y la consulta de salud, normaliza errores
+sin exponer respuestas técnicas y compone Query, preferencias, sesión local y
+notificaciones mediante `AppProviders`. La sesión no implementa cuentas,
+credenciales ni tokens; `authenticated` queda reservado para el futuro y las
+capacidades de interfaz no constituyen autorización. `localStorage` admite solo
+tema, densidad y versión de esquema. Las notificaciones son efímeras y la
+conectividad del navegador se distingue de la salud del backend. Timers,
+storage bloqueado, foco, lector de pantalla y responsive visual se validarán en
+11D-5; no se añadieron flujos jurídicos ni rutas.

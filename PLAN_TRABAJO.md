@@ -55,7 +55,7 @@ conclusión requiere revisión y criterio de un profesional competente.
 | 8 | Chat RAG | Construir contexto recuperado y respuestas locales asistidas. | Completada | Fase 1 y Fase 7 | Respuestas basadas en recuperación, sin historial no autorizado. |
 | 9 | Citas y trazabilidad | Presentar fuentes, documentos y páginas que sustentan la respuesta. | Completada | Fase 3 y Fase 8 | Cada respuesta RAG muestra referencias estructurales verificables y revalidadas. |
 | 10 | Matriz HPN | Modelar relaciones entre hechos, pruebas y normas. | Completada | Fase 2 y Fase 9 | Relaciones revisables por el profesional. |
-| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A, 11B y alcance backend/seguridad de 11C completados; 11D-0 y alcance estático de 11D-1 completados | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
+| 11 | Red jurídica | Construir y visualizar relaciones jurídicas. | En desarrollo — 11A, 11B y alcance backend/seguridad de 11C completados; 11D-0 a 11D-3 completados en alcance estático | Fase 10, NetworkX, PyVis | Red local trazable sin decisiones automáticas. |
 | 12 | Simulación | Explorar escenarios preliminares sobre la red jurídica. | Pendiente | Fase 11 | Resultados explicables y sujetos a revisión profesional. |
 | 13 | OCR | Incorporar reconocimiento óptico para documentos que lo requieran. | Pendiente | Fase 3 | Flujo OCR controlado, medido y trazable. |
 | 14 | Búsqueda web controlada | Añadir fuentes web bajo controles explícitos. | Pendiente | Fase 9 | Origen, fecha y trazabilidad de cada fuente externa. |
@@ -182,11 +182,10 @@ impide que la matriz cumpla `valid_for_review`.
 
 ## Próximo paso autorizado
 
-**Próximo paso autorizado: Fase 11D-2 — Documentos, recuperación y estado del
-sistema.** La Fase 11 permanece en desarrollo. 11A y 11B están completadas;
-11C está completada en su alcance de backend y seguridad; 11D-0 y la
-implementación estática de 11D-1 están completadas. La validación interactiva
-y visual de 11D-1 y la integración real de PyVis en navegador quedan diferidas
+**Próximo paso autorizado: Fase 11D-4 — Matriz HPN.** La Fase 11 permanece en
+desarrollo. 11A, 11B, el alcance backend/seguridad de 11C y 11D-0 a 11D-3 están
+completados en su alcance estático. La validación interactiva y visual
+acumulada y la integración real de PyVis en navegador quedan diferidas
 explícitamente a 11D-5.
 
 La secuencia prevista de 11D es:
@@ -195,9 +194,9 @@ La secuencia prevista de 11D es:
 | --- | --- | --- |
 | 11D-0 | Arquitectura de producto, UX/UI, sistema de diseño y responsividad. | Completada |
 | 11D-1 | Design System y componentes base. | Completada en implementación estática; validación interactiva y visual diferida a 11D-5 |
-| 11D-2 | Documentos, recuperación y estado del sistema. | Pendiente; siguiente bloque autorizado |
-| 11D-3 | Chat RAG y citas. | Pendiente; no autorizado |
-| 11D-4 | Matriz HPN. | Pendiente; no autorizado |
+| 11D-2 | App Shell, navegación y layouts responsive; preparación estructural para documentos, recuperación y sistema. | Completada en implementación estática; validación interactiva y visual diferida a 11D-5 |
+| 11D-3 | Servicios compartidos, sesión local, errores, preferencias visuales y notificaciones en memoria. | Completada en implementación estática; validación interactiva diferida a 11D-5 |
+| 11D-4 | Matriz HPN. | Pendiente; siguiente bloque autorizado |
 | 11D-5 | Red jurídica, integración PyVis y validación integral en navegador. | Pendiente; no autorizado |
 
 Los alcances, exclusiones, entregables, dependencias, riesgos, pruebas y

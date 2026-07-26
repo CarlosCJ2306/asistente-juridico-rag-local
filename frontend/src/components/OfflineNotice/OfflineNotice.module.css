@@ -1,0 +1,11 @@
+.notice {
+  position: fixed;
+  z-index: var(--layer-sticky);
+  right: max(var(--space-4), env(safe-area-inset-right));
+  top: max(var(--space-4), env(safe-area-inset-top));
+  left: max(var(--space-4), env(safe-area-inset-left));
+  width: min(42rem, calc(100vw - var(--space-8)));
+  margin-inline: auto;
+  box-shadow: var(--shadow-md);
+  pointer-events: none;
+}

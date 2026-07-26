@@ -1,0 +1,22 @@
+.group {
+  min-width: 0;
+}
+
+.label {
+  margin: 0 0 var(--space-2);
+  padding-inline: var(--space-3);
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  font-weight: var(--font-weight-bold);
+  letter-spacing: var(--letter-spacing-label);
+  line-height: var(--line-height-normal);
+  text-transform: uppercase;
+}
+
+.list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}

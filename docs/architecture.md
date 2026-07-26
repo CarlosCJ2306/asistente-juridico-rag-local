@@ -435,5 +435,64 @@ La API pública y su política de extensión se documentan en
 [`frontend-design-system.md`](frontend-design-system.md). La implementación
 estática de 11D-1 está completada tras auditar dependencias, contratos tipados,
 tokens, contraste calculado, responsividad estructural, accesibilidad estática,
-seguridad y CSS. La interacción y visualización real se comprobarán en 11D-5;
-11D-2 es el siguiente bloque autorizado y la Fase 11 continúa en desarrollo.
+seguridad y CSS. La interacción y visualización real se comprobarán en 11D-5.
+11D-2 y 11D-3 están completadas en alcance estático; 11D-4 es el siguiente
+bloque autorizado y la Fase 11 continúa en desarrollo.
+
+### App Shell — Fase 11D-2
+
+```text
+product.config + navigation.config
+                 ↓
+AppSidebar ─ NavigationGroup ─ NavigationItem
+                 ↓ misma configuración
+Drawer móvil ─ NavigationGroup ─ NavigationItem
+                 ↓
+AppTopbar + MainContent + Router Outlet
+```
+
+El shell usa un único `<main>` y mantiene exclusivamente dos estados locales:
+sidebar compacta y Drawer abierto. La ruta `/` y su consulta de salud se
+conservan; la configuración marca el resto de módulos como ocultos para evitar
+enlaces o páginas ficticias. Títulos y breadcrumbs proceden de labels cerrados,
+nunca del pathname mostrado al usuario.
+
+`ContentLayout`, `FullWidthLayout` y `SplitPanelLayout` componen primitivas del
+Design System y no duplican su núcleo visual. No se añadieron cliente API,
+sesión, autenticación, cuentas, notificaciones, almacenamiento web ni datos de
+dominio. La auditoría cierra 11D-2 en alcance estático: el Drawer abierto se
+cierra al entrar en el breakpoint de escritorio, la configuración es readonly,
+los breadcrumbs usan separadores decorativos y los paneles no imponen
+landmarks sin título. Las comprobaciones reales de teclado, Drawer, zoom,
+responsive y lectores de pantalla pertenecen a 11D-5.
+
+### Infraestructura compartida — Fase 11D-3
+
+```text
+AppErrorBoundary
+  └─ PreferencesProvider
+      └─ SessionProvider (local, no autenticado)
+          └─ QueryProvider
+              └─ NotificationsProvider
+                  ├─ RouterProvider
+                  ├─ OfflineNotice
+                  └─ NotificationViewport
+```
+
+El cliente API es una capa nativa sin React: valida la única base configurada,
+construye URLs y parámetros cerrados, admite JSON o `FormData`, cancelación y
+timeout, y convierte fallos en categorías y mensajes seguros. La consulta
+`/api/health` usa exclusivamente esta capa. TanStack Query conserva una única
+instancia y solo reintenta una vez errores expresamente recuperables; no
+persiste caché ni respuestas.
+
+La sesión `local` no representa autenticación y no guarda usuario, token ni
+credencial. Sus capacidades son señales futuras de presentación, nunca una
+barrera de seguridad. Las preferencias aplican tema y densidad al elemento raíz
+y son la única información persistida en navegador, mediante una clave
+versionada que rechaza propiedades adicionales. Las notificaciones permanecen
+en memoria, con límites, deduplicación y cleanup de timers. El límite global de
+render y el indicador offline no registran ni muestran datos técnicos. No se
+añadieron rutas o funcionalidades jurídicas. 11D-3 queda completada en
+implementación estática, 11D-4 es el siguiente bloque autorizado y las
+comprobaciones interactivas se difieren a 11D-5.

@@ -516,3 +516,101 @@ fuentes utilizadas por las respuestas RAG.
   11D-5.
 - **Estado:** 11D-1 completada en implementación estática; 11D-2 es el
   siguiente bloque autorizado. La Fase 11 continúa en desarrollo.
+
+## 2026-07-26 — Fase 11D-2: App Shell y navegación
+
+- **Shell:** `AppLayout` integra skip link, sidebar de escritorio, topbar,
+  Drawer móvil, un único contenido principal y `Outlet` de React Router.
+- **Navegación:** configuración tipada única para agrupación, disponibilidad,
+  iconos, rutas, matching, títulos seguros y breadcrumbs. Solo Inicio está
+  activo; los ocho módulos futuros permanecen ocultos y no crean enlaces.
+- **Responsive:** navegación móvil por debajo de escritorio, sidebar local
+  expandida o compacta, targets de 44 px, scroll interno y layouts con ancho
+  controlado o container queries.
+- **Layouts:** `ContentLayout`, `FullWidthLayout` y `SplitPanelLayout` componen
+  primitivas del Design System y ofrecen variantes cerradas.
+- **Rutas:** se conserva la consulta real de salud en `/`; el comodín presenta
+  una página 404 segura sin pathname ni detalles técnicos.
+- **Privacidad:** sin cuentas, sesión, notificaciones funcionales, datos
+  simulados, llamadas API nuevas, almacenamiento web ni persistencia del shell.
+- **Estado:** 11D-2 implementada y en validación; 11D-3 permanece pendiente y
+  la Fase 11 continúa en desarrollo. La validación interactiva se difiere a
+  11D-5.
+
+## 2026-07-26 — Auditoría estática de Fase 11D-2
+
+- **Breakpoint seguro:** un listener de `matchMedia` con cleanup cierra el
+  Drawer móvil si el viewport entra en escritorio, evitando conservar el
+  overlay modal sobre la sidebar persistente.
+- **Accesibilidad:** breadcrumbs con separadores explícitamente decorativos,
+  marca larga y compacta centralizada, ayudas compactas sin descripción ARIA
+  duplicada y paneles neutrales sin landmarks no titulados.
+- **Responsive:** se eliminó el ancho mínimo global que podía provocar scroll
+  horizontal con zoom y se habilitó wrap en topbar y acciones.
+- **Contratos:** configuración de producto y navegación readonly; el matching
+  puro ignora query y hash y conserva estrategias exact/prefix explícitas.
+- **Estructura:** un solo router y provider, una ruta funcional, una fuente de
+  navegación para desktop/móvil, un solo main y ningún elemento hidden en DOM.
+- **Estado:** 11D-2 completada en implementación estática; interacción y
+  visualización real diferidas a 11D-5. 11D-3 es el siguiente bloque
+  autorizado y la Fase 11 continúa en desarrollo.
+
+## 2026-07-26 — Fase 11D-3: servicios compartidos del frontend
+
+- **API:** cliente HTTP nativo único con configuración validada, URLs y queries
+  seguras, JSON, `FormData`, cancelación, timeout y errores normalizados. La
+  consulta real de `/api/health` fue migrada sin duplicar acceso.
+- **Composición:** `AppProviders` centraliza error boundary, preferencias,
+  sesión local, QueryClient único y notificaciones en memoria; `main.tsx` solo
+  monta esta composición y el router existente.
+- **Sesión:** modo local sin usuario, credenciales, tokens, expiración ni red.
+  El modo authenticated queda reservado y las capacidades futuras de UI no son
+  autorización ni seguridad.
+- **Preferencias:** tema system/light/dark y densidad comfortable/compact con
+  aplicación inmediata. `localStorage` queda limitado a esos dos valores y la
+  versión del esquema mediante lectura defensiva y reset.
+- **Notificaciones y conectividad:** avisos efímeros con límite, deduplicación,
+  cierre y timers con cleanup; advertencias revisables sin expiración. El aviso
+  offline distingue conectividad del navegador de disponibilidad del backend.
+- **Seguridad:** mensajes públicos cerrados, sin cuerpos de respuesta, URLs,
+  credenciales, telemetría, HTML interpretado ni contenido jurídico; límite
+  global de render sin stacks o detalles técnicos.
+- **Alcance:** no se añadieron rutas, cuentas, autenticación ni funcionalidades
+  de documentos, búsqueda, chat, HPN o red jurídica.
+- **Validación:** ESLint, TypeScript estricto y build Vite aprobados; los
+  barridos confirman un solo `fetch` encapsulado, un solo QueryClient, un solo
+  health y ausencia de almacenamiento, credenciales, logs o HTML inseguro fuera
+  de las políticas declaradas.
+- **Estado:** 11D-3 implementada y en validación; 11D-4 permanece pendiente. La
+  interacción real, timers, storage bloqueado, foco, lector de pantalla y
+  responsive visual se difieren a 11D-5.
+
+## 2026-07-26 — Auditoría estática de Fase 11D-3
+
+- **Respuestas HTTP:** se diferencia una respuesta realmente vacía de JSON
+  inválido o contenido inesperado; 204 y 205 se aceptan sin cuerpo, mientras
+  una respuesta 2xx no vacía e incompatible falla con un error seguro.
+- **Cancelación:** timeout y `AbortSignal` externo conservan su causa según el
+  primer evento, con controller, listener y timer propios por petición y
+  cleanup incondicional.
+- **Configuración y URL:** la resolución válida o inválida de la base queda
+  cacheada; se rechazan barras dobles en paths y se mantienen host, protocolo,
+  credenciales, query y hash bajo las restricciones cerradas existentes.
+- **Notificaciones:** los timers pasan al provider para cubrir también avisos
+  temporalmente fuera del límite visual; dismissal, desborde, clear y unmount
+  eliminan sus timers. La deduplicación ignora una repetición con la misma clave
+  sin reiniciar el timer del aviso existente.
+- **Encapsulación:** el índice API dejó de exponer clases internas y el índice
+  de componentes dejó el toast como detalle del viewport. El provider de
+  preferencias protege además el acceso a `document` y el aviso offline no
+  intercepta navegación subyacente.
+- **Seguridad y estructura:** una sola llamada `fetch`, health, QueryClient y
+  AppProviders; sin ciclos evidentes, almacenamiento sensible, sesión
+  persistida, credenciales, HTML interpretado, logs, telemetría, colores fuera
+  de tokens ni recursos externos.
+- **Validación:** ESLint, TypeScript estricto y build Vite aprobados; 183 módulos
+  transformados. No hay test runner ni navegador, por lo que timeout, abort,
+  timers, storage, contexts, foco, ARIA y responsive real se validarán en
+  11D-5.
+- **Estado:** 11D-3 completada en implementación estática; 11D-4 — Matriz HPN —
+  es el siguiente bloque autorizado. La Fase 11 continúa en desarrollo.

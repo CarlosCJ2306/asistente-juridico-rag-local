@@ -1,39 +1,58 @@
 import { useQuery } from "@tanstack/react-query";
+import type { ReactNode } from "react";
 
-import { getHealth } from "../api/health";
+import { getHealth, toAppError } from "../api";
+import { productConfig } from "../app/product.config";
+import { ProfessionalReviewNotice } from "../components";
+import { AsyncContent, Badge, Button, Card, ErrorState, Heading, Stack, Text } from "../design-system";
+import { ContentLayout } from "../layouts";
 
 export function HomePage() {
   const healthQuery = useQuery({
     queryKey: ["backend-health"],
-    queryFn: getHealth,
-    retry: 1,
+    queryFn: ({ signal }) => getHealth(signal),
   });
 
-  let connectionStatus = "Conectando…";
-  let statusClass = "status status--loading";
-
+  let serviceStatus: ReactNode = <AsyncContent status="loading" />;
   if (healthQuery.isSuccess) {
-    connectionStatus = "Backend disponible";
-    statusClass = "status status--available";
+    serviceStatus = (
+      <AsyncContent status="success">
+        <Badge variant="success" role="status">Backend disponible</Badge>
+      </AsyncContent>
+    );
   } else if (healthQuery.isError) {
-    connectionStatus = "Backend no disponible";
-    statusClass = "status status--unavailable";
+    const error = toAppError(healthQuery.error);
+    serviceStatus = error.category === "offline" ? (
+      <AsyncContent
+        status="offline"
+        presentations={{ offline: <Badge variant="danger" role="status">Backend no disponible</Badge> }}
+      />
+    ) : (
+      <AsyncContent
+        status="error"
+        presentations={{
+          error: (
+            <ErrorState
+              title="Backend no disponible"
+              message={error.userMessage}
+              retryAction={<Button variant="secondary" onClick={() => void healthQuery.refetch()}>Reintentar</Button>}
+            />
+          ),
+        }}
+      />
+    );
   }
 
   return (
-    <main className="home">
-      <section className="card" aria-labelledby="page-title">
-        <p className="eyebrow">Entorno local</p>
-        <h1 id="page-title">Asistente Jurídico RAG Local</h1>
-        <p className="notice">
-          Herramienta de apoyo. No sustituye el criterio de un profesional
-          competente.
-        </p>
-        <p className={statusClass} role="status" aria-live="polite">
-          <span className="status__indicator" aria-hidden="true" />
-          {connectionStatus}
-        </p>
-      </section>
-    </main>
+    <ContentLayout title="Inicio" description={productConfig.description}>
+      <Card as="section" aria-labelledby="service-status-title">
+        <Stack gap="md" align="start">
+          <Heading as="h2" size="sm" id="service-status-title">Estado del servicio local</Heading>
+          <Text variant="secondary">Disponibilidad del backend configurado para esta instalación.</Text>
+          {serviceStatus}
+        </Stack>
+      </Card>
+      <ProfessionalReviewNotice variant="compact" />
+    </ContentLayout>
   );
 }

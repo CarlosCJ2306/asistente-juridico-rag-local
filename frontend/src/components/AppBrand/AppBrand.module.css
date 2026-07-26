@@ -1,0 +1,45 @@
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-width: 0;
+  min-height: var(--size-touch-target);
+  color: var(--color-text-primary);
+  text-decoration: none;
+}
+
+.brand:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-md);
+}
+
+.brandCompact {
+  width: var(--size-touch-target);
+  min-width: var(--size-touch-target);
+  justify-content: center;
+}
+
+.icon {
+  width: var(--size-icon-lg);
+  height: var(--size-icon-lg);
+  flex: 0 0 auto;
+}
+
+.names {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.name {
+  font-weight: var(--font-weight-bold);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.environment {
+  color: var(--color-text-secondary);
+  font-size: var(--font-size-xs);
+  line-height: var(--line-height-normal);
+}

@@ -1,0 +1,163 @@
+.appLayout {
+  --app-sidebar-width: 17rem;
+  display: grid;
+  min-width: 0;
+  min-height: 100dvh;
+  grid-template-rows: auto minmax(0, 1fr);
+  background: var(--color-canvas);
+}
+
+.sidebarRegion {
+  display: none;
+  min-width: 0;
+  min-height: 0;
+  border-inline-end: var(--border-width) solid var(--color-border-subtle);
+  background: var(--color-surface);
+}
+
+.sidebar {
+  display: flex;
+  min-width: 0;
+  height: 100dvh;
+  flex-direction: column;
+  gap: var(--space-5);
+  padding: var(--space-4);
+  overflow: hidden;
+}
+
+.sidebarNavigation,
+.mobileNavigation {
+  display: grid;
+  min-width: 0;
+  gap: var(--space-5);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sidebarNavigation {
+  flex: 1 1 auto;
+}
+
+.sidebarFooter {
+  margin-block-start: auto;
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--color-border-subtle);
+}
+
+.topbar {
+  position: sticky;
+  inset-block-start: 0;
+  z-index: var(--layer-sticky);
+  display: flex;
+  min-width: 0;
+  min-height: 4rem;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--layout-gutter);
+  border-block-end: var(--border-width) solid var(--color-border-subtle);
+  background: var(--color-surface);
+}
+
+.topbarPrimary,
+.topbarActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+}
+
+.topbarTitle {
+  margin: 0;
+  font-size: var(--font-size-lg);
+  line-height: var(--line-height-tight);
+  overflow-wrap: anywhere;
+}
+
+.mainContent {
+  min-width: 0;
+  padding-block: var(--space-6) var(--space-10);
+}
+
+.breadcrumbRegion {
+  margin-block-end: var(--space-4);
+}
+
+.contentLayout,
+.fullWidthLayout,
+.splitPanel {
+  min-width: 0;
+}
+
+.splitPanel {
+  container-type: inline-size;
+}
+
+.splitContent {
+  min-width: 0;
+}
+
+.splitPrimary,
+.splitSecondary {
+  min-width: 0;
+}
+
+@container (min-width: 48rem) {
+  .splitContent {
+    display: grid;
+    align-items: start;
+  }
+
+  .splitBalanced {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .splitPrimaryWide {
+    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
+  }
+
+  .splitSecondaryWide {
+    grid-template-columns: minmax(16rem, 1fr) minmax(0, 2fr);
+  }
+}
+
+@media (min-width: 64rem) {
+  .appLayout {
+    grid-template-columns: var(--app-sidebar-width) minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .appLayoutCompact {
+    --app-sidebar-width: 5rem;
+  }
+
+  .sidebarRegion {
+    position: sticky;
+    inset-block-start: 0;
+    display: block;
+    grid-row: 1 / -1;
+    grid-column: 1;
+  }
+
+  .topbar {
+    grid-row: 1;
+    grid-column: 2;
+  }
+
+  .mainContent {
+    grid-row: 2;
+    grid-column: 2;
+  }
+
+  .mobileTrigger {
+    display: none;
+  }
+}
+
+@media (min-width: 90rem) {
+  .mainContent {
+    padding-block-start: var(--space-8);
+  }
+}

@@ -9,6 +9,7 @@ import styles from "../composites.module.css";
 
 export type DrawerPosition = "start" | "end" | "bottom";
 interface DrawerBaseProps {
+  id?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   title: ReactNode;
@@ -28,14 +29,14 @@ export type DrawerProps = DrawerBaseProps & DrawerDismissPolicy;
 
 const positionClasses: Record<DrawerPosition, string> = { start: styles.drawerStart, end: styles.drawerEnd, bottom: styles.drawerBottom };
 
-export function Drawer({ open, onOpenChange, title, description, children, footer, position = "end", preventClose = false, preventCloseReason, closeLabel = "Cerrar panel", className }: DrawerProps) {
+export function Drawer({ id, open, onOpenChange, title, description, children, footer, position = "end", preventClose = false, preventCloseReason, closeLabel = "Cerrar panel", className }: DrawerProps) {
   const titleId = useId();
   const descriptionId = useId();
   const preventCloseReasonId = useId();
   const describedBy = [description ? descriptionId : null, preventCloseReason ? preventCloseReasonId : null].filter(Boolean).join(" ") || undefined;
   const { dialogRef, requestClose, handleCancel, handleBackdropClick, handleClose } = useDialog({ open, preventClose, onOpenChange });
   return (
-    <dialog ref={dialogRef} aria-labelledby={titleId} aria-describedby={describedBy} onCancel={handleCancel} onClose={handleClose} onClick={handleBackdropClick} className={classNames(styles.dialog, styles.drawer, positionClasses[position], className)}>
+    <dialog id={id} ref={dialogRef} aria-labelledby={titleId} aria-describedby={describedBy} onCancel={handleCancel} onClose={handleClose} onClick={handleBackdropClick} className={classNames(styles.dialog, styles.drawer, positionClasses[position], className)}>
       <div className={styles.dialogPanel}>
         {preventCloseReason ? <VisuallyHidden id={preventCloseReasonId}>{preventCloseReason}</VisuallyHidden> : null}
         <header className={styles.dialogHeader}>

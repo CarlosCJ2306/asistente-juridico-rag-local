@@ -1,0 +1,19 @@
+.skipLink {
+  position: fixed;
+  inset-block-start: var(--space-2);
+  inset-inline-start: var(--space-2);
+  z-index: var(--layer-tooltip);
+  min-height: var(--size-touch-target);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width-strong) solid var(--color-focus-ring);
+  border-radius: var(--radius-md);
+  color: var(--color-text-primary);
+  background: var(--color-surface-elevated);
+  box-shadow: var(--shadow-md);
+  transform: translateY(calc(-100% - var(--space-4)));
+  transition: transform var(--duration-fast) var(--easing-standard);
+}
+
+.skipLink:focus {
+  transform: translateY(0);
+}

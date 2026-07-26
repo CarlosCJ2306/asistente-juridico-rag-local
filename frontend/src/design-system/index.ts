@@ -63,5 +63,16 @@ export { AsyncContent } from "./patterns/AsyncContent/AsyncContent";
 export type { AsyncContentProps, AsyncStatus } from "./patterns/AsyncContent/AsyncContent";
 export { PageHeader } from "./patterns/PageHeader/PageHeader";
 export type { PageHeaderProps } from "./patterns/PageHeader/PageHeader";
-export { ChevronDownIcon, CloseIcon, InfoIcon } from "./icons/Icon";
+export {
+  ArrowBackIcon,
+  BrandIcon,
+  ChevronDownIcon,
+  CloseIcon,
+  CollapseIcon,
+  ExpandIcon,
+  HomeIcon,
+  InfoIcon,
+  MenuIcon,
+  NavigationIcon,
+} from "./icons/Icon";
 export type { IconProps } from "./icons/Icon";

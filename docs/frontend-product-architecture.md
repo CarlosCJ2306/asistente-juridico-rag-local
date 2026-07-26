@@ -1,13 +1,13 @@
 # Arquitectura de producto frontend — Fase 11D-0
 
-**Estado:** 11D-0 y 11D-1 completadas en su alcance estático; validación
-interactiva y visual de 11D-1 diferida a 11D-5.
+**Estado:** 11D-0 a 11D-3 completadas en su alcance estático.
 
 **Alcance vigente:** definir la arquitectura de producto, experiencia de uso,
 sistema de diseño y responsividad antes de iniciar cambios en React. Los bloques
 11A y 11B están completados. El bloque 11C está completado en su alcance de
 backend y seguridad; su integración real en navegador se verificará en 11D-5.
-La Fase 11 continúa en desarrollo. 11D-2 es el siguiente bloque autorizado.
+La Fase 11 continúa en desarrollo. 11D-4 es el siguiente bloque autorizado. La
+validación interactiva y visual acumulada se mantiene diferida a 11D-5.
 
 ## 1. Principios de producto
 
@@ -346,37 +346,43 @@ accesibilidad en navegador pertenece a 11D-5.
 - **Cierre:** tokens, componentes y estados asíncronos validados en los rangos
   documentales, sin duplicación ni dependencias de dominio.
 
-### 11D-2 — Documentos, recuperación y estado del sistema
+### 11D-2 — App Shell, navegación y layouts responsive
 
-- **Objetivo:** integrar los flujos operativos previos al análisis jurídico.
-- **Alcance:** documentos, búsquedas existentes, salud y modelos con contratos
-  públicos actuales.
-- **Fuera de alcance:** Chat RAG, HPN, red y cambios de backend.
-- **Entregables:** páginas adaptables, filtros, paginación, estados vacíos y
-  errores seguros.
-- **Dependencias:** 11D-1 y APIs ya validadas.
-- **Riesgos:** exposición de datos internos, caché obsoleta y tablas no
-  utilizables en móvil.
-- **Pruebas:** contratos simulados, filtros, errores, privacidad,
-  responsividad y navegación por teclado.
-- **Cierre:** flujos completos sin registrar contenido ni alterar contratos.
+- **Objetivo:** construir el armazón profesional que alojará los flujos
+  funcionales sin implementarlos todavía.
+- **Alcance:** marca local, configuración central de navegación, skip link,
+  sidebar, topbar, Drawer móvil, breadcrumbs, layouts de página y 404.
+- **Fuera de alcance:** páginas funcionales de documentos, búsqueda, chat,
+  HPN, red, notificaciones, sesión, autenticación y cambios de backend.
+- **Entregables:** shell mobile-first, navegación basada en disponibilidad
+  cerrada, ruta existente preservada y layouts reutilizables.
+- **Dependencias:** 11D-1 y React Router vigente.
+- **Riesgos:** enlaces a módulos inexistentes, divergencia entre navegación
+  móvil y escritorio, pathname sensible, overflow y pérdida de foco.
+- **Pruebas:** TypeScript, ESLint, build, imports, rutas y barridos estáticos;
+  interacción real diferida a 11D-5 por ausencia de runner de navegador.
+- **Cierre:** shell implementado sin rutas ficticias, datos simulados,
+  almacenamiento web ni lógica de dominio.
 
-### 11D-3 — Chat RAG y citas
+### 11D-3 — Servicios compartidos del frontend
 
-- **Objetivo:** presentar el Chat RAG stateless y sus citas estructuradas con
-  revisión profesional obligatoria.
-- **Alcance:** sesión visual temporal en memoria, estados answered e
-  insufficient_context, fuentes y errores cerrados.
-- **Fuera de alcance:** historial persistente, memoria conversacional,
-  streaming y reranking.
-- **Entregables:** interfaz de consulta, respuesta, citas y avisos persistentes.
-- **Dependencias:** 11D-1, 11D-2 y contratos completados en Fases 8 y 9.
-- **Riesgos:** aparentar certeza, persistir contenido sensible o reutilizar
-  turnos como contexto no autorizado.
-- **Pruebas:** ciclo de vida en memoria, privacidad, citas, errores,
-  accesibilidad y ausencia de almacenamiento.
-- **Cierre:** ningún contenido sensible persiste y toda respuesta conserva su
-  revisión y trazabilidad visibles.
+- **Objetivo:** establecer cliente API, errores seguros, composición de
+  providers, sesión local, preferencias visuales, conectividad y notificaciones
+  efímeras sin implementar flujos jurídicos.
+- **Alcance:** health sobre el cliente común, QueryClient único, contratos
+  cerrados, tema y densidad, allowlist de almacenamiento y límites globales de
+  error y conectividad.
+- **Fuera de alcance:** cuentas, autenticación, documentos, búsqueda, chat,
+  HPN, red jurídica, historial y nuevas rutas.
+- **Entregables:** infraestructura tipada y neutral reutilizable por los
+  siguientes bloques.
+- **Dependencias:** 11D-1 y 11D-2.
+- **Riesgos:** tratar capacidades de UI como autorización, persistir datos
+  sensibles o exponer respuestas técnicas.
+- **Pruebas:** ESLint, TypeScript, build y barridos estáticos; interacción,
+  timers, storage y navegador se difieren a 11D-5.
+- **Cierre:** cliente y providers únicos, errores sanitizados y almacenamiento
+  limitado exclusivamente a tema, densidad y versión de esquema.
 
 ### 11D-4 — Matriz HPN
 
@@ -449,4 +455,55 @@ La auditoría estática confirmó dependencias, API pública, tokens, contrastes
 declarados, responsividad estructural, accesibilidad tipada y ausencia de APIs
 inseguras. La interacción real, teclado, foco, Escape, lectores de pantalla,
 contraste renderizado, reflow, zoom y `<dialog>` se validarán en 11D-5. 11D-2
-queda como siguiente bloque autorizado.
+fue implementada y auditada posteriormente en su alcance estático.
+
+## 18. Estado de implementación de 11D-2
+
+11D-2 implementa el armazón profesional sin añadir funciones jurídicas: un
+`AppLayout` con skip link, sidebar persistente desde escritorio, topbar,
+Drawer móvil, un único `<main>` y `Outlet` de React Router. La configuración
+tipada de navegación es la única fuente para sidebar, navegación móvil, título
+de sección y breadcrumbs seguros.
+
+La única ruta funcional activa continúa siendo `/`, cuya consulta de salud se
+preservó. Documentos, Búsqueda, Chat jurídico, Matrices HPN, Red jurídica,
+Notificaciones, Estado del sistema y Configuración están declarados como
+reservas ocultas: no se renderizan ni generan enlaces. No hay rutas planeadas
+visibles. La ruta comodín presenta un 404 seguro sin repetir el pathname.
+
+`ContentLayout`, `FullWidthLayout` y `SplitPanelLayout` construyen sobre las
+primitivas del Design System. El último se apila por defecto y cambia a una de
+tres proporciones cerradas mediante container query. El estado del shell se
+limita al colapso local del sidebar y la apertura del Drawer; no usa Context,
+almacenamiento ni persistencia.
+
+La auditoría estática corrigió el cierre del Drawer al cruzar a escritorio, el
+reflow global con zoom, la semántica de breadcrumbs y paneles, la ayuda visual
+compacta, el wrap de topbar y la inmutabilidad de configuración. Teclado real,
+retorno de foco, Drawer, responsive desde 360 px, orientación, zoom al 200 %,
+lector de pantalla y navegadores se comprobarán en 11D-5. 11D-2 queda
+completada en implementación estática; 11D-3 fue autorizada, implementada y
+auditada posteriormente en el mismo alcance.
+
+## 19. Estado de implementación de 11D-3
+
+11D-3 está completada en implementación estática. `AppProviders` compone el límite de
+errores, preferencias, sesión local, TanStack Query y notificaciones en memoria.
+La sesión `local` no contiene usuario, credenciales ni tokens; el modo
+`authenticated` queda reservado como contrato futuro. Las capacidades sirven
+solo para adaptación futura de la interfaz y nunca sustituyen autorización del
+backend.
+
+El cliente API nativo valida la base configurada, construye URLs y queries de
+forma cerrada, soporta JSON, `FormData`, cancelación y timeout, y normaliza
+errores sin mostrar cuerpos libres. `/api/health` conserva una única
+implementación sobre este cliente. Las preferencias permiten únicamente tema y
+densidad en una clave versionada de `localStorage`; sesión, capacidades,
+notificaciones y contenido jurídico permanecen fuera del almacenamiento.
+
+Las notificaciones tienen IDs efímeros, deduplicación, límites y timers con
+cleanup, sin persistencia. El indicador offline distingue conectividad del
+navegador de salud del backend. No se añadieron rutas ni funciones de dominio.
+La interacción real, timers, bloqueo de storage, foco, lector de pantalla y
+responsive visual continúan diferidos a 11D-5; 11D-4 es el siguiente bloque
+autorizado.

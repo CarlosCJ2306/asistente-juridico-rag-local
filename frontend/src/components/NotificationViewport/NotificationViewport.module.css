@@ -1,0 +1,25 @@
+.viewport {
+  position: fixed;
+  z-index: var(--layer-overlay);
+  right: max(var(--space-4), env(safe-area-inset-right));
+  bottom: max(var(--space-4), env(safe-area-inset-bottom));
+  display: grid;
+  width: min(26rem, calc(100vw - var(--space-8)));
+  gap: var(--space-3);
+  pointer-events: none;
+}
+
+.item {
+  min-width: 0;
+  box-shadow: var(--shadow-lg);
+  pointer-events: auto;
+}
+
+@media (max-width: 479px) {
+  .viewport {
+    right: max(var(--space-3), env(safe-area-inset-right));
+    bottom: max(var(--space-3), env(safe-area-inset-bottom));
+    left: max(var(--space-3), env(safe-area-inset-left));
+    width: auto;
+  }
+}

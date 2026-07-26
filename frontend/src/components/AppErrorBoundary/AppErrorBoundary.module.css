@@ -1,0 +1,7 @@
+.fallback {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--color-canvas);
+}

@@ -213,8 +213,21 @@ red, almacenamiento del navegador, HTML interpretado, telemetría, colores
 fuera de tokens, rutas antiguas, clases CSS inexistentes ni ciclos evidentes.
 
 11D-1 queda completada en implementación estática. Esto no equivale a una
-validación interactiva o visual. 11D-2 es el siguiente bloque autorizado y la
-Fase 11 continúa en desarrollo.
+validación interactiva o visual. 11D-2 y 11D-3 están completadas en alcance
+estático; 11D-4 es el siguiente bloque autorizado y la Fase 11 continúa en
+desarrollo.
+
+## Consumo desde el App Shell
+
+11D-2 consume la API pública sin incorporar contratos de aplicación al núcleo.
+El shell reutiliza `Button`, `IconButton`, `Drawer`, `Container`,
+`Stack`, `PageHeader`, `Card`, estados, textos e iconos centralizados. Los
+componentes de navegación, marca y breadcrumbs permanecen en `src/components`;
+los layouts de aplicación permanecen en `src/layouts`.
+
+El Design System no importa navegación, producto, router, páginas ni layouts
+de aplicación. El estado responsive del shell tampoco modifica los tokens ni
+persiste tema, densidad o dimensiones.
 
 ## Seguridad y privacidad
 
@@ -230,25 +243,29 @@ La API acepta `className` como punto de composición controlado. No sustituye
 variantes, tamaños, semántica ni estados ARIA. Una feature no debe usarlo para
 redefinir targets táctiles, ocultar foco o alterar el significado de estados.
 
-## Componentes pendientes
+## Límites de alcance
 
 Permanecen fuera de 11D-1:
 
-- App Shell, sidebar, topbar y navegación principal;
-- cliente API compartido y notificaciones globales;
+- App Shell, sidebar, topbar y navegación principal, implementados después en
+  11D-2 sin incorporarse al núcleo visual;
+- cliente API compartido y notificaciones globales, implementados después en
+  11D-3 sin incorporarse al núcleo visual;
 - componentes de documentos, recuperación, chat, citas, HPN y red jurídica;
 - iframe PyVis y alternativa textual del grafo;
 - autenticación, cuentas, permisos y persistencia de sesión;
-- pantalla o persistencia de preferencias.
+- pantalla de preferencias; 11D-3 solo incorpora persistencia allowlisted de
+  tema y densidad.
 
-Estos elementos requieren los bloques 11D-2 a 11D-5 o una autorización futura.
+Los elementos todavía pendientes requieren 11D-4, 11D-5 o una autorización
+futura.
 
 ## Límites con componentes de producto y features
 
-`src/components` contiene componentes compartidos entre dos o más features que
-conocen el producto jurídico y se construyen sobre el Design System. En esta
-fase solo existe `ProfessionalReviewNotice`; el núcleo visual no lo importa ni
-lo reexporta.
+`src/components` contiene componentes compartidos entre dos o más features o
+por el shell que conocen el producto y se construyen sobre el Design System.
+11D-1 incorporó `ProfessionalReviewNotice`; 11D-2 añadió marca, navegación,
+breadcrumbs y skip link. El núcleo visual no los importa ni los reexporta.
 
 Los componentes específicos permanecen en
 `src/features/<feature>/components`. Una feature puede importar el Design

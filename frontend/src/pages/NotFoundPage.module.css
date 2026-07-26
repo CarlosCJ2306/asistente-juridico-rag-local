@@ -1,0 +1,19 @@
+.homeLink {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--size-touch-target);
+  color: var(--color-action-text);
+  font-weight: var(--font-weight-semibold);
+}
+
+.homeLink:focus-visible {
+  outline: var(--border-width-strong) solid var(--color-focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+.homeLink svg {
+  width: var(--size-icon-md);
+  height: var(--size-icon-md);
+}
