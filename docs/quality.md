@@ -7,7 +7,12 @@
 
 Las pruebas usan fixtures, mocks y SQLite temporal cuando corresponde. Está prohibido usar, resetear o modificar la SQLite principal durante pruebas automatizadas. Tampoco se deben usar documentos jurídicos reales, modelos reales o índices locales salvo en una validación manual explícitamente autorizada.
 
+La recuperación gobernada se prueba con SQLite y FTS5 temporales, ChromaDB
+temporal o falso, embeddings simulados y contenido sintético. La cobertura
+comprueba expiración, retiro, vigencia, capas, bypass por identificador,
+fingerprint, transiciones de indexación, revalidación previa al prompt y retiro
+de citas, sin modificar las persistencias locales principales.
+
 ## Informes locales de validación
 
 `local_validation_reports/` no se versiona ni es una fuente de verdad del proyecto. La política inicial es conservar temporalmente `latest` y ejecuciones relevantes, revisar periódicamente los informes obsoletos y eliminarlos manualmente cuando ya no sean necesarios. Esta política no autoriza su borrado automático.
-

@@ -33,8 +33,11 @@ from app.main import app
 from app.schemas.document import (
     DocumentCreate,
     DocumentListFilters,
-    DocumentRead,
     DocumentUploadGovernance,
+)
+from app.services.document_governance_service import (
+    DocumentGovernanceError,
+    DocumentGovernanceService,
 )
 
 
@@ -212,11 +215,6 @@ def test_document_schema_rejects_unsafe_paths_long_names_and_invalid_dates() -> 
     with pytest.raises(ValidationError, match="at most 255 characters"):
         DocumentCreate(**long_filename_data)
 
-    temporary_data = document_data("temporary").model_dump()
-    temporary_data["knowledge_layer"] = KnowledgeLayer.TEMPORARY
-    with pytest.raises(ValidationError, match="requieren expires_at"):
-        DocumentCreate(**temporary_data)
-
     incoherent_data = document_data("dates").model_dump()
     incoherent_data["published_at"] = datetime(2026, 7, 27, tzinfo=timezone.utc)
     incoherent_data["source_accessed_at"] = datetime(2026, 7, 26, tzinfo=timezone.utc)
@@ -225,12 +223,25 @@ def test_document_schema_rejects_unsafe_paths_long_names_and_invalid_dates() -> 
 
 
 def test_public_upload_governance_limits_layers_sources_and_expiration() -> None:
-    with pytest.raises(ValidationError, match="capa solicitada"):
-        DocumentUploadGovernance(knowledge_layer=KnowledgeLayer.MANAGED_CORPUS)
-    with pytest.raises(ValidationError, match="procedencia solicitada"):
-        DocumentUploadGovernance(source_kind=SourceKind.MANAGED_IMPORT)
-    with pytest.raises(ValidationError, match="requieren expires_at"):
-        DocumentUploadGovernance(knowledge_layer=KnowledgeLayer.TEMPORARY)
+    policy = DocumentGovernanceService()
+    with pytest.raises(DocumentGovernanceError, match="DOCUMENT_LAYER_RESERVED"):
+        policy.validate_public_upload(
+            DocumentUploadGovernance(knowledge_layer=KnowledgeLayer.MANAGED_CORPUS)
+        )
+    with pytest.raises(
+        DocumentGovernanceError,
+        match="DOCUMENT_SOURCE_KIND_RESERVED",
+    ):
+        policy.validate_public_upload(
+            DocumentUploadGovernance(source_kind=SourceKind.MANAGED_IMPORT)
+        )
+    with pytest.raises(
+        DocumentGovernanceError,
+        match="DOCUMENT_TEMPORARY_EXPIRATION_REQUIRED",
+    ):
+        policy.validate_public_upload(
+            DocumentUploadGovernance(knowledge_layer=KnowledgeLayer.TEMPORARY)
+        )
 
     temporary = DocumentUploadGovernance(
         knowledge_layer=KnowledgeLayer.TEMPORARY,
@@ -245,7 +256,7 @@ async def test_public_serialization_excludes_private_storage_metadata(
 ) -> None:
     repository = DocumentRepository(temporary_session)
     created = await repository.create(document_data("h"))
-    serialized = DocumentRead.model_validate(created).model_dump(mode="json")
+    serialized = DocumentGovernanceService().to_public_read(created).model_dump(mode="json")
 
     assert serialized["display_name"] == "original-h.pdf"
     for field in (

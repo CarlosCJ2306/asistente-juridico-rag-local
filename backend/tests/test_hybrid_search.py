@@ -14,7 +14,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.core.config import Settings
-from app.database.models.document import DocumentType
+from app.database.models.document import DocumentType, KnowledgeLayer, ReviewStatus
 from app.database.repositories.semantic_chunk_repository import ActiveChunk
 from app.database.repositories.text_search_repository import TextSearchRepositoryError
 from app.database.session import DatabaseSessionManager, get_db_session
@@ -36,6 +36,7 @@ from app.services.hybrid_search_service import (
     _CombinedCandidate,
 )
 from app.services.semantic_index_service import SemanticServiceError
+from app.services.document_governance_service import DocumentGovernanceSnapshot
 
 
 def _active(chunk_id: UUID, *, index: int = 1, text: str = "Texto sintético") -> ActiveChunk:
@@ -493,6 +494,53 @@ def test_final_sqlite_validation_discards_stale_and_reapplies_filters() -> None:
     assert [item.chunk_id for item in response.items] == [valid.chunk_id]
 
 
+def test_hybrid_search_does_not_reintroduce_governance_excluded_chunk() -> None:
+    base = _active(UUID(int=801))
+    excluded = ActiveChunk(
+        chunk_id=base.chunk_id,
+        document_id=base.document_id,
+        document_type=base.document_type,
+        chunk_index=base.chunk_index,
+        text=base.text,
+        start_page=base.start_page,
+        end_page=base.end_page,
+        governance=DocumentGovernanceSnapshot(
+            review_status=ReviewStatus.REJECTED,
+        ),
+    )
+    response, _, _ = _run_search(
+        HybridSearchRequest(query="consulta"),
+        [_text(excluded)],
+        [_semantic(excluded)],
+        [excluded],
+    )
+
+    assert response.items == []
+    assert response.returned == 0
+
+
+def test_hybrid_layer_filter_is_deduplicated_and_forwarded() -> None:
+    chunk = _active(UUID(int=802))
+    request = HybridSearchRequest(
+        query="consulta",
+        knowledge_layers=[
+            KnowledgeLayer.PRIVATE_LIBRARY,
+            KnowledgeLayer.PRIVATE_LIBRARY,
+        ],
+    )
+    response, text_service, semantic_service = _run_search(
+        request,
+        [_text(chunk)],
+        [_semantic(chunk)],
+        [chunk],
+    )
+
+    assert response.returned == 1
+    assert request.knowledge_layers == [KnowledgeLayer.PRIVATE_LIBRARY]
+    assert text_service.requests[0].knowledge_layers == request.knowledge_layers
+    assert semantic_service.requests[0].knowledge_layers == request.knowledge_layers
+
+
 @pytest.mark.parametrize(
     ("field", "value"),
     [
@@ -586,6 +634,7 @@ def test_hybrid_api_success_empty_validation_and_privacy(tmp_path, monkeypatch) 
         (SemanticServiceError("CHROMA_DEPENDENCY_MISSING"), 503),
         (SemanticServiceError("SEMANTIC_INDEX_NOT_READY"), 503),
         (SemanticServiceError("SEMANTIC_INDEX_INCOMPATIBLE"), 503),
+        (SemanticServiceError("SEMANTIC_INDEX_REBUILD_REQUIRED"), 503),
         (SemanticServiceError("EMBEDDING_MODEL_NOT_LOADED"), 503),
         (HybridSearchError("HYBRID_SEARCH_ERROR"), 500),
         (HybridSearchError("HYBRID_OUTPUT_INVALID"), 500),

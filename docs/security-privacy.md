@@ -8,6 +8,21 @@ Los documentos, embeddings, índices y generación se procesan localmente. SQLit
 
 El producto distingue corpus administrado, biblioteca privada, documentos temporales y futuras fuentes web verificadas. Los documentos privados no pasan automáticamente al corpus general. Las fuentes web futuras requerirán procedencia, vigencia, permisos, conservación y revisión.
 
+La elegibilidad documental es calculada y no se persiste como autorización. La
+expiración de un documento temporal lo excluye, pero no elimina automáticamente
+su registro, páginas, chunks ni archivo. La API comunica únicamente indicadores
+y códigos técnicos tipados, sin rutas, contenido documental ni errores
+internos. El borrado lógico, el archivo técnico y el retiro editorial son
+condiciones distintas, aunque cualquiera excluye el documento de RAG.
+
+FTS5 y ChromaDB solo proponen candidatos. SQLite vuelve a decidir antes del
+resultado, del contexto y de cada cita, incluso cuando el cliente suministra
+un `document_id` o una capa. Los documentos vencidos, retirados, rechazados,
+archivados, no vigentes, no indexados o candidatos globales se excluyen de
+inmediato aunque persistan entradas antiguas en un índice derivado. Los cambios
+de gobernanza invalidan de forma detectable el índice semántico; nunca disparan
+una reconstrucción automática ni eliminan PDF, páginas o chunks.
+
 ## Documentos y rutas
 
 La carga acepta PDF con límites de tamaño, validación de MIME, extensión y firma. Los nombres se normalizan y las rutas se validan para impedir traversal y escapes del almacenamiento autorizado. Los PDF pueden contener contenido malicioso o instrucciones no confiables; nunca se tratan como instrucciones del sistema.

@@ -74,7 +74,7 @@ class Settings(BaseSettings):
         validate_default=True,
     )
     semantic_collection_prefix: str = "legal_chunks"
-    semantic_index_schema_version: int = Field(default=1, gt=0)
+    semantic_index_schema_version: int = Field(default=2, gt=0)
     semantic_index_batch_size: int = Field(default=32, gt=0)
     semantic_search_top_k_default: int = Field(default=10, gt=0)
     semantic_search_top_k_max: int = Field(default=50, gt=0)

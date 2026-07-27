@@ -36,6 +36,10 @@ from app.services.document_extraction_service import (
     DocumentExtractionError,
     DocumentExtractionService,
 )
+from app.services.document_governance_service import (
+    DocumentGovernanceError,
+    DocumentGovernanceService,
+)
 from app.services.document_service import (
     DocumentService,
     DocumentStorageError,
@@ -53,6 +57,10 @@ def _service(session: AsyncSession) -> DocumentService:
 
 def _extraction_service(session: AsyncSession) -> DocumentExtractionService:
     return DocumentExtractionService(session)
+
+
+def _governance_service(session: AsyncSession) -> DocumentGovernanceService:
+    return DocumentGovernanceService(session)
 
 
 def _bad_request(error: Exception) -> HTTPException:
@@ -79,7 +87,7 @@ async def upload_document(
             expires_at=expires_at,
         )
         return await _service(session).upload_pdf(file, document_type, governance)
-    except ValidationError as exc:
+    except (ValidationError, DocumentGovernanceError) as exc:
         raise HTTPException(
             status_code=422,
             detail="DOCUMENT_GOVERNANCE_INVALID",
@@ -117,10 +125,11 @@ async def list_documents(
         status=status,
     )
     repository = DocumentRepository(session)
+    governance = _governance_service(session)
     documents = await repository.list(filters)
     total = await repository.count(filters)
     return DocumentPage(
-        items=[DocumentRead.model_validate(document) for document in documents],
+        items=[governance.to_public_read(document) for document in documents],
         total=total,
         page=page,
         page_size=page_size,
@@ -137,7 +146,7 @@ async def get_document(
     document = await DocumentRepository(session).get_by_id(document_id)
     if document is None:
         raise HTTPException(status_code=404, detail="Documento no encontrado")
-    return DocumentRead.model_validate(document)
+    return _governance_service(session).to_public_read(document)
 
 
 @router.delete("/{document_id}", status_code=204)

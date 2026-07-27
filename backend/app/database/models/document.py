@@ -128,6 +128,22 @@ class IndexStatus(str, Enum):
     EXCLUDED = "excluded"
 
 
+class RagEligibilityReason(str, Enum):
+    """Motivos públicos y no sensibles de exclusión documental."""
+
+    DOCUMENT_DELETED = "document_deleted"
+    DOCUMENT_ARCHIVED = "document_archived"
+    EXTRACTION_INCOMPLETE = "extraction_incomplete"
+    REVIEW_PENDING = "review_pending"
+    REVIEW_REJECTED = "review_rejected"
+    LEGAL_VALIDITY_NOT_ALLOWED = "legal_validity_not_allowed"
+    TEMPORARY_EXPIRATION_MISSING = "temporary_expiration_missing"
+    TEMPORARY_EXPIRED = "temporary_expired"
+    EXPIRATION_NOT_ALLOWED = "expiration_not_allowed"
+    LAYER_NOT_RAG_ELIGIBLE = "layer_not_rag_eligible"
+    INDEX_NOT_READY = "index_not_ready"
+
+
 def enum_values(enum_class: type[Enum]) -> list[str]:
     """Persiste valores legibles de enums en lugar de sus nombres Python."""
 

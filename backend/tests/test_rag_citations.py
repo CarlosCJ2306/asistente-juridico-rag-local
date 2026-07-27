@@ -13,7 +13,7 @@ from pydantic import ValidationError
 
 from app.api.routes.chat import _rag_http_error
 from app.core.config import Settings
-from app.database.models.document import DocumentType
+from app.database.models.document import DocumentType, KnowledgeLayer, ReviewStatus
 from app.database.repositories.semantic_chunk_repository import ActiveChunk
 from app.schemas.rag_chat import RagChatResponse, RagCitation
 from app.schemas.hybrid_search import HybridSearchItem, HybridSearchResponse
@@ -26,6 +26,7 @@ from app.services.rag_citation_service import (
     RagCitationService,
 )
 from app.services.rag_chat_service import RagChatError, RagChatService
+from app.services.document_governance_service import DocumentGovernanceSnapshot
 from app.services.rag_prompt_service import RagPromptService
 
 
@@ -472,6 +473,8 @@ def test_revalidation_builds_public_metadata_from_current_sqlite_source() -> Non
     assert citation.marker == "[F1]"
     assert citation.document_id == chunk.document_id
     assert citation.document_name == "sentencia.pdf"
+    assert citation.display_name == "sentencia.pdf"
+    assert citation.knowledge_layer is KnowledgeLayer.PRIVATE_LIBRARY
     assert "chunk_id" not in citation.model_dump()
     assert "stored_filename" not in citation.model_dump()
 
@@ -487,6 +490,12 @@ def test_revalidation_builds_public_metadata_from_current_sqlite_source() -> Non
         replace(_chunk(1), end_page=3),
         replace(_chunk(1), document_name="actualizado.pdf"),
         replace(_chunk(1), text="Texto modificado"),
+        replace(
+            _chunk(1),
+            governance=DocumentGovernanceSnapshot(
+                review_status=ReviewStatus.REJECTED,
+            ),
+        ),
     ],
 )
 def test_revalidation_rejects_deleted_or_changed_sources(changed) -> None:

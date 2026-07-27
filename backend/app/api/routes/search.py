@@ -33,6 +33,7 @@ def _hybrid_http_error(error: Exception) -> HTTPException:
         "SEMANTIC_INDEX_NOT_READY",
         "SEMANTIC_INDEX_STATE_INVALID",
         "SEMANTIC_INDEX_INCOMPATIBLE",
+        "SEMANTIC_INDEX_REBUILD_REQUIRED",
         "EMBEDDING_MODEL_NOT_LOADED",
         "HYBRID_SEARCH_UNAVAILABLE",
     }
@@ -50,6 +51,7 @@ def _semantic_http_error(error: SemanticServiceError) -> HTTPException:
         "SEMANTIC_INDEX_NOT_READY",
         "SEMANTIC_INDEX_STATE_INVALID",
         "SEMANTIC_INDEX_INCOMPATIBLE",
+        "SEMANTIC_INDEX_REBUILD_REQUIRED",
     }:
         status_code = 503
     elif error.code in {

@@ -8,16 +8,18 @@ import math
 import threading
 import time
 from datetime import datetime, timezone
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai.embedding_model import EMBEDDING_MODEL_ID, EmbeddingError, EmbeddingModel, get_embedding_model
 from app.core.Log import log_error, log_info, log_success, log_warning
 from app.core.config import settings
+from app.database.models.document import Document, IndexStatus
 from app.database.models.document_chunk import DocumentChunk
 from app.database.repositories.semantic_chunk_repository import (
     ActiveChunk,
+    ActiveSourceSnapshot,
     SemanticChunkRepository,
     update_source_fingerprint,
 )
@@ -27,6 +29,7 @@ from app.schemas.semantic_search import (
     SemanticStatusResponse,
 )
 from app.services.embedding_service import EmbeddingService
+from app.services.document_governance_service import DocumentGovernanceService
 from app.vector_store.chroma_store import ChromaStore, ChromaStoreError
 from app.vector_store.semantic_index_state import (
     SemanticIndexState,
@@ -58,16 +61,16 @@ class SemanticIndexService:
         store: ChromaStore | None = None,
         state_store: SemanticStateStore | None = None,
     ) -> None:
+        self.session = session
         self.repository = SemanticChunkRepository(session)
+        self.governance = DocumentGovernanceService(session)
         self.embedding_model = embedding_model or get_embedding_model()
         self.embedding_service = EmbeddingService(self.embedding_model)
         self.store = store or ChromaStore()
         self.state_store = state_store or SemanticStateStore()
 
     async def status(self) -> SemanticStatusResponse:
-        snapshot = await self.repository.source_snapshot(
-            batch_size=settings.semantic_index_batch_size
-        )
+        snapshot = await self._source_snapshot()
         active_chunks = snapshot.chunk_count
         dependency_available = self.store.dependency_available()
         try:
@@ -118,16 +121,17 @@ class SemanticIndexService:
         if type(self)._last_error_code is not None and not type(self)._building:
             state_name = "error"
             error_code = type(self)._last_error_code
+        if not dependency_available:
+            state_name = "unavailable"
+            error_code = "CHROMA_DEPENDENCY_MISSING"
         try:
             self._validate_state(state, model_dimension=None)
             if dependency_available:
                 await self._validate_collection(state)
-            else:
-                state_name = "unavailable"
-                error_code = "CHROMA_DEPENDENCY_MISSING"
         except SemanticServiceError as exc:
-            state_name = "error"
-            error_code = exc.code
+            if dependency_available:
+                state_name = "error"
+                error_code = exc.code
         return SemanticStatusResponse(
             state=state_name,
             dependency_available=dependency_available,
@@ -166,6 +170,11 @@ class SemanticIndexService:
         indexed = 0
         indexed_digest = hashlib.sha256()
         seen_chunk_ids: set[str] = set()
+        snapshot_now = datetime.now(timezone.utc)
+        prepared_documents: dict[UUID, IndexStatus] = {}
+        excluded_documents: set[UUID] = set()
+        state_activated = False
+        build_succeeded = False
         try:
             try:
                 old_state = await asyncio.to_thread(self.state_store.read)
@@ -190,11 +199,28 @@ class SemanticIndexService:
             )
             offset = 0
             while True:
-                chunks = await self.repository.list_active_batch(
+                source_chunks = await self.repository.list_active_batch(
                     offset=offset, limit=settings.semantic_index_batch_size
                 )
-                if not chunks:
+                if not source_chunks:
                     break
+                offset += len(source_chunks)
+                await self._prepare_document_states(
+                    source_chunks,
+                    prepared_documents=prepared_documents,
+                    excluded_documents=excluded_documents,
+                    now=snapshot_now,
+                )
+                chunks = [
+                    chunk
+                    for chunk in source_chunks
+                    if self.governance.evaluate_indexing_eligibility(
+                        chunk.governance,
+                        now=snapshot_now,
+                    ).eligible
+                ]
+                if not chunks:
+                    continue
                 embedded = await asyncio.to_thread(
                     self.embedding_service.embed_chunks,
                     [self._as_document_chunk(chunk) for chunk in chunks],
@@ -217,11 +243,8 @@ class SemanticIndexService:
                     metadatas=[self._metadata(chunk) for chunk in chunks],
                 )
                 indexed += len(chunks)
-                offset += len(chunks)
 
-            source_snapshot = await self.repository.source_snapshot(
-                batch_size=settings.semantic_index_batch_size
-            )
+            source_snapshot = await self._source_snapshot(now=snapshot_now)
             source_count = source_snapshot.chunk_count
             stored_count = await asyncio.to_thread(self.store.count, temporary_name)
             if (
@@ -245,6 +268,10 @@ class SemanticIndexService:
                 source_fingerprint=source_snapshot.fingerprint,
             )
             await asyncio.to_thread(self.state_store.write_atomic, new_state)
+            state_activated = True
+            await self._confirm_indexed_documents(prepared_documents)
+            await self.session.commit()
+            build_succeeded = True
             temporary_cleanup_required = False
             if old_state is not None and old_state.active_collection != temporary_name:
                 try:
@@ -285,6 +312,11 @@ class SemanticIndexService:
             self._log_rebuild_error("SEMANTIC_INDEX_BUILD_ERROR", request_id, started_at)
             raise SemanticServiceError("SEMANTIC_INDEX_BUILD_ERROR") from exc
         finally:
+            if not build_succeeded:
+                await self.session.rollback()
+                if state_activated:
+                    await self._restore_previous_state(old_state)
+                await self._mark_failed_documents(prepared_documents)
             if temporary_cleanup_required and temporary_name:
                 try:
                     await asyncio.to_thread(self.store.delete_collection, temporary_name)
@@ -296,6 +328,140 @@ class SemanticIndexService:
                     )
             type(self)._building = False
             type(self)._rebuild_lock.release()
+
+    async def _prepare_document_states(
+        self,
+        chunks: list[ActiveChunk],
+        *,
+        prepared_documents: dict[UUID, IndexStatus],
+        excluded_documents: set[UUID],
+        now: datetime,
+    ) -> None:
+        document_ids = list(dict.fromkeys(chunk.document_id for chunk in chunks))
+        documents = await self.repository.get_documents_by_ids(document_ids)
+        for document_id in document_ids:
+            if document_id in prepared_documents or document_id in excluded_documents:
+                continue
+            document = documents.get(document_id)
+            if document is None:
+                continue
+            if not self.governance.evaluate_indexing_eligibility(
+                document,
+                now=now,
+            ).eligible:
+                await self._exclude_document(document)
+                excluded_documents.add(document_id)
+                continue
+            original = document.index_status
+            if original is IndexStatus.INDEXING:
+                await self.governance.transition_index_status(
+                    document,
+                    IndexStatus.FAILED,
+                )
+            if document.index_status in {
+                IndexStatus.NOT_REQUESTED,
+                IndexStatus.FAILED,
+                IndexStatus.INDEXED,
+                IndexStatus.EXCLUDED,
+            }:
+                await self.governance.transition_index_status(
+                    document,
+                    IndexStatus.PENDING,
+                )
+            if document.index_status is IndexStatus.PENDING:
+                await self.governance.transition_index_status(
+                    document,
+                    IndexStatus.INDEXING,
+                )
+            if document.index_status is not IndexStatus.INDEXING:
+                raise SemanticServiceError("SEMANTIC_INDEX_BUILD_ERROR")
+            prepared_documents[document_id] = original
+
+    async def _exclude_document(self, document: Document) -> None:
+        index_status = document.index_status
+        if index_status is IndexStatus.EXCLUDED:
+            return
+        if index_status is IndexStatus.INDEXING:
+            await self.governance.transition_index_status(
+                document,
+                IndexStatus.FAILED,
+            )
+        await self.governance.transition_index_status(
+            document,
+            IndexStatus.EXCLUDED,
+        )
+
+    async def _confirm_indexed_documents(
+        self,
+        prepared_documents: dict[UUID, IndexStatus],
+    ) -> None:
+        documents = await self.repository.get_documents_by_ids(
+            list(prepared_documents)
+        )
+        for document_id in prepared_documents:
+            document = documents.get(document_id)
+            if document is None:
+                raise SemanticServiceError("SEMANTIC_INDEX_BUILD_ERROR")
+            await self.governance.confirm_indexed(document)
+
+    async def _mark_failed_documents(
+        self,
+        prepared_documents: dict[UUID, IndexStatus],
+    ) -> None:
+        retry_ids = [
+            document_id
+            for document_id, original in prepared_documents.items()
+            if original not in {IndexStatus.INDEXED, IndexStatus.EXCLUDED}
+        ]
+        if not retry_ids:
+            return
+        try:
+            documents = await self.repository.get_documents_by_ids(
+                retry_ids
+            )
+            for document_id in retry_ids:
+                document = documents.get(document_id)
+                if document is None or document.index_status is IndexStatus.FAILED:
+                    continue
+                if document.index_status is IndexStatus.NOT_REQUESTED:
+                    await self.governance.transition_index_status(
+                        document,
+                        IndexStatus.PENDING,
+                    )
+                if document.index_status is IndexStatus.PENDING:
+                    await self.governance.transition_index_status(
+                        document,
+                        IndexStatus.INDEXING,
+                    )
+                if document.index_status is IndexStatus.INDEXING:
+                    await self.governance.transition_index_status(
+                        document,
+                        IndexStatus.FAILED,
+                    )
+            await self.session.commit()
+        except Exception:
+            await self.session.rollback()
+            log_warning(
+                "No fue posible confirmar el fallo de indexación documental",
+                operation="semantic_index_status_cleanup",
+                error_code="SEMANTIC_INDEX_STATUS_UPDATE_ERROR",
+            )
+
+    async def _restore_previous_state(
+        self,
+        old_state: SemanticIndexState | None,
+    ) -> None:
+        try:
+            if old_state is None:
+                await asyncio.to_thread(self.state_store.clear)
+            else:
+                await asyncio.to_thread(self.state_store.write_atomic, old_state)
+        except SemanticStateError:
+            log_warning(
+                "No fue posible restaurar el estado semántico anterior",
+                operation="semantic_index_state_restore",
+                error_code="SEMANTIC_INDEX_STATE_RESTORE_ERROR",
+            )
 
     async def active_state(self, *, require_model: bool) -> SemanticIndexState:
         if not self.store.dependency_available():
@@ -315,7 +481,25 @@ class SemanticIndexService:
             model_dimension=self.embedding_model.dimension if require_model else None,
         )
         await self._validate_collection(state)
+        snapshot = await self._source_snapshot()
+        if (
+            state.source_fingerprint != snapshot.fingerprint
+            or state.indexed_chunks != snapshot.chunk_count
+        ):
+            raise SemanticServiceError("SEMANTIC_INDEX_REBUILD_REQUIRED")
         return state
+
+    async def _source_snapshot(
+        self,
+        *,
+        now: datetime | None = None,
+    ) -> ActiveSourceSnapshot:
+        """Fingerprint gobernado de la fuente indexable, calculado por lotes."""
+
+        return await self.repository.source_snapshot(
+            batch_size=settings.semantic_index_batch_size,
+            now=now,
+        )
 
     async def _validate_collection(self, state: SemanticIndexState) -> None:
         try:
@@ -371,6 +555,7 @@ class SemanticIndexService:
         return {
             "document_id": str(chunk.document_id),
             "document_type": chunk.document_type.value,
+            "knowledge_layer": chunk.knowledge_layer.value,
             "chunk_index": chunk.chunk_index,
             "start_page": chunk.start_page,
             "end_page": chunk.end_page,

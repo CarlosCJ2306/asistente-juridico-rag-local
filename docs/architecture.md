@@ -15,21 +15,33 @@ El sistema es local. FastAPI expone servicios documentales, recuperación, Chat 
 - PyMuPDF reconstruye texto por palabras y líneas; el limpiador y el chunker conservan orden y rangos de página.
 - Alembic mantiene el esquema explícitamente. FastAPI no crea tablas ni ejecuta migraciones al iniciar.
 
-Las políticas completas de transiciones, aprobación y expiración pertenecen a
-12A-0B. Su aplicación a FTS5, ChromaDB, selección de corpus y Chat RAG
-pertenece a 12A-0C; los índices actuales todavía no usan esos campos.
+`DocumentGovernanceService` centraliza las matrices de transición de revisión,
+vigencia e indexación, las reglas de capa y versionado, y la elegibilidad RAG
+calculada. Cada flujo de recuperación obtiene candidatos desde el índice,
+carga chunks y gobernanza vigente desde SQLite y aplica esa política antes de
+exponer resultados. La evaluación usa campos ya cargados, no persiste la
+elegibilidad y evita consultas N+1.
 
 ## Recuperación e IA local
 
 - FTS5 indexa texto de chunks y se sincroniza con triggers SQLite.
 - `multilingual-e5-small` genera embeddings locales bajo demanda.
-- ChromaDB persiste solo embeddings y metadatos mínimos; no reemplaza los chunks SQLite.
-- La búsqueda híbrida combina FTS5 y semántica mediante RRF, con filtros y revalidación contra SQLite.
+- ChromaDB persiste solo embeddings y metadatos mínimos, incluida la capa; no reemplaza los chunks SQLite.
+- El fingerprint semántico incluye los cambios de gobernanza que alteran la
+  fuente y la versión del esquema de metadata. Una incompatibilidad exige
+  rebuild explícito mediante colección temporal y activación atómica.
+- La búsqueda híbrida combina únicamente candidatos elegibles de FTS5 y
+  semántica mediante RRF, con filtros de capa y revalidación contra SQLite.
 - Qwen3 GGUF se ejecuta mediante `llama-cpp-python`, con plantilla conversacional del GGUF y carga explícita.
 
 ## RAG y citas
 
-`RagChatService` recupera una vez, obtiene texto vigente desde SQLite, selecciona contexto bajo presupuesto de tokens, neutraliza evidencia no confiable y genera fuera del event loop. `RagCitationService` valida markers, cobertura estructural y fuentes vigentes antes de construir la respuesta pública. El Chat es stateless y exige revisión profesional.
+`RagChatService` recupera una vez, obtiene texto vigente desde SQLite y vuelve
+a comprobar elegibilidad y filtros antes de seleccionar contexto. Si no queda
+evidencia elegible, no genera una respuesta jurídica. `RagCitationService`
+valida markers, cobertura y nuevamente la fuente gobernada antes de construir
+citas con nombre visible, capa, documento, chunk y páginas. El Chat es
+stateless y exige revisión profesional.
 
 ## Matrices HPN y Red jurídica
 

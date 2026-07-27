@@ -19,6 +19,7 @@ from app.schemas.semantic_search import (
     SemanticSearchResponse,
 )
 from app.services.semantic_index_service import SemanticIndexService, SemanticServiceError
+from app.services.document_governance_service import DocumentGovernanceService
 from app.vector_store.chroma_store import ChromaStoreError, VectorCandidate
 
 
@@ -31,6 +32,7 @@ class _ValidatedCandidate:
 class SemanticSearchService:
     def __init__(self, index_service: SemanticIndexService) -> None:
         self.index_service = index_service
+        self.governance = DocumentGovernanceService()
 
     async def search(
         self,
@@ -117,6 +119,7 @@ class SemanticSearchService:
                     chunk_id=item.chunk.chunk_id,
                     document_id=item.chunk.document_id,
                     document_type=item.chunk.document_type,
+                    knowledge_layer=item.chunk.knowledge_layer,
                     chunk_index=item.chunk.chunk_index,
                     start_page=item.chunk.start_page,
                     end_page=item.chunk.end_page,
@@ -170,6 +173,9 @@ class SemanticSearchService:
                 chunk is None
                 or not self._metadata_matches(candidate.metadata, chunk)
                 or not self._filters_match(request, chunk)
+                or not self.governance.evaluate_rag_eligibility(
+                    chunk.governance
+                ).eligible
             ):
                 stale += 1
                 continue
@@ -192,6 +198,7 @@ class SemanticSearchService:
     def _metadata_matches(metadata: dict[str, object], chunk: ActiveChunk) -> bool:
         document_id = metadata.get("document_id")
         document_type = metadata.get("document_type")
+        knowledge_layer = metadata.get("knowledge_layer")
         chunk_index = metadata.get("chunk_index")
         start_page = metadata.get("start_page")
         end_page = metadata.get("end_page")
@@ -200,6 +207,8 @@ class SemanticSearchService:
             and document_id == str(chunk.document_id)
             and isinstance(document_type, str)
             and document_type == chunk.document_type.value
+            and isinstance(knowledge_layer, str)
+            and knowledge_layer == chunk.knowledge_layer.value
             and type(chunk_index) is int
             and chunk_index == chunk.chunk_index
             and type(start_page) is int
@@ -214,6 +223,8 @@ class SemanticSearchService:
             return False
         if request.document_types and chunk.document_type not in request.document_types:
             return False
+        if request.knowledge_layers and chunk.knowledge_layer not in request.knowledge_layers:
+            return False
         if request.min_page is not None and chunk.start_page < request.min_page:
             return False
         return not (request.max_page is not None and chunk.end_page > request.max_page)
@@ -226,6 +237,14 @@ class SemanticSearchService:
         if request.document_types:
             clauses.append(
                 {"document_type": {"$in": [item.value for item in request.document_types]}}
+            )
+        if request.knowledge_layers:
+            clauses.append(
+                {
+                    "knowledge_layer": {
+                        "$in": [item.value for item in request.knowledge_layers]
+                    }
+                }
             )
         if request.min_page is not None:
             clauses.append({"start_page": {"$gte": request.min_page}})
@@ -251,6 +270,7 @@ class SemanticSearchService:
             for value in (
                 request.document_id,
                 request.document_types,
+                request.knowledge_layers,
                 request.min_page,
                 request.max_page,
             )

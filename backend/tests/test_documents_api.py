@@ -89,6 +89,12 @@ def test_upload_registers_pdf_in_category_and_returns_safe_metadata(document_cli
     assert body["review_status"] == "not_required"
     assert body["legal_validity_status"] == "unknown"
     assert body["index_status"] == "not_requested"
+    assert body["rag_eligible"] is False
+    assert body["rag_eligibility_reasons"] == [
+        "extraction_incomplete",
+        "index_not_ready",
+    ]
+    assert body["is_expired"] is False
     assert {"stored_filename", "relative_path", "sha256"}.isdisjoint(body)
     stored = list((project_root / "storage" / "documents" / "expedientes").glob("*.pdf"))
     assert len(stored) == 1
@@ -188,6 +194,11 @@ def test_list_and_detail_never_expose_private_storage_fields(document_client) ->
 
     for payload in (created, listed, detailed):
         assert {"stored_filename", "relative_path", "sha256"}.isdisjoint(payload)
+        assert {
+            "rag_eligible",
+            "rag_eligibility_reasons",
+            "is_expired",
+        } <= payload.keys()
 
 
 def test_list_get_filters_pagination_and_logical_delete(document_client) -> None:

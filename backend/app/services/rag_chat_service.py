@@ -145,6 +145,7 @@ class RagChatService:
                     top_k=request.top_k,
                     document_id=request.document_id,
                     document_types=request.document_types,
+                    knowledge_layers=request.knowledge_layers,
                     min_page=request.min_page,
                     max_page=request.max_page,
                 ),
@@ -299,6 +300,7 @@ class RagChatService:
             for value in (
                 request.document_id,
                 request.document_types,
+                request.knowledge_layers,
                 request.min_page,
                 request.max_page,
             )

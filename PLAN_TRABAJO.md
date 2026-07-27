@@ -41,15 +41,26 @@ Las Matrices HPN manuales y la Red jurídica ya están implementadas. La bibliot
 - Contrato público de documentos saneado, sin rutas, nombres almacenados ni
   hashes.
 
-### 12A-0B — Políticas y ciclo de vida documental — Siguiente bloque
+### 12A-0B — Políticas y ciclo de vida documental — Completada
 
-- Definir transiciones controladas, elegibilidad, aprobación, archivo y
-  expiración sin mezclar estados técnicos, editoriales y jurídicos.
+- Política central implementada para transiciones controladas, elegibilidad
+  RAG calculada, aprobación, vigencia, archivo y expiración, sin mezclar
+  estados técnicos, editoriales y jurídicos.
+- El contrato público informa elegibilidad, motivos técnicos seguros y
+  expiración sin persistir un indicador derivado.
 
-### 12A-0C — Integración de gobernanza con recuperación — Pendiente
+### 12A-0C — Integración de gobernanza con recuperación — Completada
 
-- Aplicar las políticas aprobadas a FTS5, ChromaDB, selección de corpus y Chat
-  RAG; no forma parte de 12A-0A.
+- FTS5, búsqueda semántica, recuperación híbrida, contexto RAG y citas
+  revalidan en SQLite la elegibilidad calculada y los filtros de capa.
+- El índice semántico incorpora gobernanza a su fingerprint, metadatos mínimos
+  y ciclo de `IndexStatus`; una proyección anterior requiere reconstrucción
+  explícita y nunca se actualiza automáticamente.
+
+### 12A-0D — Validación operativa de recuperación gobernada — Siguiente bloque
+
+- Validar de forma controlada la reconstrucción explícita del índice derivado
+  y los flujos gobernados sobre persistencias locales respaldadas.
 
 ### 12A-1 — Biblioteca documental frontend
 
@@ -81,8 +92,9 @@ Flujo de revisión de matrices y relación controlada con la proyección de Red 
 
 ## Dependencias
 
-12A-0A establece el modelo persistente; 12A-0B es el próximo bloque autorizado
-y precede la integración 12A-0C. La biblioteca y la carga habilitan el
+12A-0A establece el modelo persistente, 12A-0B centraliza sus políticas y
+12A-0C las integra con recuperación y Chat RAG. 12A-0D es el próximo bloque
+autorizado para la validación operativa controlada. La biblioteca y la carga habilitan el
 procesamiento; el procesamiento e índices habilitan el Chat RAG; el Chat con
 fuentes y la gobernanza de evidencia preceden a propuestas HPN; la revisión de
 esas propuestas precede su trazabilidad hacia la Red jurídica.

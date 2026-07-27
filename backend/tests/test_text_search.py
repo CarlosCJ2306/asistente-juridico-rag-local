@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import UUID
 
@@ -14,7 +15,15 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 from sqlalchemy import text
 
-from app.database.models.document import Document, DocumentStatus, DocumentType
+from app.database.models.document import (
+    Document,
+    DocumentStatus,
+    DocumentType,
+    IndexStatus,
+    KnowledgeLayer,
+    LegalValidityStatus,
+    ReviewStatus,
+)
 from app.database.models.document_chunk import DocumentChunk
 from app.database.repositories.text_search_repository import (
     TextSearchRepository,
@@ -52,6 +61,7 @@ def text_search_database(tmp_path: Path):
                 size_bytes=1,
                 sha256="a" * 64,
                 status=DocumentStatus.EXTRACTED,
+                index_status=IndexStatus.INDEXED,
             )
             second = Document(
                 original_filename="second.pdf",
@@ -63,6 +73,7 @@ def text_search_database(tmp_path: Path):
                 size_bytes=1,
                 sha256="b" * 64,
                 status=DocumentStatus.EXTRACTED,
+                index_status=IndexStatus.INDEXED,
             )
             session.add_all([first, second])
             await session.flush()
@@ -148,6 +159,97 @@ def test_text_search_triggers_update_delete_and_soft_delete(text_search_database
 
     asyncio.run(mutate())
     assert _search(manager, TextSearchRequest(query="actualización")).total == 0
+
+
+def test_text_search_revalidates_governance_and_layer_filters(
+    text_search_database,
+) -> None:
+    manager, (first_id, second_id) = text_search_database
+
+    async def configure_governance() -> None:
+        async with manager.get_session_factory()() as session:
+            first = await session.get(Document, first_id)
+            second = await session.get(Document, second_id)
+            assert first is not None and second is not None
+            first.review_status = ReviewStatus.REJECTED
+            second.knowledge_layer = KnowledgeLayer.MANAGED_CORPUS
+            second.review_status = ReviewStatus.APPROVED
+            second.legal_validity_status = LegalValidityStatus.CURRENT
+
+            expired = Document(
+                original_filename="expired.pdf",
+                stored_filename="expired.pdf",
+                relative_path="storage/documents/otros/expired.pdf",
+                document_type=DocumentType.OTRO,
+                mime_type="application/pdf",
+                extension=".pdf",
+                size_bytes=1,
+                sha256="c" * 64,
+                status=DocumentStatus.EXTRACTED,
+                knowledge_layer=KnowledgeLayer.TEMPORARY,
+                expires_at=datetime.now(timezone.utc) - timedelta(minutes=1),
+                index_status=IndexStatus.INDEXED,
+            )
+            candidate = Document(
+                original_filename="candidate.pdf",
+                stored_filename="candidate.pdf",
+                relative_path="storage/documents/otros/candidate.pdf",
+                document_type=DocumentType.OTRO,
+                mime_type="application/pdf",
+                extension=".pdf",
+                size_bytes=1,
+                sha256="d" * 64,
+                status=DocumentStatus.EXTRACTED,
+                knowledge_layer=KnowledgeLayer.GLOBAL_CANDIDATE,
+                review_status=ReviewStatus.APPROVED,
+                index_status=IndexStatus.INDEXED,
+            )
+            session.add_all([expired, candidate])
+            await session.flush()
+            session.add_all(
+                [
+                    DocumentChunk(
+                        document_id=expired.id,
+                        chunk_index=1,
+                        text="marcador gobernado temporal",
+                        char_count=27,
+                        word_count=3,
+                        start_page=1,
+                        end_page=1,
+                    ),
+                    DocumentChunk(
+                        document_id=candidate.id,
+                        chunk_index=1,
+                        text="marcador gobernado candidato",
+                        char_count=28,
+                        word_count=3,
+                        start_page=1,
+                        end_page=1,
+                    ),
+                ]
+            )
+            await session.commit()
+
+    asyncio.run(configure_governance())
+    assert _search(
+        manager,
+        TextSearchRequest(query="debido", document_id=first_id),
+    ).total == 0
+    managed = _search(
+        manager,
+        TextSearchRequest(
+            query="procedimiento",
+            knowledge_layers=[
+                KnowledgeLayer.MANAGED_CORPUS,
+                KnowledgeLayer.MANAGED_CORPUS,
+            ],
+        ),
+    )
+    assert managed.total == 1
+    assert managed.items[0].document_id == second_id
+    assert managed.items[0].knowledge_layer is KnowledgeLayer.MANAGED_CORPUS
+    assert _search(manager, TextSearchRequest(query="temporal")).total == 0
+    assert _search(manager, TextSearchRequest(query="candidato")).total == 0
 
 
 def test_text_search_compiler_rejects_controls_and_never_interprets_operators(text_search_database) -> None:

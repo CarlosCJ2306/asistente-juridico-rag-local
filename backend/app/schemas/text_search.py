@@ -8,7 +8,8 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.core.config import settings
-from app.database.models.document import DocumentType
+from app.database.models.document import DocumentType, KnowledgeLayer
+from app.schemas.governance_filters import normalize_knowledge_layers
 
 
 class TextMatchMode(str, Enum):
@@ -26,6 +27,7 @@ class TextSearchRequest(BaseModel):
     match_mode: TextMatchMode = TextMatchMode.ALL_TERMS
     document_id: UUID | None = None
     document_types: list[DocumentType] | None = None
+    knowledge_layers: list[KnowledgeLayer] | None = None
     min_page: int | None = Field(default=None, ge=1)
     max_page: int | None = Field(default=None, ge=1)
     page: int = Field(default=1, ge=1)
@@ -51,6 +53,10 @@ class TextSearchRequest(BaseModel):
             raise ValueError("La cantidad de tipos documentales supera el límite permitido")
         return value
 
+    _normalize_knowledge_layers = field_validator("knowledge_layers")(
+        normalize_knowledge_layers
+    )
+
     @model_validator(mode="after")
     def validate_page_range(self) -> "TextSearchRequest":
         if self.min_page is not None and self.max_page is not None and self.min_page > self.max_page:
@@ -62,6 +68,7 @@ class TextSearchItem(BaseModel):
     chunk_id: UUID
     document_id: UUID
     document_type: DocumentType
+    knowledge_layer: KnowledgeLayer = KnowledgeLayer.PRIVATE_LIBRARY
     chunk_index: int
     start_page: int
     end_page: int

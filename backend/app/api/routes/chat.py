@@ -31,6 +31,7 @@ def _rag_http_error(error: Exception) -> HTTPException:
         "SEMANTIC_INDEX_NOT_READY",
         "SEMANTIC_INDEX_STATE_INVALID",
         "SEMANTIC_INDEX_INCOMPATIBLE",
+        "SEMANTIC_INDEX_REBUILD_REQUIRED",
         "EMBEDDING_MODEL_NOT_LOADED",
         "HYBRID_SEARCH_UNAVAILABLE",
     }:

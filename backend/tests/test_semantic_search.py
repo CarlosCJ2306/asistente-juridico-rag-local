@@ -8,6 +8,7 @@ import math
 import os
 import subprocess
 import sys
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from uuid import uuid4
 
@@ -16,9 +17,17 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.core import paths
-from app.core.config import Settings
+from app.core.config import Settings, settings
 from app.database.base import Base
-from app.database.models.document import Document, DocumentStatus, DocumentType
+from app.database.models.document import (
+    Document,
+    DocumentStatus,
+    DocumentType,
+    IndexStatus,
+    KnowledgeLayer,
+    LegalValidityStatus,
+    ReviewStatus,
+)
 from app.database.models.document_chunk import DocumentChunk
 from app.database.repositories.semantic_chunk_repository import ActiveChunk
 from app.database.session import DatabaseSessionManager, get_db_session
@@ -367,6 +376,7 @@ def test_chroma_adapter_rejects_invalid_insert_and_misaligned_query_arrays(
     allowed_metadata: dict[str, str | int] = {
         "document_id": str(uuid4()),
         "document_type": "jurisprudencia",
+        "knowledge_layer": "private_library",
         "chunk_index": 1,
         "start_page": 1,
         "end_page": 2,
@@ -413,7 +423,7 @@ def test_semantic_state_is_atomic_minimal_and_rejects_invalid_json(tmp_path: Pat
     store = SemanticStateStore(path)
     assert store.read() is None and not path.parent.exists()
     state = SemanticIndexState(
-        schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
         active_collection=f"legal_chunks_{uuid4().hex}",
         embedding_model="intfloat/multilingual-e5-small",
         embedding_dimension=384,
@@ -514,7 +524,7 @@ def test_semantic_state_rejects_empty_partial_and_atomic_replace_failure(
     original = "original-state"
     path.write_text(original, encoding="utf-8")
     state = SemanticIndexState(
-        schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
         active_collection=f"legal_chunks_{uuid4().hex}",
         embedding_model="intfloat/multilingual-e5-small",
         embedding_dimension=3,
@@ -559,6 +569,7 @@ def test_semantic_rebuild_batches_excludes_deleted_and_activates_atomically(
                     set(metadata) == {
                         "document_id",
                         "document_type",
+                        "knowledge_layer",
                         "chunk_index",
                         "start_page",
                         "end_page",
@@ -568,8 +579,48 @@ def test_semantic_rebuild_batches_excludes_deleted_and_activates_atomically(
                 assert len(model.encoded) == 2 and all(
                     text.startswith("passage: ") for batch in model.encoded for text in batch
                 )
+                first = await session.get(Document, identifiers[0])
+                second = await session.get(Document, identifiers[1])
+                assert first is not None and second is not None
+                assert first.index_status is IndexStatus.INDEXED
+                assert second.index_status is IndexStatus.INDEXED
                 status = await service.status()
                 assert status.state == "ready" and not status.needs_rebuild
+        finally:
+            await manager.dispose()
+
+    _run(scenario())
+
+
+def test_semantic_rebuild_excludes_governance_ineligible_documents(
+    tmp_path: Path,
+) -> None:
+    async def scenario() -> None:
+        manager, identifiers = await _semantic_database(tmp_path)
+        store = FakeChromaStore()
+        state_store = SemanticStateStore(tmp_path / "vector" / "state.json")
+        try:
+            async with manager.get_session_factory()() as session:
+                rejected = await session.get(Document, identifiers[1])
+                assert rejected is not None
+                rejected.review_status = ReviewStatus.REJECTED
+                await session.commit()
+                service = SemanticIndexService(
+                    session,
+                    embedding_model=FakeEmbeddingModel(),
+                    store=store,
+                    state_store=state_store,
+                )
+                response = await service.rebuild()
+                assert response.indexed_chunks == 1
+                refreshed = await session.get(Document, identifiers[1])
+                assert refreshed is not None
+                assert refreshed.index_status is IndexStatus.EXCLUDED
+                state = state_store.read()
+                assert state is not None
+                rows = store.collections[state.active_collection]["rows"]
+                assert isinstance(rows, dict)
+                assert str(identifiers[3]) not in rows
         finally:
             await manager.dispose()
 
@@ -585,6 +636,10 @@ def test_semantic_rebuild_batches_excludes_deleted_and_activates_atomically(
         ("document_type", True),
         ("replace", True),
         ("delete_and_add", True),
+        ("knowledge_layer", True),
+        ("review_status", True),
+        ("legal_validity", True),
+        ("expires_at", True),
     ],
 )
 def test_semantic_status_uses_source_fingerprint_with_unchanged_count(
@@ -647,6 +702,25 @@ def test_semantic_status_uses_source_fingerprint_with_unchanged_count(
                                 end_page=2,
                             )
                         )
+                    elif mutation == "knowledge_layer":
+                        document = await session.get(Document, identifiers[0])
+                        assert document is not None
+                        document.knowledge_layer = KnowledgeLayer.MANAGED_CORPUS
+                        document.review_status = ReviewStatus.APPROVED
+                        document.legal_validity_status = LegalValidityStatus.CURRENT
+                    elif mutation == "review_status":
+                        document = await session.get(Document, identifiers[0])
+                        assert document is not None
+                        document.review_status = ReviewStatus.APPROVED
+                    elif mutation == "legal_validity":
+                        document = await session.get(Document, identifiers[0])
+                        assert document is not None
+                        document.legal_validity_status = LegalValidityStatus.CURRENT
+                    elif mutation == "expires_at":
+                        document = await session.get(Document, identifiers[0])
+                        assert document is not None
+                        document.knowledge_layer = KnowledgeLayer.TEMPORARY
+                        document.expires_at = datetime.now(timezone.utc) + timedelta(days=1)
                     await session.commit()
                 status = await service.status()
                 assert status.active_chunks == 2
@@ -665,12 +739,12 @@ def test_semantic_rebuild_failure_preserves_previous_index_and_removes_temporary
         old_name = f"legal_chunks_{uuid4().hex}"
         store.create_collection(
             old_name,
-            schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
             embedding_model="intfloat/multilingual-e5-small",
             embedding_dimension=3,
         )
         old_state = SemanticIndexState(
-            schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
             active_collection=old_name,
             embedding_model="intfloat/multilingual-e5-small",
             embedding_dimension=3,
@@ -693,6 +767,34 @@ def test_semantic_rebuild_failure_preserves_previous_index_and_removes_temporary
                     await service.rebuild()
                 assert state_store.read() == old_state
                 assert set(store.collections) == {old_name}
+        finally:
+            await manager.dispose()
+
+    _run(scenario())
+
+
+def test_semantic_rebuild_marks_started_documents_failed_on_error(
+    tmp_path: Path,
+) -> None:
+    async def scenario() -> None:
+        manager, identifiers = await _semantic_database(tmp_path)
+        store = FakeChromaStore()
+        store.fail_add_on_call = 1
+        try:
+            async with manager.get_session_factory()() as session:
+                service = SemanticIndexService(
+                    session,
+                    embedding_model=FakeEmbeddingModel(),
+                    store=store,
+                    state_store=SemanticStateStore(tmp_path / "vector" / "state.json"),
+                )
+                with pytest.raises(SemanticServiceError):
+                    await service.rebuild()
+                first = await session.get(Document, identifiers[0])
+                second = await session.get(Document, identifiers[1])
+                assert first is not None and second is not None
+                assert first.index_status is IndexStatus.FAILED
+                assert second.index_status is IndexStatus.FAILED
         finally:
             await manager.dispose()
 
@@ -753,7 +855,7 @@ def test_semantic_rebuild_cleanup_failures_preserve_safe_active_state(
         base_state_store = SemanticStateStore(path)
         old_name = f"legal_chunks_{uuid4().hex}"
         old_state = SemanticIndexState(
-            schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
             active_collection=old_name,
             embedding_model="intfloat/multilingual-e5-small",
             embedding_dimension=3,
@@ -768,7 +870,7 @@ def test_semantic_rebuild_cleanup_failures_preserve_safe_active_state(
                 failed_store = FakeChromaStore()
                 failed_store.create_collection(
                     old_name,
-                    schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
                     embedding_model="intfloat/multilingual-e5-small",
                     embedding_dimension=3,
                 )
@@ -789,7 +891,7 @@ def test_semantic_rebuild_cleanup_failures_preserve_safe_active_state(
                 successful_store = FakeChromaStore()
                 successful_store.create_collection(
                     old_name,
-                    schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
                     embedding_model="intfloat/multilingual-e5-small",
                     embedding_dimension=3,
                 )
@@ -911,13 +1013,13 @@ def test_semantic_rebuild_activates_explicit_empty_index_for_zero_active_chunks(
         old_name = f"legal_chunks_{uuid4().hex}"
         store.create_collection(
             old_name,
-            schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
             embedding_model="intfloat/multilingual-e5-small",
             embedding_dimension=3,
         )
         state_store.write_atomic(
             SemanticIndexState(
-                schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
                 active_collection=old_name,
                 embedding_model="intfloat/multilingual-e5-small",
                 embedding_dimension=3,
@@ -971,6 +1073,7 @@ def test_semantic_search_uses_query_embedding_filters_sqlite_and_safe_snippet(tm
                         query="acción sintética",
                         document_id=identifiers[0],
                         document_types=[DocumentType.JURISPRUDENCIA],
+                        knowledge_layers=[KnowledgeLayer.PRIVATE_LIBRARY],
                         min_page=1,
                         max_page=2,
                         top_k=1,
@@ -983,6 +1086,7 @@ def test_semantic_search_uses_query_embedding_filters_sqlite_and_safe_snippet(tm
                     "$and": [
                         {"document_id": str(identifiers[0])},
                         {"document_type": {"$in": ["jurisprudencia"]}},
+                        {"knowledge_layer": {"$in": ["private_library"]}},
                         {"start_page": {"$gte": 1}},
                         {"end_page": {"$lte": 2}},
                     ]
@@ -1040,6 +1144,65 @@ def test_semantic_search_discards_stale_duplicate_and_mismatched_candidates(tmp_
 
 
 @pytest.mark.parametrize(
+    "governance_change",
+    ["deleted", "rejected", "repealed", "temporary_expired", "global_candidate"],
+)
+def test_semantic_candidate_is_revalidated_with_current_sqlite_governance(
+    tmp_path: Path,
+    governance_change: str,
+) -> None:
+    async def scenario() -> None:
+        manager, identifiers = await _semantic_database(tmp_path)
+        store = FakeChromaStore()
+        state_store = SemanticStateStore(tmp_path / "vector" / "state.json")
+        try:
+            async with manager.get_session_factory()() as session:
+                index = SemanticIndexService(
+                    session,
+                    embedding_model=FakeEmbeddingModel(),
+                    store=store,
+                    state_store=state_store,
+                )
+                await index.rebuild()
+                state = state_store.read()
+                assert state is not None
+                rows = store.collections[state.active_collection]["rows"]
+                assert isinstance(rows, dict)
+                metadata = dict(rows[str(identifiers[2])][1])
+                document = await session.get(Document, identifiers[0])
+                assert document is not None
+                if governance_change == "deleted":
+                    document.is_deleted = True
+                elif governance_change == "rejected":
+                    document.review_status = ReviewStatus.REJECTED
+                elif governance_change == "repealed":
+                    document.legal_validity_status = LegalValidityStatus.REPEALED
+                elif governance_change == "temporary_expired":
+                    document.knowledge_layer = KnowledgeLayer.TEMPORARY
+                    document.expires_at = datetime.now(timezone.utc) - timedelta(seconds=1)
+                else:
+                    document.knowledge_layer = KnowledgeLayer.GLOBAL_CANDIDATE
+                    document.review_status = ReviewStatus.APPROVED
+                await session.commit()
+                validated, stale = await SemanticSearchService(index)._validate_candidates(
+                    [
+                        VectorCandidate(
+                            chunk_id=str(identifiers[2]),
+                            metadata=metadata,
+                            distance=0.1,
+                        )
+                    ],
+                    SemanticSearchRequest(query="consulta sintética"),
+                )
+                assert validated == []
+                assert stale == 1
+        finally:
+            await manager.dispose()
+
+    _run(scenario())
+
+
+@pytest.mark.parametrize(
     ("field", "value"),
     [
         ("document_id", None),
@@ -1069,6 +1232,7 @@ def test_semantic_metadata_validation_rejects_missing_wrong_types_and_mismatches
     metadata: dict[str, object] = {
         "document_id": str(chunk.document_id),
         "document_type": chunk.document_type.value,
+        "knowledge_layer": chunk.knowledge_layer.value,
         "chunk_index": chunk.chunk_index,
         "start_page": chunk.start_page,
         "end_page": chunk.end_page,
@@ -1253,6 +1417,7 @@ def test_semantic_api_maps_busy_and_success_without_exposing_internal_data(
         ("rebuild", "SEMANTIC_INDEX_BUILD_ERROR", 500),
         ("search", "SEMANTIC_INDEX_NOT_READY", 503),
         ("search", "SEMANTIC_INDEX_INCOMPATIBLE", 503),
+        ("search", "SEMANTIC_INDEX_REBUILD_REQUIRED", 503),
         ("search", "EMBEDDING_MODEL_NOT_LOADED", 503),
         ("search", "SEMANTIC_SEARCH_ERROR", 500),
     ],
@@ -1412,7 +1577,7 @@ def test_optional_real_chroma_persists_synthetic_vectors(tmp_path: Path) -> None
     name = f"legal_chunks_{uuid4().hex}"
     store.create_collection(
         name,
-        schema_version=1,
+        schema_version=settings.semantic_index_schema_version,
         embedding_model="intfloat/multilingual-e5-small",
         embedding_dimension=2,
     )
@@ -1422,9 +1587,10 @@ def test_optional_real_chroma_persists_synthetic_vectors(tmp_path: Path) -> None
         ids=[identifier],
         embeddings=[[1.0, 0.0]],
         metadatas=[{
-            "document_id": str(uuid4()),
-            "document_type": "otro",
-            "chunk_index": 1,
+                "document_id": str(uuid4()),
+                "document_type": "otro",
+                "knowledge_layer": "private_library",
+                "chunk_index": 1,
             "start_page": 1,
             "end_page": 1,
         }],
@@ -1442,9 +1608,10 @@ def test_optional_real_chroma_persists_synthetic_vectors(tmp_path: Path) -> None
     documents = payload.get("documents")
     assert documents is None or all(document is None for document in documents)
     assert payload["metadatas"] == [{
-        "document_id": result[0].metadata["document_id"],
-        "document_type": "otro",
-        "chunk_index": 1,
+            "document_id": result[0].metadata["document_id"],
+            "document_type": "otro",
+            "knowledge_layer": "private_library",
+            "chunk_index": 1,
         "start_page": 1,
         "end_page": 1,
     }]

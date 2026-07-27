@@ -78,6 +78,15 @@ class SemanticStateStore:
         finally:
             temporary.unlink(missing_ok=True)
 
+    def clear(self) -> None:
+        """Retira únicamente el puntero derivado cuando no existía estado previo."""
+
+        self._validate_path()
+        try:
+            self.path.unlink(missing_ok=True)
+        except OSError as exc:
+            raise SemanticStateError("SEMANTIC_INDEX_BUILD_ERROR") from exc
+
     def _validate(self, state: SemanticIndexState) -> None:
         if (
             isinstance(state.schema_version, bool)

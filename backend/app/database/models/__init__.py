@@ -8,6 +8,7 @@ from app.database.models.document import (
     IndexStatus,
     KnowledgeLayer,
     LegalValidityStatus,
+    RagEligibilityReason,
     ReviewStatus,
     SourceKind,
 )
@@ -26,7 +27,8 @@ from app.database.models.hpn import (
 
 __all__ = [
     "Document", "DocumentChunk", "DocumentPage", "DocumentStatus", "DocumentType",
-    "IndexStatus", "KnowledgeLayer", "LegalValidityStatus", "ReviewStatus", "SourceKind",
+    "IndexStatus", "KnowledgeLayer", "LegalValidityStatus", "RagEligibilityReason",
+    "ReviewStatus", "SourceKind",
     "HpnMatrix", "HpnMatrixStatus", "HpnNode", "HpnNodeSource", "HpnNodeType",
     "HpnRelation", "HpnRelationType", "HpnReviewStatus",
 ]

@@ -1,5 +1,45 @@
 # Historial técnico de cambios
 
+## 2026-07-27 — Fase 12A-0C: Recuperación gobernada
+
+- **Modificado:** búsqueda textual, semántica e híbrida aceptan filtros
+  `knowledge_layers` y revalidan cada chunk y documento mediante la política
+  central cargada desde SQLite.
+- **Modificado:** contexto RAG y citas vuelven a comprobar elegibilidad antes
+  del prompt y de la respuesta; las citas incorporan nombre visible y capa sin
+  exponer metadatos internos.
+- **Añadido:** ChromaDB conserva `knowledge_layer` como metadata mínima y el
+  fingerprint incluye capa, revisión, vigencia, expiración, archivo, borrado y
+  versión del esquema vectorial.
+- **Añadido:** el rebuild explícito controla `pending → indexing → indexed`,
+  confirma `indexed` solo tras persistir y validar la proyección, y registra
+  `failed` ante errores iniciados sin invalidar un índice anterior útil.
+- **Seguridad:** SQLite conserva la decisión final; FTS5, ChromaDB,
+  `document_id` y filtros públicos no pueden omitir la gobernanza. No existe
+  rebuild automático.
+- **Validaciones:** 695 pruebas aprobadas; Ruff y mypy sin errores.
+- **Pendiente:** la proyección semántica de esquema anterior requiere una
+  reconstrucción explícita y validación operativa en 12A-0D.
+- **Estado:** completada.
+
+## 2026-07-27 — Fase 12A-0B: Políticas y ciclo de vida documental
+
+- **Añadido:** política central de elegibilidad RAG calculada por capa,
+  extracción, revisión, vigencia, expiración, archivo e indexación.
+- **Añadido:** matrices explícitas para transiciones de revisión, vigencia e
+  indexación, junto con validaciones de capas ordinarias y versionado sin
+  ciclos simples.
+- **Modificado:** carga, listado y detalle documentales exponen únicamente
+  `rag_eligible`, motivos técnicos tipados e `is_expired`, calculados con los
+  campos ya cargados y sin consultas N+1.
+- **Seguridad:** la expiración solo detecta y excluye; no elimina documentos,
+  páginas, chunks ni archivos. Los errores y logs no incluyen contenido o
+  metadatos documentales.
+- **Validaciones:** 676 pruebas aprobadas; Ruff y mypy sin errores.
+- **Pendiente:** FTS5, ChromaDB, búsqueda y Chat RAG consumirán esta política
+  exclusivamente en 12A-0C.
+- **Estado:** completada.
+
 ## 2026-07-26 — Fase 12A-0A: Fundamentos de gobernanza documental
 
 - **Añadido:** capas de conocimiento, procedencia, revisión, vigencia,

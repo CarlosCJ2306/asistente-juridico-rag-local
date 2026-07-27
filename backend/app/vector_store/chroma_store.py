@@ -13,7 +13,7 @@ from uuid import UUID
 
 from app.core.config import settings
 from app.core.paths import VECTOR_DIR
-from app.database.models.document import DocumentType
+from app.database.models.document import DocumentType, KnowledgeLayer
 
 
 class ChromaStoreError(RuntimeError):
@@ -37,6 +37,7 @@ class ChromaStore:
     _METADATA_KEYS = {
         "document_id",
         "document_type",
+        "knowledge_layer",
         "chunk_index",
         "start_page",
         "end_page",
@@ -172,6 +173,7 @@ class ChromaStore:
             return False
         document_id = metadata.get("document_id")
         document_type = metadata.get("document_type")
+        knowledge_layer = metadata.get("knowledge_layer")
         chunk_index = metadata.get("chunk_index")
         start_page = metadata.get("start_page")
         end_page = metadata.get("end_page")
@@ -180,6 +182,8 @@ class ChromaStore:
             and cls._valid_uuid(document_id)
             and isinstance(document_type, str)
             and document_type in {item.value for item in DocumentType}
+            and isinstance(knowledge_layer, str)
+            and knowledge_layer in {item.value for item in KnowledgeLayer}
             and type(chunk_index) is int
             and chunk_index >= 1
             and type(start_page) is int

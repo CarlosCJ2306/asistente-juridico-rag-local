@@ -26,6 +26,7 @@ from app.schemas.text_search import TextSearchItem, TextSearchRequest
 from app.services.semantic_index_service import SemanticIndexService, SemanticServiceError
 from app.services.semantic_search_service import SemanticSearchService
 from app.services.text_search_service import TextSearchService, TextSearchValidationError
+from app.services.document_governance_service import DocumentGovernanceService
 
 
 class HybridSearchError(RuntimeError):
@@ -60,6 +61,7 @@ class HybridSearchService:
         self.text_service = text_service or TextSearchService(session)
         self.semantic_service = semantic_service or SemanticSearchService(index_service)
         self.repository = repository or index_service.repository
+        self.governance = DocumentGovernanceService()
 
     async def search(
         self,
@@ -87,6 +89,7 @@ class HybridSearchService:
                     match_mode=request.text_match_mode,
                     document_id=request.document_id,
                     document_types=request.document_types,
+                    knowledge_layers=request.knowledge_layers,
                     min_page=request.min_page,
                     max_page=request.max_page,
                     page=1,
@@ -100,6 +103,7 @@ class HybridSearchService:
                     top_k=candidate_limit,
                     document_id=request.document_id,
                     document_types=request.document_types,
+                    knowledge_layers=request.knowledge_layers,
                     min_page=request.min_page,
                     max_page=request.max_page,
                 ),
@@ -214,6 +218,9 @@ class HybridSearchService:
                 chunk is None
                 or any(not self._metadata_matches(item, chunk) for item in source_items)
                 or not self._filters_match(request, chunk)
+                or not self.governance.evaluate_rag_eligibility(
+                    chunk.governance
+                ).eligible
             ):
                 stale += 1
                 continue
@@ -228,6 +235,7 @@ class HybridSearchService:
         return (
             item.document_id == chunk.document_id
             and item.document_type == chunk.document_type
+            and item.knowledge_layer == chunk.knowledge_layer
             and item.chunk_index == chunk.chunk_index
             and item.start_page == chunk.start_page
             and item.end_page == chunk.end_page
@@ -238,6 +246,8 @@ class HybridSearchService:
         if request.document_id is not None and chunk.document_id != request.document_id:
             return False
         if request.document_types and chunk.document_type not in request.document_types:
+            return False
+        if request.knowledge_layers and chunk.knowledge_layer not in request.knowledge_layers:
             return False
         if request.min_page is not None and chunk.start_page < request.min_page:
             return False
@@ -272,6 +282,7 @@ class HybridSearchService:
             chunk_id=chunk.chunk_id,
             document_id=chunk.document_id,
             document_type=chunk.document_type,
+            knowledge_layer=chunk.knowledge_layer,
             chunk_index=chunk.chunk_index,
             start_page=chunk.start_page,
             end_page=chunk.end_page,
@@ -300,6 +311,7 @@ class HybridSearchService:
             for value in (
                 request.document_id,
                 request.document_types,
+                request.knowledge_layers,
                 request.min_page,
                 request.max_page,
             )

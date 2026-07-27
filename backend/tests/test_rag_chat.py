@@ -13,7 +13,7 @@ from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
 from app.core.config import Settings
-from app.database.models.document import DocumentType
+from app.database.models.document import DocumentType, KnowledgeLayer, ReviewStatus
 from app.database.repositories.semantic_chunk_repository import ActiveChunk
 from app.database.session import DatabaseSessionManager, get_db_session
 from app.main import app
@@ -23,6 +23,7 @@ from app.schemas.rag_chat import RagChatRequest, RagChatResponse
 from app.services import rag_chat_service as chat_module
 from app.services.rag_chat_service import RagChatError, RagChatService
 from app.services.rag_context_service import RagContextService
+from app.services.document_governance_service import DocumentGovernanceSnapshot
 from app.services.rag_prompt_service import (
     EVIDENCE_CLOSE,
     EVIDENCE_OPEN,
@@ -465,13 +466,23 @@ def test_hybrid_receives_every_request_field_unchanged() -> None:
         top_k=3,
         document_id=chunk.document_id,
         document_types=[chunk.document_type],
+        knowledge_layers=[
+            KnowledgeLayer.PRIVATE_LIBRARY,
+            KnowledgeLayer.PRIVATE_LIBRARY,
+        ],
         min_page=1,
         max_page=2,
     )
     asyncio.run(service.chat(request))
     forwarded = hybrid.calls[0]
     for field in (
-        "text_match_mode", "top_k", "document_id", "document_types", "min_page", "max_page"
+        "text_match_mode",
+        "top_k",
+        "document_id",
+        "document_types",
+        "knowledge_layers",
+        "min_page",
+        "max_page",
     ):
         assert getattr(forwarded, field) == getattr(request, field)
     assert forwarded.query == request.question
@@ -512,6 +523,7 @@ def test_all_stale_candidates_return_insufficient_without_generation() -> None:
         ("EMBEDDING_MODEL_NOT_LOADED", 503),
         ("FTS5_NOT_AVAILABLE", 503),
         ("SEMANTIC_INDEX_NOT_READY", 503),
+        ("SEMANTIC_INDEX_REBUILD_REQUIRED", 503),
         ("RAG_GENERATION_BUSY", 409),
         ("RAG_OUTPUT_INVALID", 500),
     ],
@@ -653,6 +665,40 @@ def test_context_service_revalidates_metadata_filters_order_and_duplicates() -> 
     items = [_item(first), _item(first), _item(second).model_copy(update={"start_page": 99})]
     result = asyncio.run(RagContextService(Repo()).get_valid_chunks(items, request))  # type: ignore[arg-type]
     assert result == [first]
+
+
+def test_context_service_excludes_chunk_that_lost_governance_eligibility() -> None:
+    base = _chunk(1)
+    rejected = ActiveChunk(
+        chunk_id=base.chunk_id,
+        document_id=base.document_id,
+        document_type=base.document_type,
+        chunk_index=base.chunk_index,
+        text=base.text,
+        start_page=base.start_page,
+        end_page=base.end_page,
+        document_name=base.document_name,
+        governance=DocumentGovernanceSnapshot(
+            review_status=ReviewStatus.REJECTED,
+        ),
+    )
+
+    class Repo:
+        async def get_active_by_ids(self, ids):
+            return {rejected.chunk_id: rejected}
+
+    result = asyncio.run(
+        RagContextService(Repo()).get_valid_chunks(  # type: ignore[arg-type]
+            [_item(rejected)],
+            RagChatRequest(
+                question="x",
+                document_id=rejected.document_id,
+                knowledge_layers=[KnowledgeLayer.PRIVATE_LIBRARY],
+            ),
+        )
+    )
+
+    assert result == []
 
 
 def test_api_success_insufficient_errors_and_privacy(tmp_path, monkeypatch) -> None:

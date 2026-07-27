@@ -20,6 +20,10 @@ from app.database.repositories.document_repository import (
     DuplicateDocumentError,
 )
 from app.schemas.document import DocumentCreate, DocumentRead, DocumentUploadGovernance
+from app.services.document_governance_service import (
+    DocumentGovernanceError,
+    DocumentGovernanceService,
+)
 
 
 PDF_SIGNATURE = b"%PDF-"
@@ -62,6 +66,7 @@ class DocumentService:
     ) -> None:
         self.session = session
         self.repository = DocumentRepository(session)
+        self.governance = DocumentGovernanceService(session)
         self.temporary_directory = temporary_directory.resolve()
         self.documents_directory = documents_directory.resolve()
         self.project_root = project_root.resolve()
@@ -89,6 +94,7 @@ class DocumentService:
             governance = DocumentUploadGovernance.model_validate(
                 (governance or DocumentUploadGovernance()).model_dump()
             )
+            self.governance.validate_public_upload(governance)
             original_filename = self._normalize_original_filename(upload.filename)
             self._validate_declared_metadata(original_filename, upload.content_type)
             temporary_path, size_bytes, sha256 = await self._write_temporary_file(upload)
@@ -148,11 +154,14 @@ class DocumentService:
                 sha256_prefix=sha256[:12],
                 duration_ms=duration_ms,
             )
-            return DocumentRead.model_validate(document)
+            return self.governance.to_public_read(document)
         except DuplicateDocumentError:
             await self.session.rollback()
             raise
         except (InvalidDocumentError, DocumentTooLargeError):
+            await self.session.rollback()
+            raise
+        except DocumentGovernanceError:
             await self.session.rollback()
             raise
         except DocumentStorageError:

@@ -14,6 +14,7 @@ from app.database.models.document import (
     IndexStatus,
     KnowledgeLayer,
     LegalValidityStatus,
+    RagEligibilityReason,
     ReviewStatus,
     SourceKind,
 )
@@ -114,8 +115,6 @@ class DocumentCreate(BaseModel):
     @model_validator(mode="after")
     def validate_governance(self) -> "DocumentCreate":
         self.display_name = self.display_name.strip() or self.original_filename
-        if self.knowledge_layer is KnowledgeLayer.TEMPORARY and self.expires_at is None:
-            raise ValueError("Los documentos temporales requieren expires_at")
         if (
             self.published_at is not None
             and self.source_accessed_at is not None
@@ -152,23 +151,6 @@ class DocumentUploadGovernance(BaseModel):
             raise ValueError("expires_at debe incluir zona horaria")
         return value
 
-    @model_validator(mode="after")
-    def validate_public_scope(self) -> "DocumentUploadGovernance":
-        if self.knowledge_layer not in {
-            KnowledgeLayer.PRIVATE_LIBRARY,
-            KnowledgeLayer.TEMPORARY,
-        }:
-            raise ValueError("La capa solicitada está reservada")
-        if self.source_kind is not SourceKind.LOCAL_UPLOAD:
-            raise ValueError("La procedencia solicitada está reservada")
-        if self.knowledge_layer is KnowledgeLayer.TEMPORARY:
-            if self.expires_at is None:
-                raise ValueError("Los documentos temporales requieren expires_at")
-        elif self.expires_at is not None:
-            raise ValueError("expires_at solo se admite para documentos temporales")
-        return self
-
-
 class DocumentRead(BaseModel):
     """Contrato público sin metadatos privados de almacenamiento."""
 
@@ -199,6 +181,9 @@ class DocumentRead(BaseModel):
     supersedes_document_id: UUID | None
     created_at: datetime
     updated_at: datetime
+    rag_eligible: bool
+    rag_eligibility_reasons: list[RagEligibilityReason]
+    is_expired: bool
 
 
 class DocumentStatusRead(BaseModel):

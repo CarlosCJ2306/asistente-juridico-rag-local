@@ -11,11 +11,12 @@ from uuid import UUID
 
 from app.core.config import settings
 from app.core.source_sanitization import sanitize_document_name
-from app.database.models.document import DocumentType
+from app.database.models.document import DocumentType, KnowledgeLayer
 from app.database.repositories.semantic_chunk_repository import (
     ActiveChunk,
 )
 from app.schemas.rag_chat import RagCitation
+from app.services.document_governance_service import DocumentGovernanceService
 
 
 MARKER_PREFIX = "F"
@@ -114,6 +115,7 @@ class CitationSource:
     start_page: int
     end_page: int
     text_fingerprint: str
+    knowledge_layer: KnowledgeLayer = KnowledgeLayer.PRIVATE_LIBRARY
 
 
 @dataclass(frozen=True)
@@ -157,6 +159,7 @@ class RagCitationService:
                     document_id=chunk.document_id,
                     document_name=chunk.document_name,
                     document_type=chunk.document_type,
+                    knowledge_layer=chunk.knowledge_layer,
                     chunk_index=chunk.chunk_index,
                     start_page=chunk.start_page,
                     end_page=chunk.end_page,
@@ -292,16 +295,26 @@ class RagCitationService:
             [source.chunk_id for source in used_sources]
         )
         citations: list[RagCitation] = []
+        governance = DocumentGovernanceService()
         for source in used_sources:
             chunk = current.get(source.chunk_id)
-            if chunk is None or not self._matches(source, chunk):
+            if (
+                chunk is None
+                or not governance.evaluate_rag_eligibility(
+                    chunk.governance
+                ).eligible
+                or not self._matches(source, chunk)
+            ):
                 raise RagCitationError("RAG_CITATION_SOURCE_STALE")
+            display_name = self.sanitize_document_name(chunk.document_name)
             citations.append(
                 RagCitation(
                     marker=source.marker,
                     document_id=chunk.document_id,
-                    document_name=self.sanitize_document_name(chunk.document_name),
+                    document_name=display_name,
+                    display_name=display_name,
                     document_type=chunk.document_type,
+                    knowledge_layer=chunk.knowledge_layer,
                     chunk_index=chunk.chunk_index,
                     start_page=chunk.start_page,
                     end_page=chunk.end_page,
@@ -324,6 +337,7 @@ class RagCitationService:
             not isinstance(chunk.chunk_id, UUID)
             or not isinstance(chunk.document_id, UUID)
             or not isinstance(chunk.document_type, DocumentType)
+            or not isinstance(chunk.knowledge_layer, KnowledgeLayer)
             or isinstance(chunk.chunk_index, bool)
             or chunk.chunk_index < 1
             or isinstance(chunk.start_page, bool)
@@ -341,6 +355,7 @@ class RagCitationService:
             source.chunk_id == chunk.chunk_id
             and source.document_id == chunk.document_id
             and source.document_type == chunk.document_type
+            and source.knowledge_layer == chunk.knowledge_layer
             and source.chunk_index == chunk.chunk_index
             and source.start_page == chunk.start_page
             and source.end_page == chunk.end_page

@@ -9,7 +9,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.database.models.document import DocumentType
+from app.database.models.document import DocumentType, KnowledgeLayer
 
 
 class TextSearchRepositoryError(RuntimeError):
@@ -38,30 +38,26 @@ class TextSearchRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def search(
+    async def search_candidates(
         self,
         *,
         match_expression: str,
         document_id: UUID | None,
         document_types: list[DocumentType] | None,
+        knowledge_layers: list[KnowledgeLayer] | None,
         min_page: int | None,
         max_page: int | None,
-        offset: int,
-        limit: int,
-    ) -> tuple[list[TextSearchRow], int]:
+    ) -> list[TextSearchRow]:
         await self._ensure_index_ready()
         where_sql, params = self._where_clause(
             match_expression=match_expression,
             document_id=document_id,
             document_types=document_types,
+            knowledge_layers=knowledge_layers,
             min_page=min_page,
             max_page=max_page,
         )
-        params.update(offset=offset, limit=limit)
         try:
-            count = int(
-                (await self.session.scalar(text(f"SELECT COUNT(*) {where_sql}"), params)) or 0
-            )
             result = await self.session.execute(
                 text(
                     "SELECT f.chunk_id, f.document_id, d.document_type, "
@@ -70,8 +66,7 @@ class TextSearchRepository:
                     "bm25(document_chunks_fts) AS rank_bm25 "
                     f"{where_sql} "
                     "ORDER BY rank_bm25 ASC, f.document_id ASC, "
-                    "f.chunk_index ASC, f.chunk_id ASC "
-                    "LIMIT :limit OFFSET :offset"
+                    "f.chunk_index ASC, f.chunk_id ASC"
                 ),
                 params,
             )
@@ -90,7 +85,7 @@ class TextSearchRepository:
             )
             for row in result.mappings()
         ]
-        return rows, count
+        return rows
 
     async def _ensure_index_ready(self) -> None:
         try:
@@ -112,6 +107,7 @@ class TextSearchRepository:
         match_expression: str,
         document_id: UUID | None,
         document_types: list[DocumentType] | None,
+        knowledge_layers: list[KnowledgeLayer] | None,
         min_page: int | None,
         max_page: int | None,
     ) -> tuple[str, dict[str, object]]:
@@ -120,7 +116,6 @@ class TextSearchRepository:
             "JOIN document_chunks AS c ON c.id = f.chunk_id "
             "JOIN documents AS d ON d.id = f.document_id "
             "WHERE document_chunks_fts MATCH :match_expression",
-            "AND d.is_deleted = 0",
         ]
         params: dict[str, object] = {"match_expression": match_expression}
         if document_id is not None:
@@ -133,6 +128,13 @@ class TextSearchRepository:
                 placeholders.append(f":{key}")
                 params[key] = document_type.value
             clauses.append(f"AND d.document_type IN ({', '.join(placeholders)})")
+        if knowledge_layers:
+            placeholders = []
+            for index, knowledge_layer in enumerate(knowledge_layers):
+                key = f"knowledge_layer_{index}"
+                placeholders.append(f":{key}")
+                params[key] = knowledge_layer.value
+            clauses.append(f"AND d.knowledge_layer IN ({', '.join(placeholders)})")
         if min_page is not None:
             clauses.append("AND f.start_page >= :min_page")
             params["min_page"] = min_page
