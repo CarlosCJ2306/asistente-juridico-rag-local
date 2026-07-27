@@ -22,6 +22,16 @@ carga chunks y gobernanza vigente desde SQLite y aplica esa política antes de
 exponer resultados. La evaluación usa campos ya cargados, no persiste la
 elegibilidad y evita consultas N+1.
 
+## Corpus administrado
+
+El manifiesto versionable declara metadatos y nombres relativos, mientras que
+los PDF permanecen en un staging local ignorado. La CLI valida sin escribir y,
+solo ante una orden de importación, reutiliza `DocumentService`, el
+almacenamiento oficial y `DocumentGovernanceService`. El registro
+`managed_corpus_entries` vincula cada `source_key` con un documento sin
+duplicar metadatos. Importar no aprueba, extrae ni indexa; las versiones nuevas
+se conservan por separado y pueden enlazar el documento sustituido.
+
 ## Recuperación e IA local
 
 - FTS5 indexa texto de chunks y se sincroniza con triggers SQLite.

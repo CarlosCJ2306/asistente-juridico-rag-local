@@ -9,6 +9,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 MODELS_DIR = PROJECT_ROOT / "models"
 EMBEDDINGS_MODELS_DIR = MODELS_DIR / "embeddings"
 STORAGE_DIR = PROJECT_ROOT / "storage"
+STAGING_DIR = STORAGE_DIR / "staging"
+MANAGED_CORPUS_STAGING_DIR = STAGING_DIR / "managed_corpus"
 DATABASE_DIR = STORAGE_DIR / "database"
 DOCUMENTS_DIR = STORAGE_DIR / "documents"
 EXTRACTED_DIR = STORAGE_DIR / "extracted"
@@ -66,4 +68,21 @@ def resolve_vector_path(value: str | Path, *, expected_directory: bool) -> Path:
         raise ValueError("VECTOR_STORE_PATH_INVALID") from exc
     if expected_directory and candidate == allowed_directory:
         raise ValueError("VECTOR_STORE_PATH_INVALID")
+    return candidate
+
+
+def resolve_managed_corpus_staging_directory(value: str | Path) -> Path:
+    """Resuelve staging dentro de ``storage/staging`` sin crearlo."""
+
+    configured_path = Path(value)
+    if configured_path.is_absolute() or ".." in configured_path.parts:
+        raise ValueError("MANAGED_CORPUS_STAGING_PATH_INVALID")
+    candidate = (PROJECT_ROOT / configured_path).resolve()
+    allowed_directory = (PROJECT_ROOT / "storage" / "staging").resolve()
+    try:
+        candidate.relative_to(allowed_directory)
+    except ValueError as exc:
+        raise ValueError("MANAGED_CORPUS_STAGING_PATH_INVALID") from exc
+    if candidate == allowed_directory:
+        raise ValueError("MANAGED_CORPUS_STAGING_PATH_INVALID")
     return candidate

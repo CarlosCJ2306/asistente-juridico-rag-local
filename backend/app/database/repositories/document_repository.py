@@ -33,12 +33,21 @@ class DocumentRepository:
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
 
-    async def create(self, data: DocumentCreate) -> Document:
+    async def create(
+        self,
+        data: DocumentCreate,
+        *,
+        use_savepoint: bool = True,
+    ) -> Document:
         """Registra metadatos y hace flush; el consumidor controla el commit."""
 
         document = Document(**data.model_dump())
         try:
-            async with self.session.begin_nested():
+            if use_savepoint:
+                async with self.session.begin_nested():
+                    self.session.add(document)
+                    await self.session.flush()
+            else:
                 self.session.add(document)
                 await self.session.flush()
         except IntegrityError as exc:

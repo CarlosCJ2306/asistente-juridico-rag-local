@@ -65,12 +65,16 @@ Las Matrices HPN manuales y la Red jurídica ya están implementadas. La bibliot
 - El caso sin evidencia devuelve `insufficient_context` sin requerir Qwen; el
   caso con evidencia exige el modelo y conserva citas revalidadas en SQLite.
 
-### 12A-0E — Importación controlada del corpus administrado — Siguiente bloque
+### 12A-0E — Importación controlada del corpus administrado — Completada
 
-Incorporación explícita, trazable y revisable de fuentes destinadas al corpus
-administrado, sin promover contenido de forma automática.
+- Manifiesto JSON versionable, staging local ignorado y CLI explícita para
+  validar, importar, consultar estado, revisar y promover fuentes.
+- La importación reutiliza el almacenamiento documental oficial y deja cada
+  fuente en revisión pendiente, vigencia desconocida y sin indexar.
+- Los duplicados no se promueven automáticamente; las versiones posteriores
+  son documentos independientes enlazados con su versión anterior.
 
-### 12A-1 — Biblioteca documental frontend
+### 12A-1 — Biblioteca documental frontend — Siguiente bloque
 
 Interfaz para listar y consultar el estado de documentos ya administrados por el backend.
 
@@ -100,12 +104,13 @@ Flujo de revisión de matrices y relación controlada con la proyección de Red 
 
 ## Dependencias
 
-12A-0A establece el modelo persistente, 12A-0B centraliza sus políticas y
-12A-0C las integra con recuperación y Chat RAG. 12A-0D es el próximo bloque
-autorizado para la validación operativa controlada. La biblioteca y la carga habilitan el
-procesamiento; el procesamiento e índices habilitan el Chat RAG; el Chat con
-fuentes y la gobernanza de evidencia preceden a propuestas HPN; la revisión de
-esas propuestas precede su trazabilidad hacia la Red jurídica.
+12A-0A establece el modelo persistente, 12A-0B centraliza sus políticas,
+12A-0C las integra con recuperación y Chat RAG, 12A-0D valida ese flujo y
+12A-0E incorpora fuentes administradas de forma explícita. 12A-1 es el próximo
+bloque autorizado. La biblioteca y la carga habilitan el procesamiento; el
+procesamiento e índices habilitan el Chat RAG; el Chat con fuentes y la
+gobernanza de evidencia preceden a propuestas HPN; la revisión de esas
+propuestas precede su trazabilidad hacia la Red jurídica.
 
 ## Criterios generales de finalización
 

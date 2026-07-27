@@ -36,6 +36,30 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Compruebe `GET /api/health` antes de usar otros flujos. No ejecute migraciones, resets o seeds sin autorización para la base objetivo.
 
+## Corpus administrado local
+
+Configure `MANAGED_CORPUS_STAGING_PATH` con una ruta relativa bajo
+`storage/staging`; el valor predeterminado es
+`storage/staging/managed_corpus`. Los PDF de staging no se versionan y el
+manifiesto vive en `managed_corpus/manifest.json`. Copiar un PDF no dispara
+ninguna operación.
+
+Desde la raíz, con el entorno backend activo y después de aplicar las
+migraciones autorizadas, use comandos explícitos:
+
+```bat
+python scripts\manage_corpus.py --json validate
+python scripts\manage_corpus.py --json import
+python scripts\manage_corpus.py --json status
+python scripts\manage_corpus.py --json review --source-key FUENTE --decision approve --legal-validity current --confirm
+python scripts\manage_corpus.py --json promote --source-key FUENTE --document-id UUID --confirm
+```
+
+`import` se detiene en el primer error salvo que se indique
+`--continue-on-error`. Aprobar no extrae ni indexa. El procesamiento posterior
+continúa mediante los servicios oficiales: revisión humana, vigencia,
+extracción, chunks, indexación confirmada y, finalmente, elegibilidad RAG.
+
 ## Frontend
 
 Desde `frontend`:

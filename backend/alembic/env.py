@@ -27,6 +27,7 @@ from app.database.models import (  # noqa: F401, E402
     HpnNode,
     HpnNodeSource,
     HpnRelation,
+    ManagedCorpusEntry,
 )
 from app.database.session import build_database_url  # noqa: E402
 

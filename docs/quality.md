@@ -13,6 +13,12 @@ comprueba expiración, retiro, vigencia, capas, bypass por identificador,
 fingerprint, transiciones de indexación, revalidación previa al prompt y retiro
 de citas, sin modificar las persistencias locales principales.
 
+El corpus administrado se prueba con manifiestos y PDF mínimos sintéticos,
+SQLite y directorios temporales. Las pruebas cubren validación dry-run,
+traversal y symlinks, duplicados, idempotencia, rollback, revisión, promoción,
+versionado y migración reversible, sin usar el staging ni el almacenamiento
+principal.
+
 ## Informes locales de validación
 
 `local_validation_reports/` no se versiona ni es una fuente de verdad del proyecto. La política inicial es conservar temporalmente `latest` y ejecuciones relevantes, revisar periódicamente los informes obsoletos y eliminarlos manualmente cuando ya no sean necesarios. Esta política no autoriza su borrado automático.

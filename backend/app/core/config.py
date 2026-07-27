@@ -14,6 +14,7 @@ from app.core.paths import (
     PROJECT_ROOT,
     resolve_database_file,
     resolve_embedding_model_directory,
+    resolve_managed_corpus_staging_directory,
     resolve_vector_path,
 )
 
@@ -36,6 +37,10 @@ class Settings(BaseSettings):
     log_backup_count: int = 5
 
     database_file: Path = DATABASE_DIR / "asistente_juridico.db"
+    managed_corpus_staging_path: Path = Field(
+        default=Path("storage/staging/managed_corpus"),
+        validate_default=True,
+    )
 
     document_max_size_bytes: int = Field(default=52_428_800, gt=0)
     document_upload_chunk_size_bytes: int = Field(default=1_048_576, gt=0)
@@ -148,6 +153,11 @@ class Settings(BaseSettings):
         """Acepta solo rutas de SQLite contenidas en el directorio autorizado."""
 
         return resolve_database_file(value)
+
+    @field_validator("managed_corpus_staging_path", mode="before")
+    @classmethod
+    def resolve_managed_staging_path(cls, value: str | Path) -> Path:
+        return resolve_managed_corpus_staging_directory(value)
 
     @field_validator("embedding_model_path", mode="before")
     @classmethod

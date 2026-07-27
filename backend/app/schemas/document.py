@@ -47,11 +47,11 @@ class DocumentCreate(BaseModel):
     published_at: datetime | None = None
     source_accessed_at: datetime | None = None
     version_label: str | None = Field(default=None, max_length=120)
+    supersedes_document_id: UUID | None = None
     expires_at: datetime | None = None
     archived_at: datetime | None = None
     archive_reason: str | None = Field(default=None, max_length=500)
     rejection_reason: str | None = Field(default=None, max_length=500)
-    supersedes_document_id: UUID | None = None
     error_code: str | None = Field(default=None, max_length=64)
     error_message: str | None = Field(default=None, max_length=500)
 
@@ -149,6 +149,47 @@ class DocumentUploadGovernance(BaseModel):
     def validate_expiration_timezone(cls, value: datetime | None) -> datetime | None:
         if value is not None and value.utcoffset() is None:
             raise ValueError("expires_at debe incluir zona horaria")
+        return value
+
+
+class ManagedDocumentImportMetadata(BaseModel):
+    """Metadatos confiables recibidos únicamente desde la CLI administrada."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    display_name: str = Field(min_length=1, max_length=255)
+    issuing_entity: str | None = Field(default=None, max_length=255)
+    jurisdiction: str | None = Field(default=None, max_length=120)
+    legal_area: str | None = Field(default=None, max_length=120)
+    canonical_source_url: str | None = Field(default=None, max_length=2048)
+    published_at: datetime | None = None
+    version_label: str | None = Field(default=None, max_length=120)
+    supersedes_document_id: UUID | None = None
+
+    @field_validator(
+        "display_name",
+        "issuing_entity",
+        "jurisdiction",
+        "legal_area",
+        "canonical_source_url",
+        "version_label",
+    )
+    @classmethod
+    def normalize_managed_text(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        normalized = value.strip()
+        if not normalized or any(ord(character) < 32 for character in normalized):
+            raise ValueError("MANAGED_CORPUS_METADATA_INVALID")
+        return normalized
+
+    @field_validator("published_at")
+    @classmethod
+    def require_managed_date_timezone(
+        cls, value: datetime | None
+    ) -> datetime | None:
+        if value is not None and value.utcoffset() is None:
+            raise ValueError("MANAGED_CORPUS_DATE_INVALID")
         return value
 
 class DocumentRead(BaseModel):

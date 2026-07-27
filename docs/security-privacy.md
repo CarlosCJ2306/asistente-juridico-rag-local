@@ -27,6 +27,12 @@ una reconstrucción automática ni eliminan PDF, páginas o chunks.
 
 La carga acepta PDF con límites de tamaño, validación de MIME, extensión y firma. Los nombres se normalizan y las rutas se validan para impedir traversal y escapes del almacenamiento autorizado. Los PDF pueden contener contenido malicioso o instrucciones no confiables; nunca se tratan como instrucciones del sistema.
 
+El staging del corpus administrado se ubica bajo `storage/staging`, permanece
+ignorado y no es una carpeta observada. Solo la CLI explícita puede validar o
+importar; copiar archivos no altera SQLite. Se rechazan rutas absolutas,
+traversal y symlinks, y las salidas no muestran rutas ni hashes completos. La
+importación nunca aprueba, procesa o indexa automáticamente una fuente.
+
 ## RAG y modelo
 
 El texto recuperado se delimita y neutraliza antes de construir el prompt. Los documentos no reentrenan Qwen y el conocimiento previo del modelo no es una fuente jurídica verificable. Las preguntas, respuestas, prompts y contenido documental no deben registrarse ni persistirse accidentalmente.

@@ -14,12 +14,27 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.Log import log_error, log_success, log_warning
 from app.core.config import settings
 from app.core.paths import DOCUMENTS_DIR, PROJECT_ROOT, UPLOADS_TEMP_DIR
-from app.database.models.document import DocumentStatus, DocumentType
+from app.database.models.document import (
+    DocumentStatus,
+    DocumentType,
+    IndexStatus,
+    KnowledgeLayer,
+    LegalValidityStatus,
+    ReviewStatus,
+    SourceKind,
+    utc_now,
+)
+from app.database.repositories.managed_corpus_repository import ManagedCorpusRepository
 from app.database.repositories.document_repository import (
     DocumentRepository,
     DuplicateDocumentError,
 )
-from app.schemas.document import DocumentCreate, DocumentRead, DocumentUploadGovernance
+from app.schemas.document import (
+    DocumentCreate,
+    DocumentRead,
+    DocumentUploadGovernance,
+    ManagedDocumentImportMetadata,
+)
 from app.services.document_governance_service import (
     DocumentGovernanceError,
     DocumentGovernanceService,
@@ -66,6 +81,7 @@ class DocumentService:
     ) -> None:
         self.session = session
         self.repository = DocumentRepository(session)
+        self.managed_registry = ManagedCorpusRepository(session)
         self.governance = DocumentGovernanceService(session)
         self.temporary_directory = temporary_directory.resolve()
         self.documents_directory = documents_directory.resolve()
@@ -85,16 +101,54 @@ class DocumentService:
     ) -> DocumentRead:
         """Valida, almacena y registra un PDF; confirma solo tras moverlo con éxito."""
 
+        governance = DocumentUploadGovernance.model_validate(
+            (governance or DocumentUploadGovernance()).model_dump()
+        )
+        self.governance.validate_public_upload(governance)
+        return await self._store_pdf(
+            upload,
+            document_type,
+            governance=governance,
+        )
+
+    async def import_managed_pdf(
+        self,
+        upload: UploadFile,
+        document_type: DocumentType,
+        metadata: ManagedDocumentImportMetadata,
+        *,
+        corpus_id: str,
+        source_key: str,
+    ) -> DocumentRead:
+        """Registra una fuente administrada pendiente sin aprobar ni procesar."""
+
+        return await self._store_pdf(
+            upload,
+            document_type,
+            managed_metadata=metadata,
+            managed_identity=(corpus_id, source_key),
+        )
+
+    async def _store_pdf(
+        self,
+        upload: UploadFile,
+        document_type: DocumentType,
+        *,
+        governance: DocumentUploadGovernance | None = None,
+        managed_metadata: ManagedDocumentImportMetadata | None = None,
+        managed_identity: tuple[str, str] | None = None,
+    ) -> DocumentRead:
+        """Único flujo físico y transaccional para cargas públicas y administradas."""
+
+        is_managed = managed_metadata is not None and managed_identity is not None
+        if is_managed == (governance is not None):
+            raise DocumentStorageError("La modalidad de carga documental no es válida")
         temporary_path: Path | None = None
         final_path: Path | None = None
         moved_to_final_path = False
         storage_confirmed = False
         started_at = time.perf_counter()
         try:
-            governance = DocumentUploadGovernance.model_validate(
-                (governance or DocumentUploadGovernance()).model_dump()
-            )
-            self.governance.validate_public_upload(governance)
             original_filename = self._normalize_original_filename(upload.filename)
             self._validate_declared_metadata(original_filename, upload.content_type)
             temporary_path, size_bytes, sha256 = await self._write_temporary_file(upload)
@@ -112,8 +166,40 @@ class DocumentService:
 
             stored_filename = f"{uuid4()}.pdf"
             final_path = self._build_final_path(document_type, stored_filename)
-            document = await self.repository.create(
-                DocumentCreate(
+            if is_managed:
+                assert managed_metadata is not None
+                create_data = DocumentCreate(
+                    original_filename=original_filename,
+                    display_name=managed_metadata.display_name,
+                    stored_filename=stored_filename,
+                    relative_path=self._to_project_relative_path(final_path),
+                    document_type=document_type,
+                    mime_type="application/pdf",
+                    extension=".pdf",
+                    size_bytes=size_bytes,
+                    sha256=sha256,
+                    status=DocumentStatus.PENDING_EXTRACTION,
+                    knowledge_layer=KnowledgeLayer.MANAGED_CORPUS,
+                    source_kind=SourceKind.MANAGED_IMPORT,
+                    review_status=ReviewStatus.PENDING,
+                    legal_validity_status=LegalValidityStatus.UNKNOWN,
+                    index_status=IndexStatus.NOT_REQUESTED,
+                    issuing_entity=managed_metadata.issuing_entity,
+                    jurisdiction=managed_metadata.jurisdiction,
+                    legal_area=managed_metadata.legal_area,
+                    canonical_source_url=managed_metadata.canonical_source_url,
+                    published_at=managed_metadata.published_at,
+                    source_accessed_at=(
+                        utc_now()
+                        if managed_metadata.canonical_source_url is not None
+                        else None
+                    ),
+                    version_label=managed_metadata.version_label,
+                    supersedes_document_id=managed_metadata.supersedes_document_id,
+                )
+            else:
+                assert governance is not None
+                create_data = DocumentCreate(
                     original_filename=original_filename,
                     display_name=governance.display_name or original_filename,
                     stored_filename=stored_filename,
@@ -128,7 +214,17 @@ class DocumentService:
                     source_kind=governance.source_kind,
                     expires_at=governance.expires_at,
                 )
+            document = await self.repository.create(
+                create_data,
+                use_savepoint=not is_managed,
             )
+            if is_managed:
+                assert managed_identity is not None
+                await self.managed_registry.create_entry(
+                    corpus_id=managed_identity[0],
+                    source_key=managed_identity[1],
+                    document_id=document.id,
+                )
 
             self._move_to_final_path(temporary_path, final_path)
             moved_to_final_path = True
@@ -144,16 +240,28 @@ class DocumentService:
                 ) from exc
 
             duration_ms = round((time.perf_counter() - started_at) * 1000, 2)
-            log_success(
-                "Documento PDF almacenado y registrado",
-                operation="document_upload",
-                document_id=str(document.id),
-                document_type=document.document_type.value,
-                status=document.status.value,
-                size_bytes=document.size_bytes,
-                sha256_prefix=sha256[:12],
-                duration_ms=duration_ms,
-            )
+            if is_managed:
+                assert managed_identity is not None
+                log_success(
+                    "Documento administrado almacenado y registrado",
+                    operation="managed_corpus_import",
+                    source_key=managed_identity[1],
+                    document_type=document.document_type.value,
+                    status=document.status.value,
+                    size_bytes=document.size_bytes,
+                    duration_ms=duration_ms,
+                )
+            else:
+                log_success(
+                    "Documento PDF almacenado y registrado",
+                    operation="document_upload",
+                    document_id=str(document.id),
+                    document_type=document.document_type.value,
+                    status=document.status.value,
+                    size_bytes=document.size_bytes,
+                    sha256_prefix=sha256[:12],
+                    duration_ms=duration_ms,
+                )
             return self.governance.to_public_read(document)
         except DuplicateDocumentError:
             await self.session.rollback()

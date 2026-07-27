@@ -40,6 +40,8 @@ storage/extracted/*
 storage/vector_store/*
 !storage/vector_store/.gitkeep
 storage/vector/
+storage/staging/**/*
+!storage/staging/**/.gitkeep
 local_validation_reports/
 storage/database/*
 !storage/database/.gitkeep

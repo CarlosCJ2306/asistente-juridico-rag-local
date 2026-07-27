@@ -386,3 +386,45 @@ def test_document_governance_migration_round_trip_is_additive(tmp_path: Path) ->
             (document_id,),
         ).fetchone() == ("original.pdf", "private_library")
         assert connection.execute("SELECT COUNT(*) FROM document_chunks").fetchone()[0] == 1
+
+
+def test_managed_corpus_registry_migration_is_reversible_and_additive(
+    tmp_path: Path,
+) -> None:
+    database_file = tmp_path / "managed_corpus_registry.db"
+    _run_migration(database_file, "20260726_05")
+    document_id, values = _document_row(status="registered")
+    with sqlite3.connect(database_file) as connection:
+        connection.execute(
+            "INSERT INTO documents ("
+            "id, original_filename, stored_filename, relative_path, document_type, "
+            "mime_type, extension, size_bytes, sha256, status, error_code, error_message, "
+            "created_at, updated_at, deleted_at, is_deleted"
+            ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            values,
+        )
+        connection.commit()
+
+    _run_migration(database_file, "head")
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute(
+            "INSERT INTO managed_corpus_entries "
+            "(corpus_id, source_key, document_id, imported_at) VALUES (?,?,?,?)",
+            ("test-corpus", "source-v1", document_id, "2026-07-27 00:00:00"),
+        )
+        connection.commit()
+        assert connection.execute(
+            "SELECT document_id FROM managed_corpus_entries "
+            "WHERE corpus_id=? AND source_key=?",
+            ("test-corpus", "source-v1"),
+        ).fetchone() == (document_id,)
+
+    _downgrade_migration(database_file, "20260726_05")
+    with sqlite3.connect(database_file) as connection:
+        assert connection.execute(
+            "SELECT name FROM sqlite_master WHERE name='managed_corpus_entries'"
+        ).fetchone() is None
+        assert connection.execute(
+            "SELECT COUNT(*) FROM documents WHERE id=?", (document_id,)
+        ).fetchone()[0] == 1

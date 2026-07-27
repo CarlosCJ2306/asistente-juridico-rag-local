@@ -1,5 +1,22 @@
 # Historial técnico de cambios
 
+## 2026-07-27 — Fase 12A-0E: Importación controlada del corpus administrado
+
+- **Añadido:** manifiesto JSON versionable, staging configurable ignorado y
+  registro persistente de claves de fuente mediante la migración aditiva
+  `20260727_06`.
+- **Añadido:** CLI explícita para `validate`, `import`, `status`, `review` y
+  `promote`, sin endpoint administrativo público ni operaciones automáticas.
+- **Gobernanza:** toda importación queda en `managed_corpus`, procedencia
+  `managed_import`, revisión pendiente, vigencia desconocida y sin indexar;
+  aprobar o promover requiere una acción consciente separada.
+- **Seguridad:** rutas contenidas en staging, rechazo de traversal y symlinks,
+  duplicados controlados, salida sanitizada y transacciones por documento.
+- **Validación:** 719 pruebas aprobadas con almacenamiento y SQLite temporales,
+  PDF sintético y cadena Alembic reversible; Ruff y mypy sin errores. No se
+  incorporaron fuentes jurídicas reales.
+- **Estado:** completada. El siguiente bloque es 12A-1.
+
 ## 2026-07-27 — Fase 12A-0D: Validación operativa de recuperación gobernada
 
 - **Validado:** índice semántico gobernado compatible, recuperación textual,

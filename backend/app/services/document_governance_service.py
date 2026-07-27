@@ -395,6 +395,28 @@ class DocumentGovernanceService:
         )
         self._log_transition("version_link", "unlinked", "linked")
 
+    async def promote_to_managed_corpus(self, document: Document) -> None:
+        """Promueve explícitamente una fuente local e invalida su índice derivado."""
+
+        if (
+            document.is_deleted
+            or document.knowledge_layer not in self._ORDINARY_LAYERS
+            or document.status is DocumentStatus.ARCHIVED
+            or document.review_status is ReviewStatus.ARCHIVED
+        ):
+            self._reject_transition("DOCUMENT_MANAGED_PROMOTION_INVALID")
+        await self._apply(
+            document,
+            knowledge_layer=KnowledgeLayer.MANAGED_CORPUS,
+            source_kind=SourceKind.MANAGED_IMPORT,
+            review_status=ReviewStatus.PENDING,
+            legal_validity_status=LegalValidityStatus.UNKNOWN,
+            index_status=IndexStatus.EXCLUDED,
+            expires_at=None,
+            archived_at=None,
+        )
+        self._log_transition("managed_promotion", "ordinary", "pending_review")
+
     def to_public_read(
         self,
         document: Document,

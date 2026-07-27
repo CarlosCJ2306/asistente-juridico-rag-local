@@ -31,6 +31,15 @@ globales no son elegibles mientras permanezcan en esa capa.
 
 Los PDF no reentrenan el modelo; se usan como evidencia recuperada mediante RAG.
 
+## Incorporación al corpus administrado
+
+Copiar un PDF al staging solo lo deja disponible para una operación local:
+no crea registros ni inicia procesamiento. `validate` comprueba manifiesto,
+archivo, hash y duplicados sin escribir. `import` almacena el documento como
+pendiente y no elegible. Una revisión humana separada puede aprobarlo y definir
+su vigencia, pero la elegibilidad RAG solo llega después de extracción,
+fragmentación e indexación confirmadas por los mecanismos oficiales.
+
 ## Chat RAG
 
 El Chat RAG utiliza únicamente evidencia documental que continúe elegible según

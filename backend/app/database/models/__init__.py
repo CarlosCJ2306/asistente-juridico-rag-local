@@ -23,6 +23,7 @@ from app.database.models.hpn import (
     HpnRelationType,
     HpnReviewStatus,
 )
+from app.database.models.managed_corpus import ManagedCorpusEntry
 
 
 __all__ = [
@@ -31,4 +32,5 @@ __all__ = [
     "ReviewStatus", "SourceKind",
     "HpnMatrix", "HpnMatrixStatus", "HpnNode", "HpnNodeSource", "HpnNodeType",
     "HpnRelation", "HpnRelationType", "HpnReviewStatus",
+    "ManagedCorpusEntry",
 ]
