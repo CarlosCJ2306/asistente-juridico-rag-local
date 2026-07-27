@@ -57,10 +57,18 @@ Las Matrices HPN manuales y la Red jurídica ya están implementadas. La bibliot
   y ciclo de `IndexStatus`; una proyección anterior requiere reconstrucción
   explícita y nunca se actualiza automáticamente.
 
-### 12A-0D — Validación operativa de recuperación gobernada — Siguiente bloque
+### 12A-0D — Validación operativa de recuperación gobernada — Completada
 
-- Validar de forma controlada la reconstrucción explícita del índice derivado
-  y los flujos gobernados sobre persistencias locales respaldadas.
+- La reconstrucción explícita, recuperación gobernada, filtros de capa y Chat
+  RAG se validaron sobre persistencias locales respaldadas, sin modificar la
+  biblioteca ni los índices derivados fuera de su proyección técnica.
+- El caso sin evidencia devuelve `insufficient_context` sin requerir Qwen; el
+  caso con evidencia exige el modelo y conserva citas revalidadas en SQLite.
+
+### 12A-0E — Importación controlada del corpus administrado — Siguiente bloque
+
+Incorporación explícita, trazable y revisable de fuentes destinadas al corpus
+administrado, sin promover contenido de forma automática.
 
 ### 12A-1 — Biblioteca documental frontend
 

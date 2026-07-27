@@ -606,7 +606,7 @@ def test_llm_lifecycle_endpoints_use_shared_adapter_without_real_model(monkeypat
     assert unloaded.json()["state"] == "unloaded"
 
 
-def test_qwen_must_already_be_loaded() -> None:
+def test_no_context_does_not_require_qwen_or_invoke_it() -> None:
     llm = FakeLLM()
     llm.is_loaded = False
     hybrid = FakeHybrid([])
@@ -616,9 +616,65 @@ def test_qwen_must_already_be_loaded() -> None:
         context_service=FakeContext([]),  # type: ignore[arg-type]
         local_llm=llm,  # type: ignore[arg-type]
     )
+    response = asyncio.run(service.chat(RagChatRequest(question="Pregunta")))
+    assert response.status == "insufficient_context"
+    assert len(hybrid.calls) == 1
+    assert llm.calls == []
+
+
+def test_evidence_requires_loaded_qwen() -> None:
+    chunk = _chunk()
+    llm = FakeLLM()
+    llm.is_loaded = False
+    hybrid = FakeHybrid([_item(chunk)])
+    service = RagChatService(
+        FakeSession(),  # type: ignore[arg-type]
+        hybrid_service=hybrid,  # type: ignore[arg-type]
+        context_service=FakeContext([chunk]),  # type: ignore[arg-type]
+        local_llm=llm,  # type: ignore[arg-type]
+    )
     with pytest.raises(RagChatError, match="RAG_LLM_NOT_LOADED"):
         asyncio.run(service.chat(RagChatRequest(question="Pregunta")))
-    assert hybrid.calls == []
+    assert len(hybrid.calls) == 1
+    assert llm.calls == []
+
+
+def test_revalidated_ineligible_evidence_returns_insufficient_without_qwen() -> None:
+    chunk = _chunk()
+    llm = FakeLLM()
+    llm.is_loaded = False
+    service = RagChatService(
+        FakeSession(),  # type: ignore[arg-type]
+        hybrid_service=FakeHybrid([_item(chunk)]),  # type: ignore[arg-type]
+        context_service=FakeContext([]),  # type: ignore[arg-type]
+        local_llm=llm,  # type: ignore[arg-type]
+    )
+    response = asyncio.run(service.chat(RagChatRequest(question="Pregunta")))
+    assert response.status == "insufficient_context"
+    assert llm.calls == []
+
+
+def test_governance_layer_and_document_filter_cannot_bypass_empty_retrieval() -> None:
+    llm = FakeLLM()
+    llm.is_loaded = False
+    hybrid = FakeHybrid([])
+    service = RagChatService(
+        FakeSession(),  # type: ignore[arg-type]
+        hybrid_service=hybrid,  # type: ignore[arg-type]
+        context_service=FakeContext([]),  # type: ignore[arg-type]
+        local_llm=llm,  # type: ignore[arg-type]
+    )
+    request = RagChatRequest(
+        question="Pregunta",
+        document_id=UUID(int=10),
+        knowledge_layers=[KnowledgeLayer.MANAGED_CORPUS],
+    )
+    response = asyncio.run(service.chat(request))
+    assert response.status == "insufficient_context"
+    assert len(hybrid.calls) == 1
+    assert hybrid.calls[0].document_id == request.document_id
+    assert hybrid.calls[0].knowledge_layers == request.knowledge_layers
+    assert llm.calls == []
 
 
 @pytest.mark.parametrize(

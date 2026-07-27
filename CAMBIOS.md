@@ -1,5 +1,27 @@
 # Historial técnico de cambios
 
+## 2026-07-27 — Fase 12A-0D: Validación operativa de recuperación gobernada
+
+- **Validado:** índice semántico gobernado compatible, recuperación textual,
+  semántica e híbrida, filtros de capa y ausencia de bypass mediante
+  `document_id`.
+- **Validado:** Chat RAG devuelve `insufficient_context` sin evidencia y sin
+  cargar Qwen; con evidencia y modelo cargado respondió con citas
+  revalidadas y campos públicos seguros.
+- **Conservación:** la validación no modificó documentos, páginas, chunks,
+  FTS5, matrices HPN ni la gobernanza documental; los modelos terminaron
+  descargados.
+- **Estado:** completada.
+
+## 2026-07-27 — Corrección del orden de validación de Chat RAG
+
+- **Corregido:** `RagChatService.chat()` ejecuta primero la recuperación
+  híbrida y la revalidación de contexto; solo exige Qwen cuando existe
+  evidencia elegible.
+- **Validado:** sin evidencia se devuelve `insufficient_context` sin invocar
+  Qwen; con evidencia y Qwen descargado se conserva `RAG_LLM_NOT_LOADED`.
+- **Pendiente:** reanudar la validación operativa 12A-0D.
+
 ## 2026-07-27 — Fase 12A-0C: Recuperación gobernada
 
 - **Modificado:** búsqueda textual, semántica e híbrida aceptan filtros

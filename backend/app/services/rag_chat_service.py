@@ -124,18 +124,6 @@ class RagChatService:
         self, request: RagChatRequest, *, request_id: str | None = None
     ) -> RagChatResponse:
         started_at = time.perf_counter()
-        if not self.local_llm.is_loaded:
-            raise RagChatError("RAG_LLM_NOT_LOADED")
-        log_info(
-            "Iniciando chat RAG local",
-            operation="rag_chat",
-            request_id=request_id,
-            question_length=len(request.question),
-            term_count=len(request.question.split()),
-            top_k=request.top_k,
-            filter_count=self._filter_count(request),
-            model_state="loaded",
-        )
         retrieval_started = time.perf_counter()
         try:
             hybrid = await self.hybrid_service.search(
@@ -166,6 +154,19 @@ class RagChatService:
             response = self._insufficient(hybrid.returned)
             self._log_success(response, request, request_id, started_at, retrieval_ms, 0.0)
             return response
+
+        if not self.local_llm.is_loaded:
+            raise RagChatError("RAG_LLM_NOT_LOADED")
+        log_info(
+            "Iniciando chat RAG local",
+            operation="rag_chat",
+            request_id=request_id,
+            question_length=len(request.question),
+            term_count=len(request.question.split()),
+            top_k=request.top_k,
+            filter_count=self._filter_count(request),
+            model_state="loaded",
+        )
 
         prompt_service = RagPromptService(
             self.local_llm.count_tokens,
