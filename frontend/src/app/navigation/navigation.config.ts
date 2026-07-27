@@ -8,7 +8,7 @@ export const navigationSections: ReadonlyArray<NavigationSection> = [
     label: "Trabajo",
     items: [
       { id: "home", label: "Inicio", route: "/", icon: HomeIcon, availability: "active", matchStrategy: "exact" },
-      { id: "documents", label: "Documentos", route: "/documents", icon: NavigationIcon, availability: "hidden", matchStrategy: "prefix" },
+      { id: "documents", label: "Documentos", route: "/documents", icon: NavigationIcon, availability: "active", matchStrategy: "prefix", detailLabel: "Detalle" },
       { id: "search", label: "Búsqueda", route: "/search", icon: NavigationIcon, availability: "hidden", matchStrategy: "prefix" },
       { id: "chat", label: "Chat jurídico", route: "/chat", icon: NavigationIcon, availability: "hidden", matchStrategy: "prefix" },
     ],

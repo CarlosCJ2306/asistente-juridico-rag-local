@@ -30,7 +30,7 @@ Este es el plan activo y la única hoja de ruta vigente. Ordena la evolución de
 | 10 | Completada | Matrices HPN manuales, revisables y trazables. |
 | 11 | Implementada; validación integrada pendiente | Red jurídica con NetworkX, API, PyVis y frontend de red. |
 
-Las Matrices HPN manuales y la Red jurídica ya están implementadas. La biblioteca documental, la carga PDF, el procesamiento, la selección de corpus, el Chat RAG y las fuentes visibles en frontend siguen pendientes.
+Las Matrices HPN manuales, la Red jurídica y la biblioteca documental de solo lectura ya están implementadas. La carga PDF, el procesamiento, la selección de corpus, el Chat RAG y las fuentes visibles en frontend siguen pendientes.
 
 ## Hoja de ruta activa
 
@@ -74,11 +74,14 @@ Las Matrices HPN manuales y la Red jurídica ya están implementadas. La bibliot
 - Los duplicados no se promueven automáticamente; las versiones posteriores
   son documentos independientes enlazados con su versión anterior.
 
-### 12A-1 — Biblioteca documental frontend — Siguiente bloque
+### 12A-1 — Biblioteca documental frontend — Completada
 
-Interfaz para listar y consultar el estado de documentos ya administrados por el backend.
+- Rutas de solo lectura para listado paginado y detalle documental, conectadas a
+  los contratos públicos existentes.
+- La interfaz presenta procedencia, gobernanza y elegibilidad RAG sin exponer
+  rutas, hashes, nombres almacenados, errores internos ni contenido documental.
 
-### 12A-2 — Carga segura de PDF desde frontend
+### 12A-2 — Carga segura de PDF desde frontend — Siguiente bloque
 
 Flujo de carga que reutilice la validación, límites y contratos documentales existentes.
 
@@ -106,8 +109,9 @@ Flujo de revisión de matrices y relación controlada con la proyección de Red 
 
 12A-0A establece el modelo persistente, 12A-0B centraliza sus políticas,
 12A-0C las integra con recuperación y Chat RAG, 12A-0D valida ese flujo y
-12A-0E incorpora fuentes administradas de forma explícita. 12A-1 es el próximo
-bloque autorizado. La biblioteca y la carga habilitan el procesamiento; el
+12A-0E incorpora fuentes administradas de forma explícita y 12A-1 expone la
+biblioteca de solo lectura. 12A-2 es el próximo bloque autorizado. La
+biblioteca y la carga habilitan el procesamiento; el
 procesamiento e índices habilitan el Chat RAG; el Chat con fuentes y la
 gobernanza de evidencia preceden a propuestas HPN; la revisión de esas
 propuestas precede su trazabilidad hacia la Red jurídica.

@@ -1,5 +1,19 @@
 # Historial técnico de cambios
 
+## 2026-07-27 — Fase 12A-1: Biblioteca documental frontend
+
+- **Añadido:** feature de documentos de solo lectura con listado paginado,
+  detalle público, navegación `/documents` y estados de carga, vacío, error y
+  backend no disponible.
+- **Contrato:** consume únicamente `GET /api/documents` y
+  `GET /api/documents/{document_id}` mediante el cliente HTTP compartido.
+- **Privacidad:** presenta metadatos públicos, procedencia y elegibilidad RAG;
+  no muestra rutas, hashes, nombres almacenados, errores internos, páginas ni
+  chunks.
+- **Validación:** ESLint, TypeScript estricto y build Vite aprobados. No existe
+  infraestructura de pruebas frontend declarada y no se instalaron herramientas.
+- **Estado:** completada. El siguiente bloque es 12A-2.
+
 ## 2026-07-27 — Fase 12A-0E: Importación controlada del corpus administrado
 
 - **Añadido:** manifiesto JSON versionable, staging configurable ignorado y
