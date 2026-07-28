@@ -6,7 +6,7 @@ import { ProfessionalReviewNotice } from "../../../components";
 import { AsyncContent, Button, Card, EmptyState, ErrorState, Stack, Text } from "../../../design-system";
 import type { AsyncStatus } from "../../../design-system";
 import { ContentLayout } from "../../../layouts";
-import { DocumentCard, DocumentUploadModal } from "../components";
+import { DocumentCard, DocumentUploadModal, SemanticIndexPanel } from "../components";
 import { useDocuments } from "../hooks";
 import type { PublicDocument } from "../types";
 import styles from "../documents.module.css";
@@ -70,6 +70,7 @@ export function DocumentsPage() {
         <AsyncContent status="success">
           <Stack gap="lg">
             <Summary total={query.data.total} currentPageItems={currentItems.length} eligibleItems={eligibleItems} />
+            <SemanticIndexPanel />
             {currentItems.length > 0 ? (
               <>
                 <ul className={styles.documentList} aria-label="Documentos registrados">

@@ -1,0 +1,1 @@
+{"active_collection": "legal_chunks_1dbaa655341c4bd5be6e33035c97e496", "created_at": "2026-07-27T17:42:05.124522+00:00", "distance_metric": "cosine", "embedding_dimension": 384, "embedding_model": "intfloat/multilingual-e5-small", "indexed_chunks": 44, "schema_version": 2, "source_fingerprint": "57b480e9bb6e72165369a24f1063e65150c4234059623290c25c82fea73da297"}
