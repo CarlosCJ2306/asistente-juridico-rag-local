@@ -9,7 +9,8 @@ Este es el plan activo y la única hoja de ruta vigente. Ordena la evolución de
 - SQLite es la fuente de verdad documental; FTS5 y ChromaDB son índices derivados y reconstruibles.
 - El procesamiento de contenido jurídico, embeddings y generación ocurre localmente; no se usan servicios externos de inferencia.
 - Los modelos no se cargan durante imports o el inicio de FastAPI; embeddings
-  admite política manual o bajo demanda y Qwen conserva ciclo explícito.
+  y Qwen admiten política manual o bajo demanda, con `on_demand` como valor
+  predeterminado del producto.
 - No se registran prompts, respuestas, chunks ni documentos completos.
 - No se versionan modelos, documentos, bases SQLite, índices, secretos, logs o informes locales de validación.
 - Toda salida asistida requiere revisión profesional; no constituye una decisión jurídica.
@@ -31,7 +32,10 @@ Este es el plan activo y la única hoja de ruta vigente. Ordena la evolución de
 | 10 | Completada | Matrices HPN manuales, revisables y trazables. |
 | 11 | Implementada; validación integrada pendiente | Red jurídica con NetworkX, API, PyVis y frontend de red. |
 
-Las Matrices HPN manuales, la Red jurídica y la biblioteca documental con carga PDF explícita ya están implementadas. El procesamiento, la selección de corpus, el Chat RAG y las fuentes visibles en frontend siguen pendientes.
+Las Matrices HPN manuales, la Red jurídica, la biblioteca documental, el
+procesamiento, la selección gobernada de corpus y el núcleo backend del Chat
+RAG ya están implementados. La interfaz de Chat y sus fuentes visibles siguen
+pendientes.
 
 ## Hoja de ruta activa
 
@@ -121,7 +125,8 @@ Estado visible de extracción, páginas, chunks e índices, sin ocultar operacio
   embeddings y LLM, sin descargas ni rutas arbitrarias desde la API.
 - Cambiar embeddings invalida la compatibilidad semántica y exige rebuild
   explícito; cambiar el LLM no modifica los índices.
-- 12C queda como siguiente bloque autorizado; no se inició durante 12B-4.
+- 12C-1 quedó completada después de 12B-4; 12C-2 es el siguiente bloque
+  autorizado.
 - Centro frontend `/models` completado con catálogo, selección, load/unload y
   estado semántico compartido; su validación visual manual permanece pendiente.
 
@@ -145,9 +150,21 @@ Estado visible de extracción, páginas, chunks e índices, sin ocultar operacio
   centralizados sin cambiar capacidades de producto.
 - La validación manual de carga 12A-2 y el orden de fases permanecen sin cambios.
 
-### 12C — Chat jurídico RAG con selección de corpus y citas
+### 12C-1 — Núcleo del Chat jurídico RAG — Completada
 
-Interfaz stateless para recuperación, respuesta, filtros de corpus y fuentes verificables.
+- `POST /api/chat/rag` conserva una consulta stateless: primero recupera y
+  revalida evidencia gobernada, y solo después carga Qwen bajo demanda cuando
+  existe contexto suficiente.
+- El caso sin evidencia devuelve `insufficient_context` sin cargar Qwen. Con
+  evidencia, la respuesta se limita al contexto, valida citas contra SQLite y
+  exige revisión profesional.
+- El runtime evita cargas duplicadas, protege la generación, aplica timeouts y
+  descarga Qwen tras inactividad sin interferir con los controles manuales.
+
+### 12C-2 — Interfaz del Chat jurídico RAG — Siguiente bloque
+
+Interfaz stateless para pregunta, filtros de corpus, respuesta y fuentes
+verificables, sin historial persistente.
 
 ### 12D — Incorporación web controlada y verificable
 
@@ -166,9 +183,10 @@ Flujo de revisión de matrices y relación controlada con la proyección de Red 
 12A-0A establece el modelo persistente, 12A-0B centraliza sus políticas,
 12A-0C las integra con recuperación y Chat RAG, 12A-0D valida ese flujo y
 12A-0E incorpora fuentes administradas de forma explícita. 12A-1 expone la
-biblioteca y 12A-2 incorpora la carga PDF explícita. 12B es el próximo bloque
-autorizado. La biblioteca y la carga habilitan el procesamiento; el
-procesamiento e índices habilitan el Chat RAG; el Chat con fuentes y la
+biblioteca y 12A-2 incorpora la carga PDF explícita. 12B habilitó el núcleo
+Chat RAG completado en 12C-1; 12C-2 es el próximo bloque autorizado. La
+biblioteca y la carga habilitan el procesamiento; el procesamiento e índices
+habilitan el Chat RAG; el Chat con fuentes y la
 gobernanza de evidencia preceden a propuestas HPN; la revisión de esas
 propuestas precede su trazabilidad hacia la Red jurídica.
 

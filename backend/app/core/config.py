@@ -77,6 +77,10 @@ class Settings(BaseSettings):
     local_llm_threads: int = 0
     local_llm_gpu_layers: int = 0
     local_llm_verbose: bool = False
+    llm_runtime_policy: str = "on_demand"
+    llm_idle_unload_seconds: float = Field(default=120.0, ge=5, le=86400)
+    llm_load_timeout_seconds: float = Field(default=120.0, ge=5, le=1800)
+    llm_generation_timeout_seconds: float = Field(default=180.0, ge=5, le=3600)
 
     embedding_model_path: Path = Field(
         default=Path("models/embeddings/multilingual-e5-small"),
@@ -244,6 +248,14 @@ class Settings(BaseSettings):
         normalized = value.strip().lower()
         if normalized not in {"manual", "on_demand"}:
             raise ValueError("EMBEDDING_RUNTIME_POLICY_INVALID")
+        return normalized
+
+    @field_validator("llm_runtime_policy")
+    @classmethod
+    def validate_llm_runtime_policy(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"manual", "on_demand"}:
+            raise ValueError("LLM_RUNTIME_POLICY_INVALID")
         return normalized
 
     @field_validator("hybrid_text_weight", "hybrid_semantic_weight")

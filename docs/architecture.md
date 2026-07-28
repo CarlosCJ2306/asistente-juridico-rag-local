@@ -70,16 +70,23 @@ activas y descarga el modelo tras un periodo configurable sin actividad.
 - La pantalla de búsqueda documental consume ese contrato sin cargar modelos ni
   reconstruir índices; muestra sólo fragmentos, procedencia resumida y rangos
   de página que el backend ya revalidó.
-- Qwen3 GGUF se ejecuta mediante `llama-cpp-python`, con plantilla conversacional del GGUF y carga explícita.
+- Qwen3 GGUF se ejecuta mediante `llama-cpp-python`, con plantilla
+  conversacional del GGUF. Su política puede ser `manual` u `on_demand`; esta
+  última es la predeterminada y nunca carga pesos durante imports o startup.
 
 ## RAG y citas
 
-`RagChatService` recupera una vez, obtiene texto vigente desde SQLite y vuelve
-a comprobar elegibilidad y filtros antes de seleccionar contexto. Si no queda
-evidencia elegible, no genera una respuesta jurídica. `RagCitationService`
-valida markers, cobertura y nuevamente la fuente gobernada antes de construir
-citas con nombre visible, capa, documento, chunk y páginas. El Chat es
-stateless y exige revisión profesional.
+`RagChatService` valida la solicitud, recupera una vez, obtiene texto vigente
+desde SQLite y vuelve a comprobar elegibilidad y filtros antes de seleccionar
+contexto. Solo si queda evidencia suficiente solicita al coordinador que cargue
+Qwen; por ello `insufficient_context` no inicializa el LLM. La evidencia se
+delimita como contenido no confiable y no puede modificar el mensaje de sistema.
+
+El coordinador del LLM serializa la carga, reutiliza la instancia cargada,
+protege generaciones activas, aplica timeouts y programa descarga por
+inactividad. `RagCitationService` valida markers, cobertura y nuevamente la
+fuente gobernada antes de construir citas con nombre visible, capa, documento,
+chunk y páginas. El Chat es stateless y exige revisión profesional.
 
 ## Matrices HPN y Red jurídica
 

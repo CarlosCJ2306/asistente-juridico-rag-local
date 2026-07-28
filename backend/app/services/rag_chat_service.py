@@ -9,7 +9,6 @@ import unicodedata
 from collections.abc import Callable
 from contextlib import AbstractAsyncContextManager
 
-from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.ai.local_llm import (
@@ -21,10 +20,18 @@ from app.ai.local_llm import (
 )
 from app.core.Log import log_error, log_info, log_success
 from app.core.config import settings
-from app.database.repositories.semantic_chunk_repository import SemanticChunkRepository
+from app.database.repositories.semantic_chunk_repository import (
+    ActiveChunk,
+    SemanticChunkRepository,
+)
 from app.schemas.hybrid_search import HybridSearchRequest
 from app.schemas.rag_chat import RagChatRequest, RagChatResponse
 from app.services.hybrid_search_service import HybridSearchService
+from app.services.llm_runtime_service import (
+    LlmRuntimeError,
+    LlmRuntimeService,
+    get_llm_runtime_service,
+)
 from app.services.rag_citation_service import (
     ActiveChunkReader,
     CITATION_ERROR_STAGES,
@@ -37,6 +44,14 @@ from app.services.rag_prompt_service import (
     INSUFFICIENT_CONTEXT_ANSWER,
     RagPromptError,
     RagPromptService,
+)
+
+
+_FORBIDDEN_DISCLOSURE_REQUEST = re.compile(
+    r"\b(?:revela|revelar|muestra|mostrar|imprime|imprimir|dime|give|show|reveal)\b"
+    r".{0,100}\b(?:prompt|instrucciones?\s+del\s+sistema|system\s+prompt|"
+    r"rutas?\s+(?:internas?|absolutas?)|configuraci[oó]n\s+interna|secretos?)\b",
+    flags=re.IGNORECASE | re.DOTALL,
 )
 
 
@@ -84,6 +99,7 @@ class RagChatService:
         hybrid_service: HybridSearchService | None = None,
         context_service: RagContextService | None = None,
         local_llm: LocalLLM | None = None,
+        llm_runtime: LlmRuntimeService | None = None,
         citation_service: RagCitationService | None = None,
         citation_session_factory: (
             Callable[[], AbstractAsyncContextManager[AsyncSession]] | None
@@ -98,6 +114,11 @@ class RagChatService:
             SemanticChunkRepository(session)
         )
         self.local_llm = local_llm or get_local_llm()
+        self.llm_runtime = llm_runtime or (
+            LlmRuntimeService(self.local_llm)
+            if local_llm is not None
+            else get_llm_runtime_service()
+        )
         self.citation_service = citation_service or RagCitationService()
         self.citation_repository_factory = (
             citation_repository_factory or SemanticChunkRepository
@@ -124,6 +145,7 @@ class RagChatService:
         self, request: RagChatRequest, *, request_id: str | None = None
     ) -> RagChatResponse:
         started_at = time.perf_counter()
+        self._validate_question(request.question)
         retrieval_started = time.perf_counter()
         try:
             hybrid = await self.hybrid_service.search(
@@ -155,8 +177,32 @@ class RagChatService:
             self._log_success(response, request, request_id, started_at, retrieval_ms, 0.0)
             return response
 
-        if not self.local_llm.is_loaded:
-            raise RagChatError("RAG_LLM_NOT_LOADED")
+        try:
+            async with self.llm_runtime.activity() as loaded_automatically:
+                return await self._answer_with_context(
+                    request=request,
+                    request_id=request_id,
+                    chunks=chunks,
+                    retrieved_chunks=hybrid.returned,
+                    started_at=started_at,
+                    retrieval_ms=retrieval_ms,
+                    loaded_automatically=loaded_automatically,
+                )
+        except LlmRuntimeError as exc:
+            self.log_failure(exc.code, request, request_id, started_at)
+            raise RagChatError(exc.code) from exc
+
+    async def _answer_with_context(
+        self,
+        *,
+        request: RagChatRequest,
+        request_id: str | None,
+        chunks: list[ActiveChunk],
+        retrieved_chunks: int,
+        started_at: float,
+        retrieval_ms: float,
+        loaded_automatically: bool,
+    ) -> RagChatResponse:
         log_info(
             "Iniciando chat RAG local",
             operation="rag_chat",
@@ -166,6 +212,11 @@ class RagChatService:
             top_k=request.top_k,
             filter_count=self._filter_count(request),
             model_state="loaded",
+            load_origin=(
+                "on_demand"
+                if loaded_automatically
+                else self.llm_runtime.load_origin or "manual"
+            ),
         )
 
         prompt_service = RagPromptService(
@@ -176,8 +227,10 @@ class RagChatService:
         try:
             selected = prompt_service.select_context(request.question, chunks)
             if selected.chunks == 0:
-                response = self._insufficient(hybrid.returned)
-                self._log_success(response, request, request_id, started_at, retrieval_ms, 0.0)
+                response = self._insufficient(retrieved_chunks)
+                self._log_success(
+                    response, request, request_id, started_at, retrieval_ms, 0.0
+                )
                 return response
             registry = self.citation_service.build_registry(selected.source_chunks)
             if len(registry.sources) != selected.chunks:
@@ -192,7 +245,7 @@ class RagChatService:
             raise RagChatError.from_citation(exc) from exc
         except RagPromptError as exc:
             if exc.code == "RAG_TOKEN_BUDGET_INVALID":
-                response = self._insufficient(hybrid.returned)
+                response = self._insufficient(retrieved_chunks)
                 self._log_success(
                     response, request, request_id, started_at, retrieval_ms, 0.0
                 )
@@ -205,21 +258,14 @@ class RagChatService:
         except LLMGenerationError as exc:
             raise RagChatError("RAG_TOKEN_BUDGET_INVALID") from exc
         generation_started = time.perf_counter()
-        try:
-            raw_answer = await run_in_threadpool(
-                self.local_llm.generate_chat,
-                messages,
-                temperature=settings.rag_temperature,
-                max_tokens=settings.rag_max_new_tokens,
-                top_p=settings.rag_top_p,
-                repeat_penalty=settings.rag_repeat_penalty,
-            )
-        except LLMGenerationBusyError as exc:
-            raise RagChatError("RAG_GENERATION_BUSY") from exc
-        except LLMNotLoadedError as exc:
-            raise RagChatError("RAG_LLM_NOT_LOADED") from exc
-        except LLMGenerationError as exc:
-            raise RagChatError("RAG_GENERATION_ERROR") from exc
+        raw_answer = await self.llm_runtime.generate_chat(
+            self.local_llm.generate_chat,
+            messages,
+            temperature=settings.rag_temperature,
+            max_tokens=settings.rag_max_new_tokens,
+            top_p=settings.rag_top_p,
+            repeat_penalty=settings.rag_repeat_penalty,
+        )
         generation_ms = round((time.perf_counter() - generation_started) * 1000, 2)
         answer = self._sanitize_output(
             raw_answer,
@@ -241,7 +287,7 @@ class RagChatService:
         response = RagChatResponse(
             status="answered",
             answer=answer,
-            retrieved_chunks=hybrid.returned,
+            retrieved_chunks=retrieved_chunks,
             context_chunks=selected.chunks,
             context_tokens=selected.tokens,
             requires_professional_review=True,
@@ -252,6 +298,13 @@ class RagChatService:
             response, request, request_id, started_at, retrieval_ms, generation_ms
         )
         return response
+
+    @staticmethod
+    def _validate_question(question: str) -> None:
+        """Bloquea solicitudes explícitas de secretos sin registrar su contenido."""
+
+        if _FORBIDDEN_DISCLOSURE_REQUEST.search(question):
+            raise RagChatError("RAG_REQUEST_FORBIDDEN")
 
     @staticmethod
     def _sanitize_output(

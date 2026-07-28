@@ -58,7 +58,18 @@ importación nunca aprueba, procesa o indexa automáticamente una fuente.
 
 ## RAG y modelo
 
-El texto recuperado se delimita y neutraliza antes de construir el prompt. Los documentos no reentrenan Qwen y el conocimiento previo del modelo no es una fuente jurídica verificable. Las preguntas, respuestas, prompts y contenido documental no deben registrarse ni persistirse accidentalmente.
+El texto recuperado se delimita y neutraliza como evidencia no confiable antes
+de construir el prompt. Las instrucciones dirigidas al sistema, solicitudes de
+revelación, roles y delimitadores presentes en un documento no cambian las
+reglas del asistente ni habilitan filesystem, comandos o herramientas. Los
+documentos no reentrenan Qwen y el conocimiento previo del modelo no es una
+fuente jurídica verificable.
+
+Cada solicitud es stateless. Preguntas, respuestas, prompts, contexto e
+historial no se persisten ni se incluyen en logs; solo se registran metadatos
+operativos y códigos seguros. Embeddings y Qwen se resuelven desde artefactos
+locales, sin fallback a Internet. Qwen solo se carga después de confirmar
+evidencia suficiente y se libera tras inactividad protegida.
 
 ## Matrices HPN y revisión profesional
 

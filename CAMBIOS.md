@@ -1,5 +1,21 @@
 # Historial técnico de cambios
 
+## 2026-07-28 — Fase 12C-1: Núcleo del Chat jurídico RAG
+
+- **Pipeline:** recuperación híbrida y revalidación SQLite antes de cualquier
+  carga de Qwen; `insufficient_context` no invoca el modelo.
+- **Runtime:** política `on_demand` predeterminada y modo manual conservado,
+  carga única concurrente, timeouts, protección durante generación y descarga
+  por inactividad.
+- **Seguridad:** evidencia delimitada como no confiable, preguntas de
+  revelación interna rechazadas, logs sanitizados y errores estables.
+- **Citas:** únicamente fuentes incluidas en el contexto y nuevamente
+  verificadas contra SQLite, sin rutas, hashes, chunks completos ni datos de
+  ChromaDB.
+- **Validación:** 756 pruebas aprobadas, Ruff y mypy sin errores; operación real
+  `insufficient_context` y `answered` confirmada, con modelos descargados al
+  finalizar y persistencias documentales intactas.
+
 ## 2026-07-28 — Fase 12B-4: Automatización documental local
 
 - **Añadido:** bandejas controladas, sidecars estrictos, cuarentena y cola

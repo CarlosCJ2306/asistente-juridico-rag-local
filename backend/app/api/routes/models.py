@@ -7,10 +7,15 @@ from fastapi.concurrency import run_in_threadpool
 from pydantic import BaseModel, ConfigDict
 
 from app.ai.embedding_model import EMBEDDING_MODEL_ID, EmbeddingError, get_embedding_model
-from app.ai.local_llm import LocalLLMError, get_local_llm, is_local_llm_loaded
+from app.ai.local_llm import get_local_llm, is_local_llm_loaded
 from app.ai.model_manager import ManifestError, ModelManager, ModelManagerError, ModelSelectionError, ModelSelectionState, get_model_selection_store
 from app.core.config import settings
 from app.services.embedding_runtime_service import get_embedding_runtime_service
+from app.services.llm_runtime_service import (
+    LlmRuntimeError,
+    LlmRuntimeService,
+    get_llm_runtime_service,
+)
 
 
 router = APIRouter(prefix="/models", tags=["models"])
@@ -52,6 +57,8 @@ class LlmRuntimeStatus(BaseModel):
     model: str
     state: Literal["unloaded", "loaded"]
     context_size: int
+    runtime_operation: Literal["idle", "loading", "unloading", "error"] = "idle"
+    load_origin: Literal["manual", "on_demand"] | None = None
 
 
 class CatalogModelStatus(BaseModel):
@@ -169,12 +176,23 @@ async def unload_embeddings_model() -> EmbeddingModelStatus:
     return _embedding_status()
 
 
-def _llm_runtime_status() -> LlmRuntimeStatus:
+def _llm_lifecycle() -> LlmRuntimeService:
     llm = get_local_llm()
+    runtime = get_llm_runtime_service()
+    if runtime.model is not llm and not runtime.busy:
+        return LlmRuntimeService(llm)
+    return runtime
+
+
+def _llm_runtime_status() -> LlmRuntimeStatus:
+    runtime = _llm_lifecycle()
+    llm = runtime.model
     return LlmRuntimeStatus(
         model=getattr(llm, "model_id", _selection_store.read().active_llm_model_id),
         state="loaded" if llm.is_loaded else "unloaded",
         context_size=settings.local_llm_context_size,
+        runtime_operation=runtime.operation,
+        load_origin=runtime.load_origin,
     )
 
 
@@ -190,9 +208,10 @@ async def load_llm_model() -> LlmRuntimeStatus:
     """Carga explícitamente Qwen fuera del event loop."""
 
     try:
-        await run_in_threadpool(get_local_llm().load)
-    except LocalLLMError as exc:
-        raise HTTPException(status_code=503, detail="RAG_LLM_UNAVAILABLE") from exc
+        await _llm_lifecycle().explicit_load()
+    except LlmRuntimeError as exc:
+        status = 409 if exc.code == "RAG_LLM_BUSY" else 503
+        raise HTTPException(status_code=status, detail=exc.code) from exc
     return _llm_runtime_status()
 
 
@@ -200,7 +219,11 @@ async def load_llm_model() -> LlmRuntimeStatus:
 async def unload_llm_model() -> LlmRuntimeStatus:
     """Libera Qwen; la operación es idempotente."""
 
-    await run_in_threadpool(get_local_llm().unload)
+    try:
+        await _llm_lifecycle().explicit_unload()
+    except LlmRuntimeError as exc:
+        status = 409 if exc.code == "RAG_LLM_BUSY" else 500
+        raise HTTPException(status_code=status, detail=exc.code) from exc
     return _llm_runtime_status()
 
 
@@ -262,8 +285,9 @@ async def select_embedding_model(payload: ModelSelectionRequest) -> ModelSelecti
 @router.put("/selection/llm", response_model=ModelSelectionResponse)
 async def select_llm_model(payload: ModelSelectionRequest) -> ModelSelectionResponse:
     runtime = get_local_llm()
+    lifecycle = _llm_lifecycle()
     try:
-        state = await run_in_threadpool(_selection_store.select, payload.model_id, "llm", currently_loaded=runtime.is_loaded)
+        state = await run_in_threadpool(_selection_store.select, payload.model_id, "llm", currently_loaded=runtime.is_loaded or lifecycle.busy)
         runtime.select_model(state.active_llm_model_id)
         return _selection_response(state)
     except ModelSelectionError as exc:

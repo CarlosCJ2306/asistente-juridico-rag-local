@@ -72,12 +72,17 @@ fragmentación e indexación confirmadas por los mecanismos oficiales.
 El Chat RAG utiliza únicamente evidencia documental que continúe elegible según
 su capa, revisión, vigencia, expiración, archivo, extracción e indexación. Los
 filtros y un identificador documental explícito no omiten esa comprobación.
-Tras revalidar en SQLite, selecciona contexto con presupuesto de tokens y solo
-entonces llama a Qwen local. Si no queda evidencia elegible, devuelve contexto
-insuficiente sin completar desde el conocimiento previo del modelo. Sus citas
-estructuradas identifican la capa y evidencia usada. Una respuesta requiere
-revisión profesional y no certifica veracidad, aplicabilidad o suficiencia
-jurídica.
+El flujo es pregunta → recuperación gobernada → evidencia revalidada → respuesta
+local → citas verificables. Tras revalidar en SQLite, selecciona contexto con
+presupuesto de tokens y solo entonces carga y llama a Qwen local. Si no queda
+evidencia elegible, devuelve contexto insuficiente sin inicializar Qwen ni
+completar desde el conocimiento previo del modelo.
+
+La búsqueda recupera candidatos trazables; el Chat añade selección de contexto,
+generación limitada y validación de citas. Sus citas estructuradas identifican
+la capa y evidencia usada. Cada pregunta es independiente: no existe memoria o
+historial persistente. Una respuesta requiere revisión profesional y no
+certifica veracidad, aplicabilidad o suficiencia jurídica.
 
 ## Matrices HPN y Red jurídica
 

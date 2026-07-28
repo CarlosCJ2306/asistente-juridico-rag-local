@@ -21,8 +21,16 @@ def _rag_http_error(error: Exception) -> HTTPException:
     code = getattr(error, "code", "RAG_GENERATION_ERROR")
     if code in {"RAG_GENERATION_BUSY", "RAG_CITATION_SOURCE_STALE"}:
         status_code = 409
+    elif code == "RAG_REQUEST_FORBIDDEN":
+        status_code = 422
+    elif code == "RAG_GENERATION_TIMEOUT":
+        status_code = 504
     elif code in {
         "RAG_LLM_NOT_LOADED",
+        "RAG_LLM_NOT_INSTALLED",
+        "RAG_LLM_LOAD_FAILED",
+        "RAG_LLM_LOAD_TIMEOUT",
+        "RAG_BACKEND_SHUTTING_DOWN",
         "RAG_RETRIEVAL_UNAVAILABLE",
         "RAG_CONTEXT_UNAVAILABLE",
         "FTS5_NOT_AVAILABLE",

@@ -17,6 +17,14 @@ comprueba expiración, retiro, vigencia, capas, bypass por identificador,
 fingerprint, transiciones de indexación, revalidación previa al prompt y retiro
 de citas, sin modificar las persistencias locales principales.
 
+El núcleo Chat RAG se prueba con recuperación, tokenizer y LLM falsos. La
+cobertura incluye contexto insuficiente sin cargar Qwen, carga bajo demanda
+única, reutilización, modo manual, descarga por inactividad, protección de
+generaciones, timeouts y cancelación. También verifica citas inventadas o
+retiradas, documentos que pierden elegibilidad, inyección desde evidencia,
+solicitudes de revelación y ausencia de preguntas, respuestas, chunks o prompts
+en logs.
+
 La automatización se valida con filesystem y SQLite temporales, PDF sintéticos,
 adaptadores de embeddings falsos y colecciones Chroma temporales o simuladas.
 Las pruebas cubren estabilidad de archivos, sidecars estrictos, recuperación

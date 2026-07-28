@@ -23,6 +23,7 @@ from app.core.middleware import RequestLoggingMiddleware
 from app.database.session import database_session_manager
 from app.services.document_automation_service import get_document_automation_service
 from app.services.embedding_runtime_service import get_embedding_runtime_service
+from app.services.llm_runtime_service import shutdown_llm_runtime_if_initialized
 
 
 _DISPOSE_SENTINEL_NAME = re.compile(r"\.phase10_dispose_[0-9a-f]{32}\.ok\Z")
@@ -97,6 +98,7 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     finally:
         if automation is not None:
             await automation.stop()
+        await shutdown_llm_runtime_if_initialized()
         await get_embedding_runtime_service().shutdown()
         try:
             await database_session_manager.dispose()

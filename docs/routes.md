@@ -76,9 +76,9 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 | `GET /api/models/selection` | Selección activa persistente. | Modelos locales. | Conectada. | Distingue modelo activo de modelo cargado. |
 | `PUT /api/models/selection/embeddings` | Seleccionar embeddings instalados. | Modelos locales. | Conectada. | Requiere el modelo actual descargado; no reconstruye el índice. |
 | `PUT /api/models/selection/llm` | Seleccionar LLM instalado. | Modelos locales. | Conectada. | Requiere el modelo actual descargado; no carga el nuevo. |
-| `GET /api/models/llm/status` | Estado de Qwen. | Modelos locales. | Conectada. | No carga el GGUF. |
-| `POST /api/models/llm/load` | Cargar Qwen local. | Modelos locales. | Conectada. | Operación explícita. |
-| `POST /api/models/llm/unload` | Liberar Qwen. | Modelos locales. | Conectada. | Operación idempotente. |
+| `GET /api/models/llm/status` | Estado de Qwen. | Modelos locales. | Conectada. | No carga el GGUF; informa estado, operación y origen de carga seguros. |
+| `POST /api/models/llm/load` | Cargar Qwen local. | Modelos locales. | Conectada. | Control manual conservado junto a la política bajo demanda. |
+| `POST /api/models/llm/unload` | Liberar Qwen. | Modelos locales. | Conectada. | Idempotente y bloqueada durante actividad protegida. |
 
 ### Búsqueda textual, semántica e híbrida
 
@@ -94,7 +94,13 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 
 | Método y ruta | Propósito | Consumidor actual | Conexión | Nota |
 | --- | --- | --- | --- | --- |
-| `POST /api/chat/rag` | Recuperar evidencia y generar una respuesta local con citas estructuradas. | Ninguno. | Solo backend. | Stateless; requiere evidencia elegible y revisión profesional. |
+| `POST /api/chat/rag` | Recuperar evidencia y generar una respuesta local con citas estructuradas. | Ninguno. | Solo backend. | Recibe una pregunta y filtros, no mensajes ni historial; recupera antes de cargar Qwen. |
+
+La respuesta pública distingue `answered` e `insufficient_context`, conserva
+conteos técnicos seguros y solo incluye citas revalidadas con documento
+público, capa, tipo, chunk y páginas. No devuelve prompt, contexto, scores,
+vectores, rutas ni contenido completo. Los fallos de índice, modelos,
+generación o citas usan códigos estables sin traceback.
 
 ### Matrices HPN, nodos y relaciones
 
