@@ -59,14 +59,22 @@ Las matrices almacenan nodos fact, evidence y norm, sus fuentes y relaciones dir
 
 ## Frontend y proxy
 
-React, TypeScript y Vite implementan App Shell, Design System, cliente HTTP compartido, Inicio, Matrices HPN y Red jurídica. En desarrollo, `frontend/.env` define la base local y Vite redirige `/api` al backend. El iframe PyVis usa ruta relativa y sandbox restringido; React no interpreta HTML HPN.
+React, TypeScript y Vite implementan App Shell, Design System, cliente HTTP
+compartido, Inicio, Biblioteca documental con carga PDF explícita, Matrices HPN
+y Red jurídica. En desarrollo, `frontend/.env` define la base local y Vite
+redirige `/api` al backend. El iframe PyVis usa ruta relativa y sandbox
+restringido; React no interpreta HTML HPN.
+
+El mapa canónico de rutas frontend y endpoints asociados está en
+[routes.md](routes.md).
 
 ## Estado de conexión
 
 | Área | Estado |
 | --- | --- |
 | Flujo documental y Chat RAG backend | Implementado y conectado |
-| Biblioteca, carga, procesamiento, corpus, chat y fuentes frontend | Pendiente |
+| Biblioteca y carga PDF frontend | Implementadas; validación manual de carga pendiente |
+| Procesamiento, corpus, chat y fuentes frontend | Pendiente |
 | Matrices HPN frontend | Implementado |
 | Red jurídica frontend | Implementada; validación integrada pendiente |
 | Fuentes web y propuestas HPN asistidas | Futuro |

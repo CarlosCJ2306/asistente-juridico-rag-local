@@ -1,5 +1,40 @@
 # Historial técnico de cambios
 
+## 2026-07-27 — Ajuste transversal: marca, apariencia e iconografía
+
+- **Añadido:** configuración tipada de marca, preset local de paleta y control
+  accesible Claro, Oscuro y Sistema en la topbar.
+- **Corregido:** la apariencia se resuelve antes del montaje y la navegación
+  usa iconos semánticos centralizados.
+- **Alcance:** no modifica capacidades de producto ni la validación manual 12A-2.
+
+## 2026-07-27 — Ajuste transversal: rutas y App Shell
+
+- **Añadido:** `docs/routes.md` como mapa canónico de rutas frontend, endpoints
+  backend y conexiones activas, sin documentar capacidades futuras como rutas
+  implementadas.
+- **Corregido:** el sidebar de escritorio queda limitado al viewport; solo su
+  navegación central se desplaza y el control de compactación permanece en el
+  pie.
+- **Alcance:** no cambia contratos, endpoints, datos ni el orden de fases. La
+  validación manual de la carga PDF continúa pendiente por separado.
+
+## 2026-07-27 — Fase 12A-2: Carga segura de PDF desde frontend
+
+- **Añadido:** modal explícito de carga PDF en la biblioteca documental, con
+  `FormData` a través del cliente HTTP compartido y reutilización del contrato
+  público existente.
+- **Gobernanza:** permite únicamente biblioteca privada o consulta temporal
+  con expiración futura; el backend mantiene las validaciones autoritativas de
+  archivo, tamaño y política.
+- **Experiencia:** los accesos de cabecera y estado vacío abren el mismo
+  formulario; una respuesta `201` actualiza la lista y dirige al detalle
+  público, sin iniciar extracción ni indexación.
+- **Validación:** ESLint, TypeScript estricto y build Vite aprobados. No existe
+  infraestructura de pruebas frontend declarada y no se instalaron herramientas.
+- **Estado:** implementada; la validación manual de carga permanece pendiente.
+  El siguiente bloque de desarrollo es 12B.
+
 ## 2026-07-27 — Fase 12A-1: Biblioteca documental frontend
 
 - **Añadido:** feature de documentos de solo lectura con listado paginado,

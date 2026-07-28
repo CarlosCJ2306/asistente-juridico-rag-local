@@ -1,5 +1,8 @@
 # Design System frontend — Fase 11D-1
 
+La configuración de marca, tokens y temas está en
+[frontend-branding-theming.md](frontend-branding-theming.md).
+
 **Estado:** implementación estática completada; validación interactiva y visual
 diferida a 11D-5.
 

@@ -1,13 +1,27 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildren } from "react";
 
+import { branding, getBrandPalette, type ResolvedTheme } from "../../config/branding";
 import { PreferencesContext } from "../../hooks/usePreferences";
 import type { DensityPreference, PreferencesContextValue, ThemePreference, VisualPreferences } from "../../types/preferences";
-import {
-  DEFAULT_VISUAL_PREFERENCES,
-  clearVisualPreferences,
-  readVisualPreferences,
-  writeVisualPreferences,
-} from "../../utils/safeStorage";
+import { DEFAULT_VISUAL_PREFERENCES, clearVisualPreferences, readVisualPreferences, writeVisualPreferences } from "../../utils/safeStorage";
+
+function resolvedTheme(preference: ThemePreference, media: MediaQueryList): ResolvedTheme {
+  return preference === "system" ? (media.matches ? "dark" : "light") : preference;
+}
+
+function applyVisualPreferences(preferences: VisualPreferences, media: MediaQueryList): void {
+  const root = document.documentElement;
+  const theme = resolvedTheme(preferences.theme, media);
+  const palette = getBrandPalette(theme);
+  root.dataset.theme = theme;
+  root.dataset.themePreference = preferences.theme;
+  root.dataset.brand = branding.themePreset;
+  root.dataset.density = preferences.density;
+  root.style.setProperty("--brand-primary", palette.primary);
+  root.style.setProperty("--brand-primary-hover", palette.primaryHover);
+  root.style.setProperty("--brand-secondary", palette.secondary);
+  root.style.setProperty("--brand-accent", palette.accent);
+}
 
 export function PreferencesProvider({ children }: PropsWithChildren) {
   const [preferences, setPreferences] = useState<VisualPreferences>(readVisualPreferences);
@@ -27,27 +41,13 @@ export function PreferencesProvider({ children }: PropsWithChildren) {
   }, []);
 
   useEffect(() => {
-    if (typeof document === "undefined") return undefined;
-    const root = document.documentElement;
-    const previousTheme = root.getAttribute("data-theme");
-    const previousDensity = root.getAttribute("data-density");
-    if (preferences.theme === "system") root.removeAttribute("data-theme");
-    else root.setAttribute("data-theme", preferences.theme);
-    root.setAttribute("data-density", preferences.density);
-    return () => {
-      if (previousTheme === null) root.removeAttribute("data-theme");
-      else root.setAttribute("data-theme", previousTheme);
-      if (previousDensity === null) root.removeAttribute("data-density");
-      else root.setAttribute("data-density", previousDensity);
-    };
+    const media = window.matchMedia("(prefers-color-scheme: dark)");
+    const updateSystemTheme = () => applyVisualPreferences(preferences, media);
+    updateSystemTheme();
+    if (preferences.theme === "system") media.addEventListener("change", updateSystemTheme);
+    return () => media.removeEventListener("change", updateSystemTheme);
   }, [preferences]);
 
-  const value = useMemo<PreferencesContextValue>(() => ({
-    ...preferences,
-    setTheme,
-    setDensity,
-    resetPreferences,
-  }), [preferences, resetPreferences, setDensity, setTheme]);
-
+  const value = useMemo<PreferencesContextValue>(() => ({ ...preferences, setTheme, setDensity, resetPreferences }), [preferences, resetPreferences, setDensity, setTheme]);
   return <PreferencesContext.Provider value={value}>{children}</PreferencesContext.Provider>;
 }

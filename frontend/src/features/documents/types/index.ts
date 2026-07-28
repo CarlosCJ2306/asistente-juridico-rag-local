@@ -8,6 +8,8 @@ export type {
   LegalValidityStatus,
   PublicDocument,
   PublicDocumentPage,
+  PublicDocumentUploadInput,
+  PublicUploadKnowledgeLayer,
   RagEligibilityReason,
   ReviewStatus,
   SourceKind,

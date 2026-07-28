@@ -18,11 +18,16 @@
 .sidebar {
   display: flex;
   min-width: 0;
+  min-height: 0;
   height: 100dvh;
   flex-direction: column;
   gap: var(--space-5);
   padding: var(--space-4);
   overflow: hidden;
+}
+
+.sidebarBrand {
+  flex: 0 0 auto;
 }
 
 .sidebarNavigation,
@@ -36,9 +41,11 @@
 
 .sidebarNavigation {
   flex: 1 1 auto;
+  min-height: 0;
 }
 
 .sidebarFooter {
+  flex: 0 0 auto;
   margin-block-start: auto;
   padding-block-start: var(--space-3);
   border-block-start: var(--border-width) solid var(--color-border-subtle);
@@ -137,6 +144,8 @@
     position: sticky;
     inset-block-start: 0;
     display: block;
+    height: 100dvh;
+    align-self: start;
     grid-row: 1 / -1;
     grid-column: 1;
   }

@@ -27,6 +27,12 @@ una reconstrucción automática ni eliminan PDF, páginas o chunks.
 
 La carga acepta PDF con límites de tamaño, validación de MIME, extensión y firma. Los nombres se normalizan y las rutas se validan para impedir traversal y escapes del almacenamiento autorizado. Los PDF pueden contener contenido malicioso o instrucciones no confiables; nunca se tratan como instrucciones del sistema.
 
+La interfaz envía el PDF únicamente mediante `FormData` al backend local y no
+conserva el archivo, su contenido, hashes ni rutas en el navegador. Solo expone
+la carga explícita para biblioteca privada o consulta temporal con expiración
+futura; el backend conserva la validación autoritativa y la interfaz no inicia
+extracción, indexación ni elegibilidad documental.
+
 El staging del corpus administrado se ubica bajo `storage/staging`, permanece
 ignorado y no es una carpeta observada. Solo la CLI explícita puede validar o
 importar; copiar archivos no altera SQLite. Se rechazan rutas absolutas,

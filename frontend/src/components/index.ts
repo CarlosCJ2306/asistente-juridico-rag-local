@@ -1,5 +1,6 @@
 export { ProfessionalReviewNotice } from "./ProfessionalReviewNotice";
 export type { ProfessionalReviewNoticeProps } from "./ProfessionalReviewNotice";
+export { AppearanceControl } from "./AppearanceControl";
 export { AppBrand } from "./AppBrand/AppBrand";
 export type { AppBrandProps } from "./AppBrand/AppBrand";
 export { Breadcrumbs } from "./Breadcrumbs/Breadcrumbs";

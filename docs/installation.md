@@ -71,6 +71,9 @@ npm run dev
 
 Vite lee `frontend/.env`; la variable `VITE_API_BASE_URL` debe referirse al origen local del frontend para que las solicitudes `/api` usen el proxy de desarrollo. El proxy reenvía `/api` al backend local. El backend usa su propia configuración; sus variables no sustituyen el archivo `.env` del frontend.
 
+Consulte el [mapa canónico de rutas](routes.md) para identificar las pantallas y
+endpoints conectados antes de validar el proxy.
+
 ## Modelos locales
 
 Los directorios de modelos se resuelven desde la configuración local. Qwen GGUF y el modelo de embeddings deben estar disponibles localmente antes de cargarlos. La carga y descarga se solicitan explícitamente mediante las rutas de modelos; no hay fallback a Internet durante inferencia.

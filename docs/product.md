@@ -13,10 +13,12 @@ El flujo objetivo es: incorporar un PDF autorizado, administrarlo en una bibliot
 El backend ya registra y carga PDF de forma segura, extrae texto con PyMuPDF, persiste páginas y chunks, recupera evidencia con FTS5 y ChromaDB, construye contexto RAG, genera con Qwen local y devuelve citas estructuradas. También existen Matrices HPN manuales, una API de grafo y exportación PyVis.
 
 El frontend actual ofrece Inicio, Biblioteca documental, Matrices HPN y Red
-jurídica. La biblioteca es de solo lectura: permite conocer los metadatos
-públicos, la procedencia y la elegibilidad para consultas, pero no muestra el
-contenido ni modifica documentos. La carga PDF, procesamiento, selección de
-corpus, Chat y fuentes visibles en frontend aún no existen.
+jurídica. La biblioteca permite conocer los metadatos públicos, la procedencia
+y la elegibilidad para consultas, además de registrar de forma explícita un PDF
+en biblioteca privada o como consulta temporal con expiración futura. No muestra
+el contenido ni inicia procesamiento, indexación o cambios de gobernanza desde
+la interfaz. El procesamiento, la selección de corpus, Chat y fuentes visibles
+en frontend aún no existen.
 
 ## Capas de conocimiento
 

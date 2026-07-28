@@ -16,7 +16,7 @@ export function AppSidebar({ sections, compact, onCompactChange }: AppSidebarPro
   return (
     <aside className={styles.sidebarRegion} aria-label="Navegación de escritorio">
       <div className={styles.sidebar}>
-        <AppBrand compact={compact} />
+        <div className={styles.sidebarBrand}><AppBrand compact={compact} /></div>
         <nav id={navigationId} className={styles.sidebarNavigation} aria-label="Navegación principal">
           {sections.map((section) => <NavigationGroup key={section.id} section={section} compact={compact} />)}
         </nav>

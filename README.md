@@ -12,9 +12,11 @@ Los documentos no reentrenan el modelo. Se utilizan como evidencia mediante recu
 
 - Backend: carga segura de PDF, extracción, páginas, chunks, embeddings locales, recuperación textual, semántica e híbrida, Chat RAG y citas estructuradas.
 - Análisis estructural: CRUD manual de Matrices HPN, API de grafo y exportación PyVis local.
-- Frontend: Inicio, Matrices HPN y Red jurídica.
+- Frontend: Inicio, Biblioteca documental con carga PDF explícita, Matrices HPN
+  y Red jurídica.
 
-La biblioteca documental, la carga y el procesamiento desde frontend, la selección visual de corpus, el Chat jurídico y la presentación de fuentes en frontend siguen pendientes.
+El procesamiento documental desde frontend, la selección visual de corpus, el
+Chat jurídico y la presentación de fuentes en frontend siguen pendientes.
 
 ## Arquitectura resumida
 
@@ -36,6 +38,7 @@ Se requiere Python 3.12, Node.js y los modelos locales correspondientes para las
 - [Seguridad y privacidad](docs/security-privacy.md)
 - [Calidad](docs/quality.md)
 - [Arquitectura de producto frontend](docs/frontend-product-architecture.md)
+- [Marca y apariencia frontend](docs/frontend-branding-theming.md)
+- [Mapa canónico de rutas e integración](docs/routes.md)
 - [Design System frontend](docs/frontend-design-system.md)
 - [Historial técnico](CAMBIOS.md)
-

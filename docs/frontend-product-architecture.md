@@ -6,16 +6,22 @@ El frontend usa React, TypeScript, Vite, React Router y TanStack Query. App Shel
 
 Las rutas activas son Inicio, Documentos, detalle documental, Matrices HPN,
 detalle de matriz y Red jurídica. La biblioteca consume los contratos públicos
-de listado paginado y detalle mediante el cliente HTTP compartido; las matrices
+de listado paginado, detalle y carga PDF mediante el cliente HTTP compartido;
+las matrices
 consumen contratos HPN tipados y la Red jurídica consume JSON sanitizado,
 muestra alternativa textual y usa iframe PyVis relativo con sandbox restringido.
+El [mapa canónico de rutas e integración](routes.md) mantiene la relación
+actualizada entre cada pantalla y sus endpoints reales.
+
+[La configuración de marca y apariencia](frontend-branding-theming.md) detalla tokens, presets, iconografía y preferencias visuales locales.
 
 ## Límites actuales
 
-No existen todavía carga PDF, procesamiento, selección de corpus, búsqueda,
-Chat jurídico, citas o fuentes visibles. La biblioteca documental actual es de
-solo lectura: no permite cambiar estados, importar, procesar, indexar, eliminar
-ni visualizar contenido de PDF. Los destinos futuros permanecen fuera de la
+No existen todavía procesamiento, selección de corpus, búsqueda, Chat jurídico,
+citas o fuentes visibles. La biblioteca permite una carga PDF explícita para
+biblioteca privada o consulta temporal con expiración futura, pero no permite
+cambiar estados, procesar, indexar, eliminar ni visualizar contenido de PDF.
+Los destinos futuros permanecen fuera de la
 navegación hasta que tengan contratos y flujos completos.
 
 ## Decisiones vigentes
@@ -29,11 +35,14 @@ navegación hasta que tengan contratos y flujos completos.
 - Mantener preguntas, respuestas, snippets, vectores y datos documentales fuera de almacenamiento web y notificaciones.
 - Usar rutas relativas para recursos locales y no exponer configuraciones, rutas o identificadores restringidos.
 - La accesibilidad incluye foco visible, targets táctiles, navegación por teclado y alternativa textual para el grafo.
+- En escritorio, el sidebar se limita al viewport: marca y control de
+  compactación no se desplazan, mientras solo la navegación central puede
+  desplazarse. El Drawer móvil conserva su propio ciclo de foco y cierre.
 
 ## Próximas áreas
 
-La evolución frontend sigue el plan activo: carga y procesamiento documental,
-selección de corpus, chat, citas/fuentes y propuestas HPN asistidas. Cada área
+La evolución frontend sigue el plan activo: procesamiento documental, selección
+de corpus, chat, citas/fuentes y propuestas HPN asistidas. Cada área
 debe reutilizar contratos backend existentes, evitar exponer identificadores
 técnicos innecesarios y conservar revisión profesional obligatoria.
 

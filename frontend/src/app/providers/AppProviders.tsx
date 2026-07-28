@@ -1,6 +1,7 @@
 import type { PropsWithChildren } from "react";
 
 import { AppErrorBoundary, NotificationViewport, OfflineNotice } from "../../components";
+import { BrandMetadata } from "../BrandMetadata";
 import { NotificationsProvider } from "./NotificationsProvider";
 import { PreferencesProvider } from "./PreferencesProvider";
 import { QueryProvider } from "./QueryProvider";
@@ -10,6 +11,7 @@ export function AppProviders({ children }: PropsWithChildren) {
   return (
     <AppErrorBoundary>
       <PreferencesProvider>
+        <BrandMetadata />
         <SessionProvider>
           <QueryProvider>
             <NotificationsProvider>

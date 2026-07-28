@@ -65,3 +65,13 @@ export interface PublicDocumentPage {
   readonly page: number;
   readonly pageSize: number;
 }
+
+export type PublicUploadKnowledgeLayer = "private_library" | "temporary";
+
+export interface PublicDocumentUploadInput {
+  readonly file: File;
+  readonly documentType: DocumentType;
+  readonly knowledgeLayer: PublicUploadKnowledgeLayer;
+  readonly displayName?: string;
+  readonly expiresAt?: string;
+}

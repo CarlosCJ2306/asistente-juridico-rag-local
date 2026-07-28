@@ -30,7 +30,7 @@ Este es el plan activo y la única hoja de ruta vigente. Ordena la evolución de
 | 10 | Completada | Matrices HPN manuales, revisables y trazables. |
 | 11 | Implementada; validación integrada pendiente | Red jurídica con NetworkX, API, PyVis y frontend de red. |
 
-Las Matrices HPN manuales, la Red jurídica y la biblioteca documental de solo lectura ya están implementadas. La carga PDF, el procesamiento, la selección de corpus, el Chat RAG y las fuentes visibles en frontend siguen pendientes.
+Las Matrices HPN manuales, la Red jurídica y la biblioteca documental con carga PDF explícita ya están implementadas. El procesamiento, la selección de corpus, el Chat RAG y las fuentes visibles en frontend siguen pendientes.
 
 ## Hoja de ruta activa
 
@@ -81,13 +81,36 @@ Las Matrices HPN manuales, la Red jurídica y la biblioteca documental de solo l
 - La interfaz presenta procedencia, gobernanza y elegibilidad RAG sin exponer
   rutas, hashes, nombres almacenados, errores internos ni contenido documental.
 
-### 12A-2 — Carga segura de PDF desde frontend — Siguiente bloque
+### 12A-2 — Carga segura de PDF desde frontend — Implementada; validación manual pendiente
 
-Flujo de carga que reutilice la validación, límites y contratos documentales existentes.
+- Modal explícito de carga que reutiliza el contrato `POST /api/documents` y el
+  cliente HTTP compartido con `FormData`.
+- Propósitos públicos limitados a biblioteca privada y consulta temporal con
+  expiración futura; el backend conserva la validación autoritativa de archivo,
+  gobernanza y tamaño.
+- La carga registra el documento sin iniciar extracción, indexación ni cambios
+  de elegibilidad desde el frontend.
+- La validación manual de carga sigue siendo independiente de los ajustes
+  transversales de rutas y App Shell.
 
-### 12B — Procesamiento, clasificación e indexación
+### 12B — Procesamiento, clasificación e indexación — Siguiente bloque
 
 Estado visible de extracción, páginas, chunks e índices, sin ocultar operaciones costosas o errores.
+
+### Ajuste transversal — Alineación de rutas y App Shell
+
+- Mapa canónico de rutas frontend y endpoints backend relacionados en
+  `docs/routes.md`.
+- Sidebar de escritorio limitado al viewport, con navegación interna desplazable
+  y control de compactación independiente del contenido principal.
+- Este ajuste no modifica el orden de fases ni cierra la validación manual de
+  12A-2.
+
+### Ajuste transversal — Marca, apariencia e iconografía
+
+- Preferencias claro, oscuro y sistema; preset local y tokens semánticos
+  centralizados sin cambiar capacidades de producto.
+- La validación manual de carga 12A-2 y el orden de fases permanecen sin cambios.
 
 ### 12C — Chat jurídico RAG con selección de corpus y citas
 
@@ -109,9 +132,9 @@ Flujo de revisión de matrices y relación controlada con la proyección de Red 
 
 12A-0A establece el modelo persistente, 12A-0B centraliza sus políticas,
 12A-0C las integra con recuperación y Chat RAG, 12A-0D valida ese flujo y
-12A-0E incorpora fuentes administradas de forma explícita y 12A-1 expone la
-biblioteca de solo lectura. 12A-2 es el próximo bloque autorizado. La
-biblioteca y la carga habilitan el procesamiento; el
+12A-0E incorpora fuentes administradas de forma explícita. 12A-1 expone la
+biblioteca y 12A-2 incorpora la carga PDF explícita. 12B es el próximo bloque
+autorizado. La biblioteca y la carga habilitan el procesamiento; el
 procesamiento e índices habilitan el Chat RAG; el Chat con fuentes y la
 gobernanza de evidencia preceden a propuestas HPN; la revisión de esas
 propuestas precede su trazabilidad hacia la Red jurídica.

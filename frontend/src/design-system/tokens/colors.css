@@ -15,6 +15,10 @@
   --palette-amber-100: #fff3c4;
   --palette-red-800: #8b2929;
   --palette-red-100: #fde7e7;
+  --brand-primary: #1e6847;
+  --brand-primary-hover: #164c34;
+  --brand-secondary: #285e94;
+  --brand-accent: #2f74b5;
 
   --color-canvas: var(--palette-ink-025);
   --color-surface: var(--palette-white);
@@ -28,15 +32,15 @@
   --color-border: var(--palette-ink-300);
   --color-border-subtle: var(--palette-ink-150);
   --color-border-strong: var(--palette-ink-650);
-  --color-action-primary: var(--palette-green-700);
-  --color-action-primary-hover: var(--palette-green-800);
-  --color-action-text: var(--palette-green-700);
+  --color-action-primary: var(--brand-primary);
+  --color-action-primary-hover: var(--brand-primary-hover);
+  --color-action-text: var(--brand-secondary);
   --color-action-secondary: var(--palette-white);
   --color-action-secondary-hover: var(--palette-ink-075);
   --color-action-ghost-hover: var(--palette-ink-075);
   --color-action-danger: var(--palette-red-800);
   --color-action-danger-hover: #6e2020;
-  --color-focus-ring: #2f74b5;
+  --color-focus-ring: var(--brand-accent);
   --color-overlay: rgb(16 23 19 / 62%);
   --color-status-info: var(--palette-blue-700);
   --color-status-info-surface: var(--palette-blue-100);
