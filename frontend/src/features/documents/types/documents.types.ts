@@ -75,3 +75,6 @@ export interface PublicDocumentUploadInput {
   readonly displayName?: string;
   readonly expiresAt?: string;
 }
+
+export interface ExtractionSummary { readonly status: DocumentStatus; readonly totalPages: number; readonly totalChunks: number; }
+export interface ExtractionTotals { readonly total: number; }

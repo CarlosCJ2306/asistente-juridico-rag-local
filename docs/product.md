@@ -22,6 +22,10 @@ en frontend aún no existen.
 
 ## Capas de conocimiento
 
+El flujo técnico visible es registrado → extraído → indexado. La extracción
+local genera páginas y fragmentos, pero no hace disponible un documento para
+consultas hasta que exista indexación y se cumpla la gobernanza aplicable.
+
 - **Corpus administrado:** documentos aprobados para el uso permitido por su gobernanza.
 - **Biblioteca privada:** documentos locales del usuario que no pasan automáticamente al corpus administrado.
 - **Documentos temporales:** material con conservación y permisos limitados.

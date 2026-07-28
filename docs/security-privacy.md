@@ -27,6 +27,10 @@ una reconstrucción automática ni eliminan PDF, páginas o chunks.
 
 La carga acepta PDF con límites de tamaño, validación de MIME, extensión y firma. Los nombres se normalizan y las rutas se validan para impedir traversal y escapes del almacenamiento autorizado. Los PDF pueden contener contenido malicioso o instrucciones no confiables; nunca se tratan como instrucciones del sistema.
 
+La extracción documental se ejecuta localmente con PyMuPDF y no activa OCR de
+forma automática. La interfaz solo presenta estados y totales, nunca texto de
+páginas o fragmentos, rutas, hashes ni contenido documental en notificaciones.
+
 La interfaz envía el PDF únicamente mediante `FormData` al backend local y no
 conserva el archivo, su contenido, hashes ni rutas en el navegador. Solo expone
 la carga explícita para biblioteca privada o consulta temporal con expiración

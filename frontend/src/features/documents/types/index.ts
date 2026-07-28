@@ -1,6 +1,8 @@
 export { isDocumentId, parsePublicDocument, parsePublicDocumentPage } from "./documents.guards";
 export type {
   DocumentId,
+  ExtractionSummary,
+  ExtractionTotals,
   DocumentStatus,
   DocumentType,
   IndexStatus,

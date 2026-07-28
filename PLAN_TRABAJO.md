@@ -93,9 +93,14 @@ Las Matrices HPN manuales, la Red jurídica y la biblioteca documental con carga
 - La validación manual de carga sigue siendo independiente de los ajustes
   transversales de rutas y App Shell.
 
-### 12B — Procesamiento, clasificación e indexación — Siguiente bloque
+### 12B-2 — Procesamiento, clasificación e indexación — Siguiente bloque
 
 Estado visible de extracción, páginas, chunks e índices, sin ocultar operaciones costosas o errores.
+
+### 12B-1 — Procesamiento y extracción documental frontend — Completada
+
+- Acción local de extracción, confirmación y resumen seguro de páginas y chunks.
+- 12B-2 queda como siguiente bloque de procesamiento e indexación.
 
 ### Ajuste transversal — Alineación de rutas y App Shell
 

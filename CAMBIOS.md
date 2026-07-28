@@ -1,5 +1,11 @@
 # Historial técnico de cambios
 
+## 2026-07-28 — Fase 12B-1: Extracción documental frontend
+
+- **Añadido:** acción explícita de extracción local, confirmación y totales
+  paginados de páginas y fragmentos sin exponer contenido documental.
+- **Alcance:** sin OCR, embeddings, indexación, búsqueda ni Chat.
+
 ## 2026-07-27 — Ajuste transversal: marca, apariencia e iconografía
 
 - **Añadido:** configuración tipada de marca, preset local de paleta y control

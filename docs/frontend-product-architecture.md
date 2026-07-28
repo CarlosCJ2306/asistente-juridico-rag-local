@@ -24,6 +24,9 @@ cambiar estados, procesar, indexar, eliminar ni visualizar contenido de PDF.
 Los destinos futuros permanecen fuera de la
 navegación hasta que tengan contratos y flujos completos.
 
+El detalle documental permite iniciar la extracción local y consultar solo los
+totales de páginas y fragmentos; no muestra texto ni inicia indexación.
+
 ## Decisiones vigentes
 
 - Features por dominio sobre un cliente HTTP común; no usar `fetch` directo dentro de features.

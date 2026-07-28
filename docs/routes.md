@@ -116,6 +116,7 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 | Listar documentos | `/documents` | `/api/documents` | `GET` | Conectada. |
 | Cargar PDF | `/documents` | `/api/documents` | `POST` | Conectada; no procesa ni indexa. |
 | Detalle documental | `/documents/:documentId` | `/api/documents/{document_id}` | `GET` | Conectada. |
+| Extraer contenido y resumen técnico | `/documents/:documentId` | `/api/documents/{document_id}/extract`, `/pages`, `/chunks` | `POST`, `GET` | Conectada; totales paginados sin mostrar texto. |
 | Listar o crear matrices | `/matrices-hpn` | `/api/hpn/matrices` | `GET`, `POST` | Conectada. |
 | Editar matriz, nodos o relaciones | `/matrices-hpn/:matrixId` | Rutas HPN correspondientes | Varios | Conectada. |
 | Proyección de red | `/legal-network/:matrixId` | `/api/hpn/matrices/{matrix_id}/graph` | `GET` | Conectada. |
