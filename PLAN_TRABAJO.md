@@ -8,7 +8,8 @@ Este es el plan activo y la única hoja de ruta vigente. Ordena la evolución de
 
 - SQLite es la fuente de verdad documental; FTS5 y ChromaDB son índices derivados y reconstruibles.
 - El procesamiento de contenido jurídico, embeddings y generación ocurre localmente; no se usan servicios externos de inferencia.
-- Los modelos se cargan explícitamente y no durante imports o el inicio de FastAPI.
+- Los modelos no se cargan durante imports o el inicio de FastAPI; embeddings
+  admite política manual o bajo demanda y Qwen conserva ciclo explícito.
 - No se registran prompts, respuestas, chunks ni documentos completos.
 - No se versionan modelos, documentos, bases SQLite, índices, secretos, logs o informes locales de validación.
 - Toda salida asistida requiere revisión profesional; no constituye una decisión jurídica.
@@ -93,9 +94,36 @@ Las Matrices HPN manuales, la Red jurídica y la biblioteca documental con carga
 - La validación manual de carga sigue siendo independiente de los ajustes
   transversales de rutas y App Shell.
 
-### 12B-2 — Procesamiento, clasificación e indexación — Siguiente bloque
+### 12B-2 — Procesamiento, clasificación e indexación — Completada
 
 Estado visible de extracción, páginas, chunks e índices, sin ocultar operaciones costosas o errores.
+
+### 12B-3 — Recuperación documental gobernada — Implementada; validación manual pendiente
+
+- Ruta `/documents/search` conectada de forma tipada a la recuperación híbrida
+  local, con filtros de documento, tipo, capa, páginas y modo textual.
+- La interfaz no carga modelos, no reconstruye índices y no abre Chat; el
+  backend mantiene la elegibilidad, revalidación y trazabilidad.
+
+### 12B-4 — Ingesta, procesamiento e indexación automáticos — Completada
+
+- Bandejas locales controladas para biblioteca privada y documentos temporales,
+  sidecars JSON estrictos, cuarentena y cola SQLite recuperable tras reinicios.
+- La carga manual y la bandeja convergen en el mismo pipeline de registro,
+  extracción PyMuPDF e indexación semántica coordinada por lotes.
+- Embeddings se preparan bajo demanda y se descargan tras inactividad; Qwen no
+  participa. La validación operativa confirmó detección, extracción, indexación,
+  búsqueda híbrida y cuarentena con datos sintéticos y backups previos.
+
+### Ajuste transversal — Catálogo y selección segura de modelos locales
+
+- Catálogo permitido, selección persistente y ciclo de vida independiente para
+  embeddings y LLM, sin descargas ni rutas arbitrarias desde la API.
+- Cambiar embeddings invalida la compatibilidad semántica y exige rebuild
+  explícito; cambiar el LLM no modifica los índices.
+- 12C queda como siguiente bloque autorizado; no se inició durante 12B-4.
+- Centro frontend `/models` completado con catálogo, selección, load/unload y
+  estado semántico compartido; su validación visual manual permanece pendiente.
 
 ### 12B-1 — Procesamiento y extracción documental frontend — Completada
 

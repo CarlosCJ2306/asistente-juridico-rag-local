@@ -11,12 +11,12 @@ from numbers import Integral
 from typing import Any, Literal
 from uuid import UUID
 
-from app.ai.model_manager import ModelManager
+from app.ai.model_manager import DEFAULT_EMBEDDING_MODEL_ID, ModelManager, get_model_selection_store
 from app.core.Log import log_error, log_info, log_success
 from app.core.config import settings
 
 
-EMBEDDING_MODEL_ID = "multilingual-e5-small"
+EMBEDDING_MODEL_ID = DEFAULT_EMBEDDING_MODEL_ID
 EmbeddingState = Literal["unloaded", "loading", "loaded", "error"]
 
 
@@ -49,6 +49,7 @@ class EmbeddingModel:
         batch_size: int = settings.embedding_batch_size,
         device: str = settings.embedding_device,
         normalize: bool = settings.embedding_normalize,
+        model_id: str = EMBEDDING_MODEL_ID,
     ) -> None:
         self.model_manager = model_manager or ModelManager()
         self._loader_factory = loader_factory
@@ -56,6 +57,7 @@ class EmbeddingModel:
         self.batch_size = batch_size
         self.device = device
         self.normalize = normalize
+        self._model_id = model_id
         self._model: Any | None = None
         self._dimension: int | None = None
         self._state: EmbeddingState = "unloaded"
@@ -79,6 +81,27 @@ class EmbeddingModel:
     def is_loaded(self) -> bool:
         return self._state == "loaded" and self._model is not None
 
+    @property
+    def model_id(self) -> str:
+        return self._model_id
+
+    @property
+    def fingerprint_identity(self) -> str:
+        entry = self.model_manager.get_model(self._model_id)
+        dimension = entry.embedding_dimension or 0
+        return f"{entry.id}|{entry.public_family}|{dimension}"
+
+    def select_model(self, model_id: str) -> None:
+        """Actualiza el modelo futuro únicamente cuando no hay pesos cargados."""
+
+        with self._lock:
+            if self.is_loaded:
+                raise EmbeddingError("MODEL_CURRENTLY_LOADED")
+            self._model_id = model_id
+            self._configured_path = str(self.model_manager.resolve_model_path(model_id))
+            self._state = "unloaded"
+            self._dimension = None
+
     def load(self) -> None:
         """Carga el modelo solo desde archivos locales y de forma idempotente."""
 
@@ -88,9 +111,9 @@ class EmbeddingModel:
             if self.is_loaded:
                 return
             verification = self.model_manager.verify_model(
-                EMBEDDING_MODEL_ID,
+                self._model_id,
                 calculate_hash=False,
-                configured_path=self._configured_path,
+                configured_path=self._configured_path if self._model_id == EMBEDDING_MODEL_ID else None,
             )
             if not verification.verified:
                 self._state = "error"
@@ -103,7 +126,11 @@ class EmbeddingModel:
             self._state = "loading"
             try:
                 factory = self._loader_factory or self._import_sentence_transformer()
-                path = self.model_manager.resolve_embedding_model_path(self._configured_path)
+                path = (
+                    self.model_manager.resolve_embedding_model_path(self._configured_path)
+                    if self._model_id == EMBEDDING_MODEL_ID
+                    else self.model_manager.resolve_model_path(self._model_id)
+                )
                 self._model = factory(
                     str(path),
                     device=self.device,
@@ -116,7 +143,7 @@ class EmbeddingModel:
                 log_success(
                     "Modelo local de embeddings cargado",
                     operation="embedding_model_load",
-                    model_id=EMBEDDING_MODEL_ID,
+                    model_id=self._model_id,
                     device=self.device,
                     dimension=dimension,
                 )
@@ -130,7 +157,7 @@ class EmbeddingModel:
                 log_error(
                     "No fue posible cargar el modelo de embeddings",
                     operation="embedding_model_load",
-                    model_id=EMBEDDING_MODEL_ID,
+                    model_id=self._model_id,
                     exception_type=type(exc).__name__,
                 )
                 raise EmbeddingError("EMBEDDING_MODEL_LOAD_ERROR") from exc
@@ -180,7 +207,7 @@ class EmbeddingModel:
                         torch.cuda.empty_cache()
                 except ImportError:
                     pass
-            log_info("Modelo de embeddings liberado", operation="embedding_model_unload", model_id=EMBEDDING_MODEL_ID)
+            log_info("Modelo de embeddings liberado", operation="embedding_model_unload", model_id=self._model_id)
 
     def encode(self, texts: Sequence[str]) -> list[list[float]]:
         """Codifica por lotes, valida salida y preserva el orden de entrada."""
@@ -239,5 +266,6 @@ def get_embedding_model() -> EmbeddingModel:
     global _embedding_model
     with _embedding_model_lock:
         if _embedding_model is None:
-            _embedding_model = EmbeddingModel()
+            selection = get_model_selection_store().read()
+            _embedding_model = EmbeddingModel(model_id=selection.active_embedding_model_id)
         return _embedding_model

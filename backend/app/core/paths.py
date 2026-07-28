@@ -9,6 +9,8 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 MODELS_DIR = PROJECT_ROOT / "models"
 EMBEDDINGS_MODELS_DIR = MODELS_DIR / "embeddings"
 STORAGE_DIR = PROJECT_ROOT / "storage"
+CONFIG_DIR = STORAGE_DIR / "config"
+MODEL_SELECTION_FILE = CONFIG_DIR / "model-selection.json"
 STAGING_DIR = STORAGE_DIR / "staging"
 MANAGED_CORPUS_STAGING_DIR = STAGING_DIR / "managed_corpus"
 DATABASE_DIR = STORAGE_DIR / "database"
@@ -19,6 +21,28 @@ VECTOR_DIR = STORAGE_DIR / "vector"
 TEMP_DIR = STORAGE_DIR / "temp"
 UPLOADS_TEMP_DIR = TEMP_DIR / "uploads"
 LOGS_DIR = STORAGE_DIR / "logs"
+INBOX_DIR = STORAGE_DIR / "inbox"
+PRIVATE_LIBRARY_INBOX_DIR = INBOX_DIR / "private_library"
+TEMPORARY_INBOX_DIR = INBOX_DIR / "temporary"
+PROCESSED_INBOX_DIR = INBOX_DIR / "processed"
+QUARANTINE_INBOX_DIR = INBOX_DIR / "quarantine"
+
+
+def resolve_inbox_directory(value: str | Path, *, expected_name: str) -> Path:
+    """Resuelve una bandeja fija sin permitir rutas externas ni symlinks."""
+
+    configured_path = Path(value)
+    if configured_path.is_absolute() or ".." in configured_path.parts:
+        raise ValueError("DOCUMENT_INBOX_PATH_INVALID")
+    candidate = (PROJECT_ROOT / configured_path).resolve()
+    allowed = (PROJECT_ROOT / "storage" / "inbox").resolve()
+    try:
+        candidate.relative_to(allowed)
+    except ValueError as exc:
+        raise ValueError("DOCUMENT_INBOX_PATH_INVALID") from exc
+    if candidate.name != expected_name or candidate.parent != allowed:
+        raise ValueError("DOCUMENT_INBOX_PATH_INVALID")
+    return candidate
 
 
 def resolve_database_file(value: str | Path) -> Path:

@@ -33,6 +33,10 @@ totales de páginas y fragmentos; no muestra texto ni inicia indexación.
 - `features/documents` mantiene tipos cerrados, guards de respuesta, query keys,
   hooks, rutas y componentes de metadatos; no persiste respuestas documentales
   en almacenamiento web.
+- `features/models` consume el catálogo permitido, la selección persistida por
+  el backend y los estados de embeddings, LLM e índice semántico. Comparte las
+  query keys semánticas con Documentos y Búsqueda: activo determina la próxima
+  carga y cargado representa exclusivamente la memoria actual.
 - Estados loading, empty, error y offline mediante patrones compartidos.
 - Renderizar contenido de dominio como texto; no usar `dangerouslySetInnerHTML` ni `srcDoc`.
 - Mantener preguntas, respuestas, snippets, vectores y datos documentales fuera de almacenamiento web y notificaciones.
@@ -44,8 +48,8 @@ totales de páginas y fragmentos; no muestra texto ni inicia indexación.
 
 ## Próximas áreas
 
-La evolución frontend sigue el plan activo: procesamiento documental, selección
-de corpus, chat, citas/fuentes y propuestas HPN asistidas. Cada área
+La evolución frontend sigue el plan activo: validación manual de recuperación,
+chat, citas/fuentes y propuestas HPN asistidas. Cada área
 debe reutilizar contratos backend existentes, evitar exponer identificadores
 técnicos innecesarios y conservar revisión profesional obligatoria.
 

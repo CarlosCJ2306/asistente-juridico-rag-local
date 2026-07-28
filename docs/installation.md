@@ -78,6 +78,34 @@ endpoints conectados antes de validar el proxy.
 
 Los directorios de modelos se resuelven desde la configuración local. Qwen GGUF y el modelo de embeddings deben estar disponibles localmente antes de cargarlos. La carga y descarga se solicitan explícitamente mediante las rutas de modelos; no hay fallback a Internet durante inferencia.
 
+### Bandejas automáticas
+
+Tras aplicar `alembic upgrade head`, el backend crea y revisa únicamente:
+
+- `storage/inbox/private_library`;
+- `storage/inbox/temporary`;
+- `storage/inbox/processed`;
+- `storage/inbox/quarantine`.
+
+Un PDF privado puede acompañarse de un JSON homónimo con `display_name` y
+`document_type`. Un temporal exige además `expires_at` futuro. La configuración
+`EMBEDDING_RUNTIME_POLICY=on_demand` permite preparar el modelo local durante
+búsqueda o indexación; `manual` conserva el ciclo explícito anterior. No existe
+descarga automática de artefactos.
+
+El intervalo de revisión, el tiempo mínimo de estabilidad, el tiempo máximo de
+inestabilidad, la cantidad de archivos inspeccionados por ciclo y el tamaño
+máximo del sidecar se configuran con las variables `DOCUMENT_INBOX_*` y
+`DOCUMENT_SIDECAR_MAX_BYTES` documentadas en `.env.example`.
+
+`models/manifest.json` es el catálogo versionado de modelos permitidos. Para
+registrar otro artefacto local se añade una entrada tipada con identificador,
+metadatos públicos y ubicación relativa dentro de la raíz de modelos; el
+archivo debe copiarse por un procedimiento administrativo separado. La entrada
+no descarga ni aprueba el modelo. `python scripts\verify_models.py` comprueba
+la instalación local sin cargar pesos ni usar Internet. La selección activa se
+guarda localmente bajo `storage/config` y no modifica `.env`.
+
 ## Validaciones básicas
 
 ```bat

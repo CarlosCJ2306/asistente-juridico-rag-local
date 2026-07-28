@@ -146,10 +146,15 @@ class SemanticChunkRepository:
         *,
         batch_size: int,
         now: datetime | None = None,
+        fingerprint_prefix: str = "",
     ) -> ActiveSourceSnapshot:
         """Calcula un fingerprint determinista por lotes sin modificar SQLite."""
 
         digest = hashlib.sha256()
+        if fingerprint_prefix:
+            encoded_prefix = fingerprint_prefix.encode("utf-8")
+            digest.update(len(encoded_prefix).to_bytes(8, byteorder="big", signed=False))
+            digest.update(encoded_prefix)
         governance = DocumentGovernanceService()
         effective_now = now or datetime.now(timezone.utc)
         offset = 0

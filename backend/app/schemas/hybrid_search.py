@@ -90,6 +90,7 @@ class HybridSearchRequest(BaseModel):
 class HybridSearchItem(BaseModel):
     chunk_id: UUID
     document_id: UUID
+    document_name: str = Field(default="Documento", min_length=1, max_length=255)
     document_type: DocumentType
     knowledge_layer: KnowledgeLayer = KnowledgeLayer.PRIVATE_LIBRARY
     chunk_index: int = Field(ge=1)

@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any
 from uuid import UUID
 
+from app.ai.model_manager import DEFAULT_EMBEDDING_MODEL_ID
 from app.core.config import settings
 from app.core.paths import VECTOR_DIR
 from app.database.models.document import DocumentType, KnowledgeLayer
@@ -106,7 +107,8 @@ class ChromaStore:
         if (
             type(schema_version) is not int
             or schema_version != settings.semantic_index_schema_version
-            or embedding_model != settings.embedding_model_name
+            or embedding_model
+            not in {settings.embedding_model_name, DEFAULT_EMBEDDING_MODEL_ID}
             or type(embedding_dimension) is not int
             or embedding_dimension <= 0
         ):
@@ -290,4 +292,11 @@ class ChromaStore:
         except ChromaStoreError:
             raise
         except Exception as exc:
+            # Chroma raises backend-specific not-found exceptions.  Normalize
+            # them so rebuild cleanup remains idempotent and never exposes
+            # adapter details to callers.
+            error_name = type(exc).__name__.lower()
+            error_text = str(exc).lower()
+            if "notfound" in error_name or "not found" in error_text or "does not exist" in error_text:
+                raise ChromaStoreError("SEMANTIC_COLLECTION_NOT_FOUND") from exc
             raise ChromaStoreError("SEMANTIC_INDEX_BUILD_ERROR") from exc

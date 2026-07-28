@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
+from app.ai.embedding_model import EmbeddingError
 
 from app.core.Log import log_error, log_info, log_success
 from app.core.config import settings
@@ -27,6 +28,10 @@ from app.services.semantic_index_service import SemanticIndexService, SemanticSe
 from app.services.semantic_search_service import SemanticSearchService
 from app.services.text_search_service import TextSearchService, TextSearchValidationError
 from app.services.document_governance_service import DocumentGovernanceService
+from app.services.embedding_runtime_service import (
+    EmbeddingRuntimeService,
+    get_embedding_runtime_service,
+)
 
 
 class HybridSearchError(RuntimeError):
@@ -56,12 +61,20 @@ class HybridSearchService:
         text_service: TextSearchService | None = None,
         semantic_service: SemanticSearchService | None = None,
         repository: SemanticChunkRepository | None = None,
+        embedding_runtime: EmbeddingRuntimeService | None = None,
     ) -> None:
         index_service = SemanticIndexService(session)
         self.text_service = text_service or TextSearchService(session)
         self.semantic_service = semantic_service or SemanticSearchService(index_service)
         self.repository = repository or index_service.repository
         self.governance = DocumentGovernanceService()
+        self.embedding_runtime = (
+            embedding_runtime
+            if embedding_runtime is not None
+            else get_embedding_runtime_service()
+            if semantic_service is None
+            else None
+        )
 
     async def search(
         self,
@@ -97,18 +110,33 @@ class HybridSearchService:
                 ),
                 request_id=request_id,
             )
-            semantic_response = await self.semantic_service.search(
-                SemanticSearchRequest(
-                    query=request.query,
-                    top_k=candidate_limit,
-                    document_id=request.document_id,
-                    document_types=request.document_types,
-                    knowledge_layers=request.knowledge_layers,
-                    min_page=request.min_page,
-                    max_page=request.max_page,
-                ),
-                request_id=request_id,
-            )
+            if self.embedding_runtime is None:
+                semantic_response = await self.semantic_service.search(
+                    SemanticSearchRequest(
+                        query=request.query,
+                        top_k=candidate_limit,
+                        document_id=request.document_id,
+                        document_types=request.document_types,
+                        knowledge_layers=request.knowledge_layers,
+                        min_page=request.min_page,
+                        max_page=request.max_page,
+                    ),
+                    request_id=request_id,
+                )
+            else:
+                async with self.embedding_runtime.activity():
+                    semantic_response = await self.semantic_service.search(
+                        SemanticSearchRequest(
+                            query=request.query,
+                            top_k=candidate_limit,
+                            document_id=request.document_id,
+                            document_types=request.document_types,
+                            knowledge_layers=request.knowledge_layers,
+                            min_page=request.min_page,
+                            max_page=request.max_page,
+                        ),
+                        request_id=request_id,
+                    )
             combined = self._fuse(text_response.items, semantic_response.items)
             validated, stale_count = await self._validate_against_sqlite(
                 combined, request
@@ -116,6 +144,9 @@ class HybridSearchService:
         except HybridSearchError as exc:
             self._log_error(exc.code, request, request_id, started_at)
             raise
+        except EmbeddingError as exc:
+            self._log_error(exc.code, request, request_id, started_at)
+            raise SemanticServiceError(exc.code) from exc
         except (TextSearchRepositoryError, SemanticServiceError) as exc:
             self._log_error(exc.code, request, request_id, started_at)
             raise
@@ -281,6 +312,7 @@ class HybridSearchService:
         return HybridSearchItem(
             chunk_id=chunk.chunk_id,
             document_id=chunk.document_id,
+            document_name=chunk.document_name or "Documento",
             document_type=chunk.document_type,
             knowledge_layer=chunk.knowledge_layer,
             chunk_index=chunk.chunk_index,

@@ -42,6 +42,9 @@ storage/vector_store/*
 storage/vector/
 storage/staging/**/*
 !storage/staging/**/.gitkeep
+storage/inbox/**/*
+!storage/inbox/**/.gitkeep
+storage/config/*.json
 local_validation_reports/
 storage/database/*
 !storage/database/.gitkeep

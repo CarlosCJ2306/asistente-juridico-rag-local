@@ -35,6 +35,8 @@ def _hybrid_http_error(error: Exception) -> HTTPException:
         "SEMANTIC_INDEX_INCOMPATIBLE",
         "SEMANTIC_INDEX_REBUILD_REQUIRED",
         "EMBEDDING_MODEL_NOT_LOADED",
+        "EMBEDDING_MODEL_NOT_FOUND",
+        "EMBEDDING_DEPENDENCY_MISSING",
         "HYBRID_SEARCH_UNAVAILABLE",
     }
     status_code = 503 if code in unavailable else 500

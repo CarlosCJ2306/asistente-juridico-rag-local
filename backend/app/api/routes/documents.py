@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Respon
 from fastapi.responses import ORJSONResponse
 from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.database.models.document import (
     DocumentStatus,
@@ -20,7 +21,11 @@ from app.database.models.document import (
 from app.database.repositories.document_chunk_repository import DocumentChunkRepository
 from app.database.repositories.document_page_repository import DocumentPageRepository
 from app.database.repositories.document_repository import DocumentRepository, DuplicateDocumentError
+from app.database.repositories.document_processing_job_repository import (
+    DocumentProcessingJobRepository,
+)
 from app.database.session import get_db_session
+from app.core.Log import log_error
 from app.schemas.document import (
     DocumentListFilters,
     DocumentPage,
@@ -86,7 +91,22 @@ async def upload_document(
             source_kind=source_kind,
             expires_at=expires_at,
         )
-        return await _service(session).upload_pdf(file, document_type, governance)
+        created = await _service(session).upload_pdf(file, document_type, governance)
+        try:
+            await DocumentProcessingJobRepository(session).create_upload_job(
+                document_id=created.id,
+                knowledge_layer=created.knowledge_layer,
+                public_name=created.display_name,
+            )
+            await session.commit()
+        except SQLAlchemyError:
+            await session.rollback()
+            log_error(
+                "No fue posible encolar el documento cargado",
+                operation="document_processing_enqueue",
+                error_code="DOCUMENT_PROCESSING_QUEUE_NOT_READY",
+            )
+        return created
     except (ValidationError, DocumentGovernanceError) as exc:
         raise HTTPException(
             status_code=422,

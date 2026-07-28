@@ -1,5 +1,42 @@
 # Historial técnico de cambios
 
+## 2026-07-28 — Fase 12B-4: Automatización documental local
+
+- **Añadido:** bandejas controladas, sidecars estrictos, cuarentena y cola
+  SQLite persistente mediante la migración `20260728_07`.
+- **Integrado:** carga manual e inbox con extracción PyMuPDF y reconstrucción
+  semántica atómica coordinada por lotes, sin OCR ni Qwen.
+- **Operación:** embeddings con política `on_demand`, protección de actividad y
+  descarga por inactividad; el modo manual continúa disponible.
+- **Frontend:** estado compacto de la cola, progreso documental real y búsqueda
+  que prepara embeddings localmente cuando el índice está compatible.
+- **Validado:** con backups previos, un PDF sintético privado fue detectado,
+  extraído, indexado y recuperado por búsqueda híbrida; un temporal sin sidecar
+  terminó en cuarentena sin registrarse ni incorporarse a los índices.
+- **Cierre:** índice semántico compatible con 70/70 chunks, embeddings y Qwen
+  descargados, persistencias HPN conservadas y procesos temporales detenidos.
+
+## 2026-07-28 — Ajuste transversal: Centro de modelos locales
+
+- **Añadido:** ruta `/models`, navegación, catálogo tipado, selección mediante
+  Modal y ciclo explícito de carga/descarga para embeddings y LLM.
+- **Integrado:** estado semántico compartido y acciones visibles desde la
+  búsqueda bloqueada, sin descargas, inferencia ni reconstrucción automática.
+
+## 2026-07-28 — Ajuste transversal: catálogo de modelos locales
+
+- **Añadido:** catálogo versionado y selección operacional atómica de
+  embeddings y LLM mediante identificadores permitidos.
+- **Seguridad:** sin rutas arbitrarias, descargas, cargas automáticas ni rebuild
+  implícito; el fingerprint semántico incorpora la identidad del embedding.
+
+## 2026-07-28 — Fase 12B-3: Recuperación documental gobernada desde frontend
+
+- **Añadido:** ruta de búsqueda documental conectada a la recuperación híbrida
+  con filtros controlados, estado operativo y resultados trazables.
+- **Alcance:** no carga modelos, no reconstruye índices, no inicia Chat ni
+  expone contenido interno; la validación manual de navegador queda pendiente.
+
 ## 2026-07-28 — Fase 12B-1: Extracción documental frontend
 
 - **Añadido:** acción explícita de extracción local, confirmación y totales

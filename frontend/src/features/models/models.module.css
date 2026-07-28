@@ -1,0 +1,8 @@
+.modelCard { min-width: 0; }
+.metadata { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: var(--space-3); margin: 0; }
+.metadata div { min-width: 0; padding: var(--space-3); border: var(--border-width) solid var(--color-border-subtle); border-radius: var(--radius-md); background: var(--color-surface-subtle); }
+.metadata dt, .metadata dd { margin: 0; overflow-wrap: anywhere; }
+.metadata dt { color: var(--color-text-secondary); font-size: var(--font-size-sm); }
+.metadata dd { margin-block-start: var(--space-1); font-weight: var(--font-weight-semibold); }
+@media (max-width: 30rem) { .metadata { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { .modelCard { scroll-behavior: auto; } }

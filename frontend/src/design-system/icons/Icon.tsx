@@ -110,6 +110,10 @@ export function SettingsIcon({ title, ...props }: IconProps) {
   return <svg viewBox="0 0 24 24" fill="none" {...props} focusable="false" {...accessibilityProps(title)}><circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="2"/><path d="M12 3v2M12 19v2M21 12h-2M5 12H3M18.4 5.6L17 7M7 17l-1.4 1.4M18.4 18.4L17 17M7 7L5.6 5.6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>;
 }
 
+export function ModelIcon({ title, ...props }: IconProps) {
+  return <svg viewBox="0 0 24 24" fill="none" {...props} focusable="false" {...accessibilityProps(title)}><path d="M5 7.5h14v9H5zM8 4v3.5M12 4v3.5M16 4v3.5M8 16.5V20M12 16.5V20M16 16.5V20" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/><circle cx="9" cy="12" r="1" fill="currentColor"/><circle cx="15" cy="12" r="1" fill="currentColor"/></svg>;
+}
+
 export function BrandIcon({ title, ...props }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" fill="none" {...props} focusable="false" {...accessibilityProps(title)}>

@@ -80,5 +80,6 @@ export {
   InfoIcon,
   MenuIcon,
   NavigationIcon,
+  ModelIcon,
 } from "./icons/Icon";
 export type { IconProps } from "./icons/Icon";

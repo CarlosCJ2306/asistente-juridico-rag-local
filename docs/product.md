@@ -12,13 +12,30 @@ El flujo objetivo es: incorporar un PDF autorizado, administrarlo en una bibliot
 
 El backend ya registra y carga PDF de forma segura, extrae texto con PyMuPDF, persiste páginas y chunks, recupera evidencia con FTS5 y ChromaDB, construye contexto RAG, genera con Qwen local y devuelve citas estructuradas. También existen Matrices HPN manuales, una API de grafo y exportación PyVis.
 
-El frontend actual ofrece Inicio, Biblioteca documental, Matrices HPN y Red
+La biblioteca incorpora procesamiento automático: una carga manual o un PDF
+estable depositado en una bandeja controlada entra en una cola persistente,
+se extrae y se incorpora al índice semántico mediante un lote atómico. Los
+temporales requieren expiración futura y los sidecars inválidos terminan en
+cuarentena. Esto no aprueba automáticamente el corpus administrado.
+
+El operador puede consultar un catálogo cerrado de modelos locales instalados y
+seleccionar de forma persistente el modelo de embeddings o el LLM activo. La
+selección no descarga ni carga modelos y no reconstruye índices.
+
+El Centro de modelos conserva selección y controles avanzados. En el flujo
+documental normal, embeddings puede cargarse bajo demanda y liberarse tras
+inactividad. Cambiar embeddings puede
+exigir reconstruir explícitamente el índice antes de buscar; seleccionar o
+cargar el LLM no modifica ese índice y no inicia el Chat futuro.
+
+El frontend actual ofrece Inicio, Biblioteca documental, Búsqueda documental, Matrices HPN y Red
 jurídica. La biblioteca permite conocer los metadatos públicos, la procedencia
 y la elegibilidad para consultas, además de registrar de forma explícita un PDF
 en biblioteca privada o como consulta temporal con expiración futura. No muestra
-el contenido ni inicia procesamiento, indexación o cambios de gobernanza desde
-la interfaz. El procesamiento, la selección de corpus, Chat y fuentes visibles
-en frontend aún no existen.
+el contenido ni inicia cambios de gobernanza desde la interfaz. La búsqueda
+documental utiliza la recuperación híbrida ya gobernada y no inicia
+procesamiento ni indexación. Chat y fuentes visibles en frontend aún no
+existen.
 
 ## Capas de conocimiento
 

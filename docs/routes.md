@@ -28,7 +28,9 @@ backend y las conexiones que ya están activas.
 | --- | --- | --- | --- | --- | --- | --- |
 | `/` | `HomePage` | Inicio y orientación local. | Ninguno. | Inicio. | Implementada y conectada. | `GET /api/health`. |
 | `/documents` | `features/documents` | Listar documentos públicos y abrir la carga PDF explícita. | Ninguno. | Documentos. | Implementada y conectada. | `GET`, `POST /api/documents`. |
+| `/documents/search` | `features/documents` | Buscar evidencia documental mediante recuperación híbrida gobernada. | Ninguno. | Desde Biblioteca documental. | Implementada; validación manual pendiente. | `POST /api/search/hybrid`. |
 | `/documents/:documentId` | `features/documents` | Consultar un documento público registrado. | `:documentId`. | Desde listado o carga exitosa. | Implementada y conectada. | `GET /api/documents/{document_id}`. |
+| `/models` | `features/models` | Consultar catálogo, selección y ciclo de vida de modelos locales. | Ninguno. | Modelos locales. | Implementada; validación visual pendiente. | Catálogo, selección, estado, carga y descarga bajo `/api/models`. |
 | `/matrices-hpn` | `features/hpn-matrices` | Listar y crear matrices HPN. | Ninguno. | Matrices HPN. | Implementada y conectada. | `GET`, `POST /api/hpn/matrices`. |
 | `/matrices-hpn/:matrixId` | `features/hpn-matrices` | Editar una matriz y sus nodos o relaciones revisables. | `:matrixId`. | Desde matrices HPN. | Implementada y conectada. | Rutas de matrices, nodos y relaciones HPN. |
 | `/legal-network` | `features/legal-network` | Estado vacío de la red y acceso a matrices. | Ninguno. | Red jurídica. | Solo frontend. | Ninguno. |
@@ -51,6 +53,10 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 | Método y ruta | Propósito | Consumidor actual | Conexión | Nota |
 | --- | --- | --- | --- | --- |
 | `POST /api/documents` | Registrar un PDF validado. | Biblioteca, modal de carga. | Conectada. | Validación autoritativa de PDF y gobernanza. |
+| `GET /api/documents/processing/summary` | Resumen seguro de la cola automática. | Biblioteca. | Conectada. | Sin rutas ni contenido documental. |
+| `GET /api/documents/processing/jobs?limit=` | Trabajos recientes sanitizados. | Ninguno. | Solo backend. | No devuelve la ruta interna de bandeja. |
+| `GET /api/documents/processing/jobs/{job_id}` | Estado de un trabajo. | Ninguno. | Solo backend. | Metadatos operativos mínimos. |
+| `POST /api/documents/processing/jobs/{job_id}/retry` | Reintentar un fallo permitido. | Ninguno. | Solo backend. | No acepta rutas ni reintenta cuarentena. |
 | `GET /api/documents?page=&page_size=&document_type=&status=` | Listar documentos públicos. | Biblioteca. | Conectada. | Paginación base 1; filtros opcionales. |
 | `GET /api/documents/{document_id}` | Detalle público. | Detalle documental. | Conectada. | Sin rutas ni hashes. |
 | `DELETE /api/documents/{document_id}` | Borrado lógico. | Ninguno. | Solo backend. | Conserva el archivo según la política vigente. |
@@ -63,12 +69,16 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 | Método y ruta | Propósito | Consumidor actual | Conexión | Nota |
 | --- | --- | --- | --- | --- |
 | `GET /api/models/status` | Estado seguro de modelos declarados. | Ninguno. | Solo backend. | No carga el modelo. |
-| `GET /api/models/embeddings/status` | Estado de embeddings. | Ninguno. | Solo backend. | No importa pesos. |
-| `POST /api/models/embeddings/load` | Cargar embeddings locales. | Ninguno. | Solo backend. | Operación explícita. |
-| `POST /api/models/embeddings/unload` | Liberar embeddings. | Ninguno. | Solo backend. | Operación idempotente. |
-| `GET /api/models/llm/status` | Estado de Qwen. | Ninguno. | Solo backend. | No carga el GGUF. |
-| `POST /api/models/llm/load` | Cargar Qwen local. | Ninguno. | Solo backend. | Operación explícita. |
-| `POST /api/models/llm/unload` | Liberar Qwen. | Ninguno. | Solo backend. | Operación idempotente. |
+| `GET /api/models/embeddings/status` | Estado de embeddings. | Modelos locales y búsqueda documental. | Conectada. | Indica carga automática sin importar pesos. |
+| `POST /api/models/embeddings/load` | Cargar embeddings locales. | Modelos locales e índice semántico. | Conectada. | Operación explícita. |
+| `POST /api/models/embeddings/unload` | Liberar embeddings. | Modelos locales e índice semántico. | Conectada. | Operación idempotente. |
+| `GET /api/models/catalog` | Catálogo sanitizado de modelos locales permitidos. | Modelos locales. | Conectada. | No expone rutas ni descarga artefactos. |
+| `GET /api/models/selection` | Selección activa persistente. | Modelos locales. | Conectada. | Distingue modelo activo de modelo cargado. |
+| `PUT /api/models/selection/embeddings` | Seleccionar embeddings instalados. | Modelos locales. | Conectada. | Requiere el modelo actual descargado; no reconstruye el índice. |
+| `PUT /api/models/selection/llm` | Seleccionar LLM instalado. | Modelos locales. | Conectada. | Requiere el modelo actual descargado; no carga el nuevo. |
+| `GET /api/models/llm/status` | Estado de Qwen. | Modelos locales. | Conectada. | No carga el GGUF. |
+| `POST /api/models/llm/load` | Cargar Qwen local. | Modelos locales. | Conectada. | Operación explícita. |
+| `POST /api/models/llm/unload` | Liberar Qwen. | Modelos locales. | Conectada. | Operación idempotente. |
 
 ### Búsqueda textual, semántica e híbrida
 
@@ -78,7 +88,7 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 | `GET /api/search/semantic/status` | Estado del índice semántico. | Ninguno. | Solo backend. | No crea ni reconstruye el índice. |
 | `POST /api/search/semantic/rebuild` | Reconstrucción semántica explícita. | Ninguno. | Solo backend. | Requiere modelo e índice locales. |
 | `POST /api/search/semantic` | Recuperación semántica. | Ninguno. | Solo backend. | Revalida candidatos contra SQLite. |
-| `POST /api/search/hybrid` | Recuperación híbrida RRF. | Ninguno. | Solo backend. | No presenta resultados en frontend aún. |
+| `POST /api/search/hybrid` | Recuperación híbrida RRF. | Búsqueda documental. | Conectada. | Filtros gobernados y resultados trazables; no inicia Chat. |
 
 ### Chat RAG
 
@@ -114,8 +124,10 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 | --- | --- | --- | --- | --- |
 | Salud local | `/` | `/api/health` | `GET` | Conectada. |
 | Listar documentos | `/documents` | `/api/documents` | `GET` | Conectada. |
-| Cargar PDF | `/documents` | `/api/documents` | `POST` | Conectada; no procesa ni indexa. |
+| Cargar PDF | `/documents` | `/api/documents` | `POST` | Conectada; encola procesamiento automático. |
 | Detalle documental | `/documents/:documentId` | `/api/documents/{document_id}` | `GET` | Conectada. |
+| Búsqueda documental gobernada | `/documents/search` | `/api/search/hybrid` | `POST` | Conectada; prepara embeddings bajo demanda si el índice es compatible. |
+| Administrar modelos locales | `/models` | `/api/models/catalog`, `/selection`, estados, load y unload | `GET`, `PUT`, `POST` | Conectada; no descarga artefactos ni ejecuta inferencia. |
 | Extraer contenido y resumen técnico | `/documents/:documentId` | `/api/documents/{document_id}/extract`, `/pages`, `/chunks` | `POST`, `GET` | Conectada; totales paginados sin mostrar texto. |
 | Listar o crear matrices | `/matrices-hpn` | `/api/hpn/matrices` | `GET`, `POST` | Conectada. |
 | Editar matriz, nodos o relaciones | `/matrices-hpn/:matrixId` | Rutas HPN correspondientes | Varios | Conectada. |

@@ -10,7 +10,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 
-from app.ai.model_manager import DEFAULT_LLM_MODEL_ID, ModelManager
+from app.ai.model_manager import DEFAULT_LLM_MODEL_ID, ModelManager, get_model_selection_store
 from app.core.Log import log_error, log_info, log_success, log_warning
 from app.core.config import settings
 
@@ -106,6 +106,18 @@ class LocalLLM:
         with self._lock:
             return self._llm is not None
 
+    @property
+    def model_id(self) -> str:
+        return self._model_id
+
+    def select_model(self, model_id: str) -> None:
+        """Cambia la próxima carga sin descargar ni cargar automáticamente."""
+
+        with self._lock:
+            if self._llm is not None:
+                raise LocalLLMError("MODEL_CURRENTLY_LOADED")
+            self._model_id = model_id
+
     def load(self) -> None:
         """Verifica y carga el GGUF una sola vez, bajo demanda."""
 
@@ -115,8 +127,7 @@ class LocalLLM:
             verification = self._model_manager.verify_model(self._model_id)
             if not verification.installed:
                 raise LLMNotInstalledError(
-                    f"El modelo '{self._model_id}' no está instalado en "
-                    f"{verification.relative_path}"
+                    f"El modelo '{self._model_id}' no está instalado"
                 )
             if not verification.verified:
                 details = "; ".join(verification.errors)
@@ -129,7 +140,6 @@ class LocalLLM:
             log_info(
                 "Cargando modelo generativo local",
                 model_id=self._model_id,
-                relative_path=verification.relative_path,
                 file_size=verification.file_size,
                 n_ctx=settings.local_llm_context_size,
                 n_threads=self._n_threads,
@@ -457,7 +467,8 @@ def get_local_llm() -> LocalLLM:
     if _local_llm_instance is None:
         with _local_llm_instance_lock:
             if _local_llm_instance is None:
-                _local_llm_instance = LocalLLM()
+                selection = get_model_selection_store().read()
+                _local_llm_instance = LocalLLM(model_id=selection.active_llm_model_id)
     return _local_llm_instance
 
 

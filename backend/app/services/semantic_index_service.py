@@ -12,7 +12,7 @@ from uuid import UUID, uuid4
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.ai.embedding_model import EMBEDDING_MODEL_ID, EmbeddingError, EmbeddingModel, get_embedding_model
+from app.ai.embedding_model import EmbeddingError, EmbeddingModel, get_embedding_model
 from app.core.Log import log_error, log_info, log_success, log_warning
 from app.core.config import settings
 from app.database.models.document import Document, IndexStatus
@@ -79,7 +79,7 @@ class SemanticIndexService:
             return SemanticStatusResponse(
                 state="error",
                 dependency_available=dependency_available,
-                embedding_model=EMBEDDING_MODEL_ID,
+                embedding_model=self._active_model_id(),
                 embedding_dimension=self.embedding_model.dimension,
                 indexed_chunks=0,
                 active_chunks=active_chunks,
@@ -95,7 +95,7 @@ class SemanticIndexService:
                 return SemanticStatusResponse(
                     state="error",
                     dependency_available=dependency_available,
-                    embedding_model=EMBEDDING_MODEL_ID,
+                    embedding_model=self._active_model_id(),
                     embedding_dimension=self.embedding_model.dimension,
                     indexed_chunks=0,
                     active_chunks=active_chunks,
@@ -107,7 +107,7 @@ class SemanticIndexService:
                     "not_ready" if dependency_available else "unavailable"
                 ),
                 dependency_available=dependency_available,
-                embedding_model=EMBEDDING_MODEL_ID,
+                embedding_model=self._active_model_id(),
                 embedding_dimension=self.embedding_model.dimension,
                 indexed_chunks=0,
                 active_chunks=active_chunks,
@@ -135,7 +135,7 @@ class SemanticIndexService:
         return SemanticStatusResponse(
             state=state_name,
             dependency_available=dependency_available,
-            embedding_model=EMBEDDING_MODEL_ID,
+            embedding_model=self._active_model_id(),
             embedding_dimension=state.embedding_dimension,
             indexed_chunks=state.indexed_chunks,
             active_chunks=active_chunks,
@@ -169,6 +169,10 @@ class SemanticIndexService:
         old_state: SemanticIndexState | None = None
         indexed = 0
         indexed_digest = hashlib.sha256()
+        fingerprint_prefix = self._fingerprint_prefix()
+        encoded_prefix = fingerprint_prefix.encode("utf-8")
+        indexed_digest.update(len(encoded_prefix).to_bytes(8, byteorder="big", signed=False))
+        indexed_digest.update(encoded_prefix)
         seen_chunk_ids: set[str] = set()
         snapshot_now = datetime.now(timezone.utc)
         prepared_documents: dict[UUID, IndexStatus] = {}
@@ -185,7 +189,7 @@ class SemanticIndexService:
                 "Iniciando reconstrucción del índice semántico",
                 operation="semantic_index_rebuild",
                 request_id=request_id,
-                embedding_model=EMBEDDING_MODEL_ID,
+                embedding_model=self._active_model_id(),
                 embedding_dimension=dimension,
                 batch_size=settings.semantic_index_batch_size,
             )
@@ -194,9 +198,12 @@ class SemanticIndexService:
                 self.store.create_collection,
                 temporary_name,
                 schema_version=settings.semantic_index_schema_version,
-                embedding_model=settings.embedding_model_name,
+                embedding_model=self._active_model_id(),
                 embedding_dimension=dimension,
             )
+            # A creation failure may leave a partially-created collection in
+            # some adapters; cleanup is idempotent for a collection that was
+            # not created at all.
             offset = 0
             while True:
                 source_chunks = await self.repository.list_active_batch(
@@ -260,7 +267,7 @@ class SemanticIndexService:
             new_state = SemanticIndexState(
                 schema_version=settings.semantic_index_schema_version,
                 active_collection=temporary_name,
-                embedding_model=settings.embedding_model_name,
+                embedding_model=self._active_model_id(),
                 embedding_dimension=dimension,
                 distance_metric="cosine",
                 indexed_chunks=indexed,
@@ -278,8 +285,9 @@ class SemanticIndexService:
                     await asyncio.to_thread(
                         self.store.delete_collection, old_state.active_collection
                     )
-                except ChromaStoreError:
-                    log_warning(
+                except ChromaStoreError as exc:
+                    if exc.code != "SEMANTIC_COLLECTION_NOT_FOUND":
+                        log_warning(
                         "No fue posible retirar la colección semántica anterior",
                         operation="semantic_index_cleanup",
                         error_code="SEMANTIC_INDEX_CLEANUP_ERROR",
@@ -320,8 +328,9 @@ class SemanticIndexService:
             if temporary_cleanup_required and temporary_name:
                 try:
                     await asyncio.to_thread(self.store.delete_collection, temporary_name)
-                except ChromaStoreError:
-                    log_warning(
+                except ChromaStoreError as exc:
+                    if exc.code != "SEMANTIC_COLLECTION_NOT_FOUND":
+                        log_warning(
                         "No fue posible retirar una colección temporal fallida",
                         operation="semantic_index_cleanup",
                         error_code="SEMANTIC_INDEX_TEMP_CLEANUP_ERROR",
@@ -499,7 +508,18 @@ class SemanticIndexService:
         return await self.repository.source_snapshot(
             batch_size=settings.semantic_index_batch_size,
             now=now,
+            fingerprint_prefix=self._fingerprint_prefix(),
         )
+
+    def _fingerprint_prefix(self) -> str:
+        identity = getattr(self.embedding_model, "fingerprint_identity", None)
+        if not isinstance(identity, str) or not identity:
+            identity = f"{self._active_model_id()}|{self.embedding_model.dimension or 0}"
+        return f"semantic:{settings.semantic_index_schema_version}|{identity}"
+
+    def _active_model_id(self) -> str:
+        model_id = getattr(self.embedding_model, "model_id", settings.embedding_model_name)
+        return model_id if isinstance(model_id, str) and model_id else settings.embedding_model_name
 
     async def _validate_collection(self, state: SemanticIndexState) -> None:
         try:
@@ -511,24 +531,20 @@ class SemanticIndexService:
             raise SemanticServiceError("SEMANTIC_INDEX_INCOMPATIBLE")
         self._validate_collection_metadata(metadata, state.embedding_dimension)
 
-    @staticmethod
-    def _validate_state(
-        state: SemanticIndexState, *, model_dimension: int | None
-    ) -> None:
+    def _validate_state(self, state: SemanticIndexState, *, model_dimension: int | None) -> None:
         if (
             state.schema_version != settings.semantic_index_schema_version
-            or state.embedding_model != settings.embedding_model_name
+            or state.embedding_model != self._active_model_id()
             or state.distance_metric != "cosine"
             or (model_dimension is not None and state.embedding_dimension != model_dimension)
         ):
             raise SemanticServiceError("SEMANTIC_INDEX_INCOMPATIBLE")
 
-    @staticmethod
-    def _validate_collection_metadata(metadata: dict[str, object], dimension: int) -> None:
+    def _validate_collection_metadata(self, metadata: dict[str, object], dimension: int) -> None:
         if (
             metadata.get("hnsw:space") != "cosine"
             or metadata.get("semantic_schema_version") != settings.semantic_index_schema_version
-            or metadata.get("embedding_model") != settings.embedding_model_name
+            or metadata.get("embedding_model") != self._active_model_id()
             or metadata.get("embedding_dimension") != dimension
         ):
             raise SemanticServiceError("SEMANTIC_INDEX_INCOMPATIBLE")

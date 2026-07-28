@@ -4,16 +4,20 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 from pathlib import Path
+import threading
 from typing import Literal
+from uuid import uuid4
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
 from app.core.Log import log_info, log_success, log_warning
-from app.core.paths import MODELS_DIR, PROJECT_ROOT
+from app.core.paths import MODEL_SELECTION_FILE, MODELS_DIR, PROJECT_ROOT
 
 
 DEFAULT_LLM_MODEL_ID = "qwen3-1.7b-q4-k-m"
+DEFAULT_EMBEDDING_MODEL_ID = "multilingual-e5-small"
 
 
 class ModelManagerError(RuntimeError):
@@ -36,6 +40,14 @@ class EmbeddingModelPathMismatchError(ModelManagerError):
     """La ruta configurada de embeddings no coincide con el manifiesto."""
 
 
+class ModelSelectionError(ModelManagerError):
+    """Error de dominio sanitizado del catálogo o la selección activa."""
+
+    def __init__(self, code: str) -> None:
+        super().__init__(code)
+        self.code = code
+
+
 class ModelManifestEntry(BaseModel):
     """Entrada validada del manifiesto local."""
 
@@ -43,7 +55,10 @@ class ModelManifestEntry(BaseModel):
 
     id: str
     name: str
-    type: str
+    type: Literal["embedding", "llm", "generative"]
+    display_name: str | None = None
+    description: str | None = None
+    family: str | None = None
     repository: str
     filename: str | None = None
     format: str
@@ -53,6 +68,10 @@ class ModelManifestEntry(BaseModel):
     installation_status: Literal["not_installed", "installed"]
     sha256: str | None = None
     minimum_file_size_bytes: int | None = Field(default=None, gt=0)
+    embedding_dimension: int | None = Field(default=None, gt=0)
+    context_length: int | None = Field(default=None, gt=0)
+    capabilities: list[str] = Field(default_factory=list)
+    enabled: bool = True
 
     @field_validator(
         "id",
@@ -98,13 +117,40 @@ class ModelManifestEntry(BaseModel):
             raise ValueError("sha256 debe contener 64 caracteres hexadecimales")
         return normalized
 
+    @property
+    def model_type(self) -> Literal["embedding", "llm"]:
+        return "embedding" if self.type == "embedding" else "llm"
+
+    @property
+    def public_name(self) -> str:
+        return self.display_name or self.name
+
+    @property
+    def public_description(self) -> str:
+        return self.description or self.purpose
+
+    @property
+    def public_family(self) -> str:
+        return self.family or self.name
+
 
 class ModelManifest(BaseModel):
     """Raíz validada del manifiesto."""
 
     model_config = ConfigDict(extra="forbid")
 
+    schema_version: Literal[1] = 1
     models: list[ModelManifestEntry]
+
+
+class ModelSelectionState(BaseModel):
+    """Selección operacional mínima; nunca contiene rutas ni credenciales."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    schema_version: Literal[1] = 1
+    active_embedding_model_id: str = DEFAULT_EMBEDDING_MODEL_ID
+    active_llm_model_id: str = DEFAULT_LLM_MODEL_ID
 
 
 class ModelVerificationResult(BaseModel):
@@ -171,6 +217,17 @@ class ModelManager:
                 return entry
         raise ModelNotFoundError(f"El modelo '{model_id}' no existe en el manifiesto")
 
+    def get_enabled_model(self, model_id: str, model_type: Literal["embedding", "llm"]) -> ModelManifestEntry:
+        try:
+            entry = self.get_model(model_id)
+        except ModelNotFoundError as exc:
+            raise ModelSelectionError("MODEL_NOT_FOUND") from exc
+        if entry.model_type != model_type:
+            raise ModelSelectionError("MODEL_TYPE_MISMATCH")
+        if not entry.enabled:
+            raise ModelSelectionError("MODEL_DISABLED")
+        return entry
+
     def list_models(self) -> tuple[ModelManifestEntry, ...]:
         """Devuelve las entradas validadas sin exponer estado mutable."""
 
@@ -200,7 +257,6 @@ class ModelManager:
             log_warning(
                 "Ruta de modelo rechazada por seguridad",
                 model_id=entry.id,
-                relative_path=entry.local_path,
             )
             raise UnsafeModelPathError(
                 f"La ruta del modelo '{entry.id}' está fuera del directorio models permitido"
@@ -328,7 +384,6 @@ class ModelManager:
         log_context = {
             "model_id": entry.id,
             "model_name": entry.name,
-            "relative_path": entry.local_path,
             "file_size": file_size,
             "verification_status": "verified" if result.verified else "failed",
         }
@@ -356,3 +411,88 @@ class ModelManager:
             "relative_path": entry.local_path,
             "file_size": verification.file_size,
         }
+
+
+class ModelSelectionStore:
+    """Lee y reemplaza atómicamente la selección local de modelos permitidos."""
+
+    def __init__(
+        self,
+        manager: ModelManager | None = None,
+        *,
+        path: Path = MODEL_SELECTION_FILE,
+        default_embedding_model_id: str = DEFAULT_EMBEDDING_MODEL_ID,
+        default_llm_model_id: str = DEFAULT_LLM_MODEL_ID,
+    ) -> None:
+        self.manager = manager or ModelManager()
+        self.path = path
+        self.default_embedding_model_id = default_embedding_model_id
+        self.default_llm_model_id = default_llm_model_id
+        self._lock = threading.RLock()
+
+    def defaults(self) -> ModelSelectionState:
+        return ModelSelectionState(
+            active_embedding_model_id=self.default_embedding_model_id,
+            active_llm_model_id=self.default_llm_model_id,
+        )
+
+    def read(self) -> ModelSelectionState:
+        with self._lock:
+            if not self.path.exists():
+                return self.defaults()
+            try:
+                raw = json.loads(self.path.read_text(encoding="utf-8"))
+                state = ModelSelectionState.model_validate(raw)
+                self.manager.get_enabled_model(state.active_embedding_model_id, "embedding")
+                self.manager.get_enabled_model(state.active_llm_model_id, "llm")
+                return state
+            except (OSError, UnicodeError, json.JSONDecodeError, ValidationError, ModelSelectionError):
+                log_warning("Selección local de modelos inválida; se usan valores predeterminados", operation="model_selection_read", error_code="MODEL_SELECTION_INVALID")
+                return self.defaults()
+
+    def select(self, model_id: str, model_type: Literal["embedding", "llm"], *, currently_loaded: bool) -> ModelSelectionState:
+        with self._lock:
+            if currently_loaded:
+                raise ModelSelectionError("MODEL_CURRENTLY_LOADED")
+            entry = self.manager.get_enabled_model(model_id, model_type)
+            try:
+                verification = self.manager.verify_model(
+                    entry.id,
+                    calculate_hash=False,
+                    configured_path=str(self.manager.resolve_model_path(entry)) if entry.id == DEFAULT_EMBEDDING_MODEL_ID else None,
+                )
+            except (ModelManagerError, OSError) as exc:
+                raise ModelSelectionError("MODEL_SELECTION_INVALID") from exc
+            if not verification.verified:
+                raise ModelSelectionError("MODEL_NOT_INSTALLED")
+            current = self.read()
+            updated = current.model_copy(update={"active_embedding_model_id" if model_type == "embedding" else "active_llm_model_id": model_id})
+            self._write_atomic(updated)
+            log_success("Selección local de modelo actualizada", operation="model_selection_update", model_id=model_id, model_type=model_type)
+            return updated
+
+    def _write_atomic(self, state: ModelSelectionState) -> None:
+        temporary = self.path.with_name(f".{self.path.name}.{uuid4().hex}.tmp")
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            with temporary.open("w", encoding="utf-8", newline="\n") as output:
+                json.dump(state.model_dump(), output, ensure_ascii=False, sort_keys=True)
+                output.flush()
+                os.fsync(output.fileno())
+            os.replace(temporary, self.path)
+        except OSError as exc:
+            raise ModelSelectionError("MODEL_SELECTION_STORAGE_ERROR") from exc
+        finally:
+            temporary.unlink(missing_ok=True)
+
+
+_selection_store: ModelSelectionStore | None = None
+_selection_store_lock = threading.Lock()
+
+
+def get_model_selection_store() -> ModelSelectionStore:
+    global _selection_store
+    with _selection_store_lock:
+        if _selection_store is None:
+            _selection_store = ModelSelectionStore()
+        return _selection_store

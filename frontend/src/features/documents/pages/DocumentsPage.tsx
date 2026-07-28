@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { isRequestCancelledError, toAppError } from "../../../api";
 import { ProfessionalReviewNotice } from "../../../components";
 import { AsyncContent, Button, Card, EmptyState, ErrorState, Stack, Text } from "../../../design-system";
 import type { AsyncStatus } from "../../../design-system";
 import { ContentLayout } from "../../../layouts";
-import { DocumentCard, DocumentUploadModal, SemanticIndexPanel } from "../components";
+import { DocumentCard, DocumentProcessingPanel, DocumentUploadModal, SemanticIndexPanel } from "../components";
 import { useDocuments } from "../hooks";
 import type { PublicDocument } from "../types";
 import styles from "../documents.module.css";
@@ -62,7 +62,7 @@ export function DocumentsPage() {
   }
 
   return (
-    <ContentLayout title="Biblioteca documental" description="Consulta los metadatos públicos, la procedencia y la disponibilidad de los documentos para recuperación local." actions={<Button onClick={openUpload}>Subir PDF</Button>}>
+    <ContentLayout title="Biblioteca documental" description="Consulta los metadatos públicos, la procedencia y la disponibilidad de los documentos para recuperación local." actions={<><Link className={styles.detailLink} to="/documents/search">Buscar en documentos</Link><Button onClick={openUpload}>Subir PDF</Button></>}>
       <ProfessionalReviewNotice />
       <Text variant="secondary">El procesamiento ocurre localmente. La disponibilidad para consultas se calcula según el estado documental y requiere revisión profesional.</Text>
       {query.isFetching && !query.isPending ? <Text as="p" variant="caption" className={styles.updating} aria-live="polite">Actualizando biblioteca…</Text> : null}
@@ -70,6 +70,7 @@ export function DocumentsPage() {
         <AsyncContent status="success">
           <Stack gap="lg">
             <Summary total={query.data.total} currentPageItems={currentItems.length} eligibleItems={eligibleItems} />
+            <DocumentProcessingPanel />
             <SemanticIndexPanel />
             {currentItems.length > 0 ? (
               <>

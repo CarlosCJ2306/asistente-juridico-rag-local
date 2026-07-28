@@ -1,5 +1,9 @@
 # Calidad y validación
 
+El catálogo y la selección de modelos se validan con manifiestos, artefactos y
+archivos operacionales temporales. Las pruebas no cargan modelos reales, no
+usan red y no escriben en los directorios principales de modelos o storage.
+
 ## Validaciones configuradas
 
 - Backend: `python -m pytest`, `python -m ruff check app tests` y `python -m mypy app` desde `backend`.
@@ -12,6 +16,14 @@ temporal o falso, embeddings simulados y contenido sintético. La cobertura
 comprueba expiración, retiro, vigencia, capas, bypass por identificador,
 fingerprint, transiciones de indexación, revalidación previa al prompt y retiro
 de citas, sin modificar las persistencias locales principales.
+
+La automatización se valida con filesystem y SQLite temporales, PDF sintéticos,
+adaptadores de embeddings falsos y colecciones Chroma temporales o simuladas.
+Las pruebas cubren estabilidad de archivos, sidecars estrictos, recuperación
+de cola, reintentos, exclusión por gobernanza, carga concurrente, descarga por
+inactividad, activación batch y privacidad de API. La validación operativa con
+persistencias principales se ejecutó por separado con backups, contenido
+sintético y comprobación de conservación de los datos preexistentes.
 
 El corpus administrado se prueba con manifiestos y PDF mínimos sintéticos,
 SQLite y directorios temporales. Las pruebas cubren validación dry-run,

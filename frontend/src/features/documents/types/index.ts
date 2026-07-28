@@ -1,4 +1,6 @@
 export { isDocumentId, parsePublicDocument, parsePublicDocumentPage } from "./documents.guards";
+export type { HybridSearchInput, HybridSearchItem, HybridSearchResponse, TextMatchMode } from "./hybridSearch.types";
+export type { ProcessingQueueSummary, ProcessingState } from "./processing.types";
 export type {
   DocumentId,
   ExtractionSummary,

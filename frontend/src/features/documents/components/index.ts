@@ -1,6 +1,10 @@
 export { DocumentBadges } from "./DocumentBadges";
+export { CorpusSelector } from "./CorpusSelector";
+export { SearchResultCard } from "./SearchResultCard";
+export { SearchStatusBanner } from "./SearchStatusBanner";
 export { DocumentCard } from "./DocumentCard";
 export { DocumentMetadata } from "./DocumentMetadata";
 export { DocumentRagAvailability } from "./DocumentRagAvailability";
 export { DocumentUploadModal } from "./DocumentUploadModal";
 export { SemanticIndexPanel } from "./SemanticIndexPanel";
+export { DocumentProcessingPanel } from "./DocumentProcessingPanel";

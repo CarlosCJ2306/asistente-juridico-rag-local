@@ -428,3 +428,58 @@ def test_managed_corpus_registry_migration_is_reversible_and_additive(
         assert connection.execute(
             "SELECT COUNT(*) FROM documents WHERE id=?", (document_id,)
         ).fetchone()[0] == 1
+
+
+def test_document_processing_queue_migration_is_additive_and_reversible(
+    tmp_path: Path,
+) -> None:
+    database_file = tmp_path / "document_processing_queue.db"
+    _run_migration(database_file, "20260727_06")
+    document_id, values = _document_row(status="registered")
+    with sqlite3.connect(database_file) as connection:
+        connection.execute(
+            "INSERT INTO documents ("
+            "id, original_filename, stored_filename, relative_path, document_type, "
+            "mime_type, extension, size_bytes, sha256, status, error_code, error_message, "
+            "created_at, updated_at, deleted_at, is_deleted"
+            ") VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            values,
+        )
+        connection.commit()
+
+    _run_migration(database_file, "20260728_07")
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys = ON")
+        connection.execute(
+            "INSERT INTO document_processing_jobs ("
+            "id, document_id, knowledge_layer, public_name, operation, state, "
+            "attempts, created_at, updated_at"
+            ") VALUES (?,?,?,?,?,?,?,?,?)",
+            (
+                uuid4().hex,
+                document_id,
+                "private_library",
+                "Documento sintético",
+                "upload_pipeline",
+                "queued",
+                0,
+                "2026-07-28 00:00:00",
+                "2026-07-28 00:00:00",
+            ),
+        )
+        connection.commit()
+        assert connection.execute(
+            "SELECT COUNT(*) FROM document_processing_jobs"
+        ).fetchone()[0] == 1
+        assert connection.execute(
+            "SELECT COUNT(*) FROM documents WHERE id=?", (document_id,)
+        ).fetchone()[0] == 1
+
+    _downgrade_migration(database_file, "20260727_06")
+    with sqlite3.connect(database_file) as connection:
+        assert connection.execute(
+            "SELECT name FROM sqlite_master WHERE name='document_processing_jobs'"
+        ).fetchone() is None
+        assert connection.execute(
+            "SELECT COUNT(*) FROM documents WHERE id=?", (document_id,)
+        ).fetchone()[0] == 1

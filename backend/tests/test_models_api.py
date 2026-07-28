@@ -33,7 +33,6 @@ def test_models_status_is_safe_and_does_not_load(
         "installed": False,
         "verified": False,
         "loaded": False,
-        "relative_path": "models/llm/test/model.gguf",
     }
     assert payload["embeddings"] == {"installed": False, "implemented": False}
     assert local_llm_module._local_llm_instance is None

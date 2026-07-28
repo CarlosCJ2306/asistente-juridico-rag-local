@@ -1,4 +1,4 @@
-import { ChatIcon, DocumentIcon, HomeIcon, MatrixIcon, NetworkIcon, SearchIcon, SettingsIcon } from "../../design-system";
+import { ChatIcon, DocumentIcon, HomeIcon, MatrixIcon, ModelIcon, NetworkIcon, SearchIcon, SettingsIcon } from "../../design-system";
 
 import type { NavigationSection } from "./navigation.types";
 
@@ -25,6 +25,7 @@ export const navigationSections: ReadonlyArray<NavigationSection> = [
     id: "system",
     label: "Sistema",
     items: [
+      { id: "models", label: "Modelos locales", route: "/models", icon: ModelIcon, availability: "active", matchStrategy: "exact" },
       { id: "notifications", label: "Notificaciones", route: "/notifications", icon: SettingsIcon, availability: "hidden", matchStrategy: "prefix" },
       { id: "system-status", label: "Estado del sistema", route: "/system/status", icon: SettingsIcon, availability: "hidden", matchStrategy: "prefix" },
       { id: "settings", label: "Configuración", route: "/settings", icon: SettingsIcon, availability: "hidden", matchStrategy: "prefix" },

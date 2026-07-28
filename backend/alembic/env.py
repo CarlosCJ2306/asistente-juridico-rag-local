@@ -23,6 +23,7 @@ from app.database.models import (  # noqa: F401, E402
     Document,
     DocumentChunk,
     DocumentPage,
+    DocumentProcessingJob,
     HpnMatrix,
     HpnNode,
     HpnNodeSource,

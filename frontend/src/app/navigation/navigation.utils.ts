@@ -37,6 +37,13 @@ export function getBreadcrumbs(pathname: string): ReadonlyArray<BreadcrumbItem> 
   if (!activeItem) return [];
   const currentItem = { id: activeItem.id, label: activeItem.label, current: true };
   if (activeItem.route === "/") return [currentItem];
+  if (withoutQueryOrHash(pathname) === "/documents/search") {
+    return [
+      { id: "home", label: "Inicio", route: "/", current: false },
+      { id: "documents", label: "Documentos", route: "/documents", current: false },
+      { id: "documents-search", label: "Búsqueda", current: true },
+    ];
+  }
   const isDetail = activeItem.matchStrategy === "prefix" && withoutQueryOrHash(pathname) !== activeItem.route;
   return [
     { id: "home", label: "Inicio", route: "/", current: false },

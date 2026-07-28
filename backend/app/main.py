@@ -21,6 +21,8 @@ from app.core.config import settings
 from app.core.exceptions import unhandled_exception_handler
 from app.core.middleware import RequestLoggingMiddleware
 from app.database.session import database_session_manager
+from app.services.document_automation_service import get_document_automation_service
+from app.services.embedding_runtime_service import get_embedding_runtime_service
 
 
 _DISPOSE_SENTINEL_NAME = re.compile(r"\.phase10_dispose_[0-9a-f]{32}\.ok\Z")
@@ -68,12 +70,22 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     """Registra los eventos esenciales del ciclo de vida."""
 
     log_info("Iniciando backend", app_env=settings.app_env)
+    session_factory_getter = getattr(
+        database_session_manager, "get_session_factory", None
+    )
+    automation = (
+        get_document_automation_service(session_factory_getter())
+        if callable(session_factory_getter)
+        else None
+    )
     try:
         log_documentation(
             "Configuración del backend cargada correctamente",
             api_prefix=settings.api_prefix,
         )
         log_success("Backend disponible", service="asistente-juridico-backend")
+        if automation is not None:
+            await automation.start()
         yield
     except Exception as exc:
         log_critical(
@@ -83,6 +95,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         )
         raise
     finally:
+        if automation is not None:
+            await automation.stop()
+        await get_embedding_runtime_service().shutdown()
         try:
             await database_session_manager.dispose()
         except Exception:

@@ -34,14 +34,42 @@ se conservan por separado y pueden enlazar el documento sustituido.
 
 ## Recuperación e IA local
 
+El manifiesto versionado bajo `models/` funciona como catálogo permitido. La
+selección activa se conserva en configuración operacional local mediante
+reemplazo atómico: activo indica qué modelo usará la próxima carga, mientras
+que cargado indica exclusivamente la presencia actual en memoria. Ninguna
+selección acepta rutas o repositorios suministrados por la API.
+
 - FTS5 indexa texto de chunks y se sincroniza con triggers SQLite.
 - `multilingual-e5-small` genera embeddings locales bajo demanda.
 - ChromaDB persiste solo embeddings y metadatos mínimos, incluida la capa; no reemplaza los chunks SQLite.
+
+## Automatización documental 12B-4
+
+`storage/inbox/private_library` y `storage/inbox/temporary` son las únicas
+bandejas observadas. El ciclo de vida de FastAPI inicia un escáner periódico
+de biblioteca estándar que espera estabilidad, valida un sidecar opcional o
+requerido según la capa y crea un trabajo SQLite. La carga HTTP crea el mismo
+tipo de trabajo sin aceptar rutas.
+
+Los trabajos reutilizan `DocumentService` y `DocumentExtractionService`. Los
+documentos listos se agrupan durante una ventana de debounce y una sola
+reconstrucción copy-on-write actualiza ChromaDB para todo el lote. Esta
+estrategia se eligió porque el adaptador vigente no ofrece un upsert por
+documento con rollback atómico; el índice activo anterior permanece intacto
+hasta validar y activar la colección temporal.
+
+La política de embeddings puede ser `manual` u `on_demand`. Bajo demanda, un
+coordinador impide cargas concurrentes, protege búsquedas e indexaciones
+activas y descarga el modelo tras un periodo configurable sin actividad.
 - El fingerprint semántico incluye los cambios de gobernanza que alteran la
   fuente y la versión del esquema de metadata. Una incompatibilidad exige
   rebuild explícito mediante colección temporal y activación atómica.
 - La búsqueda híbrida combina únicamente candidatos elegibles de FTS5 y
   semántica mediante RRF, con filtros de capa y revalidación contra SQLite.
+- La pantalla de búsqueda documental consume ese contrato sin cargar modelos ni
+  reconstruir índices; muestra sólo fragmentos, procedencia resumida y rangos
+  de página que el backend ya revalidó.
 - Qwen3 GGUF se ejecuta mediante `llama-cpp-python`, con plantilla conversacional del GGUF y carga explícita.
 
 ## RAG y citas

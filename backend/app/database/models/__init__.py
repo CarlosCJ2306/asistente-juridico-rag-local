@@ -13,6 +13,11 @@ from app.database.models.document import (
     SourceKind,
 )
 from app.database.models.document_page import DocumentPage
+from app.database.models.document_processing_job import (
+    DocumentProcessingJob,
+    DocumentProcessingOperation,
+    DocumentProcessingState,
+)
 from app.database.models.hpn import (
     HpnMatrix,
     HpnMatrixStatus,
@@ -33,4 +38,5 @@ __all__ = [
     "HpnMatrix", "HpnMatrixStatus", "HpnNode", "HpnNodeSource", "HpnNodeType",
     "HpnRelation", "HpnRelationType", "HpnReviewStatus",
     "ManagedCorpusEntry",
+    "DocumentProcessingJob", "DocumentProcessingOperation", "DocumentProcessingState",
 ]

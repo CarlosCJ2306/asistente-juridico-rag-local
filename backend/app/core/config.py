@@ -14,6 +14,7 @@ from app.core.paths import (
     PROJECT_ROOT,
     resolve_database_file,
     resolve_embedding_model_directory,
+    resolve_inbox_directory,
     resolve_managed_corpus_staging_directory,
     resolve_vector_path,
 )
@@ -48,6 +49,29 @@ class Settings(BaseSettings):
     legal_chunk_max_chars: int = Field(default=2400, gt=0)
     legal_chunk_overlap_chars: int = Field(default=200, ge=0)
     pdf_min_extractable_chars: int = Field(default=20, gt=0)
+    document_automation_enabled: bool = True
+    document_inbox_scan_interval_seconds: float = Field(default=5.0, ge=1.0, le=3600)
+    document_inbox_stability_seconds: float = Field(default=2.0, ge=0.5, le=300)
+    document_inbox_unstable_timeout_seconds: float = Field(
+        default=900.0, ge=30, le=86400
+    )
+    document_inbox_max_files_per_scan: int = Field(default=100, ge=1, le=10000)
+    document_sidecar_max_bytes: int = Field(default=16384, ge=256, le=1048576)
+    document_processing_max_retries: int = Field(default=3, ge=1, le=10)
+    document_processing_recent_limit: int = Field(default=20, ge=1, le=100)
+    document_index_debounce_seconds: float = Field(default=2.0, ge=0, le=60)
+    document_inbox_private_path: Path = Field(
+        default=Path("storage/inbox/private_library"), validate_default=True
+    )
+    document_inbox_temporary_path: Path = Field(
+        default=Path("storage/inbox/temporary"), validate_default=True
+    )
+    document_inbox_processed_path: Path = Field(
+        default=Path("storage/inbox/processed"), validate_default=True
+    )
+    document_inbox_quarantine_path: Path = Field(
+        default=Path("storage/inbox/quarantine"), validate_default=True
+    )
 
     local_llm_context_size: int = 4096
     local_llm_threads: int = 0
@@ -62,6 +86,8 @@ class Settings(BaseSettings):
     embedding_device: str = "cpu"
     embedding_batch_size: int = Field(default=16, gt=0)
     embedding_normalize: bool = True
+    embedding_runtime_policy: str = "on_demand"
+    embedding_idle_unload_seconds: float = Field(default=120.0, ge=5, le=86400)
     embedding_query_prefix: str = "query:"
     embedding_passage_prefix: str = "passage:"
 
@@ -159,6 +185,26 @@ class Settings(BaseSettings):
     def resolve_managed_staging_path(cls, value: str | Path) -> Path:
         return resolve_managed_corpus_staging_directory(value)
 
+    @field_validator("document_inbox_private_path", mode="before")
+    @classmethod
+    def resolve_private_inbox_path(cls, value: str | Path) -> Path:
+        return resolve_inbox_directory(value, expected_name="private_library")
+
+    @field_validator("document_inbox_temporary_path", mode="before")
+    @classmethod
+    def resolve_temporary_inbox_path(cls, value: str | Path) -> Path:
+        return resolve_inbox_directory(value, expected_name="temporary")
+
+    @field_validator("document_inbox_processed_path", mode="before")
+    @classmethod
+    def resolve_processed_inbox_path(cls, value: str | Path) -> Path:
+        return resolve_inbox_directory(value, expected_name="processed")
+
+    @field_validator("document_inbox_quarantine_path", mode="before")
+    @classmethod
+    def resolve_quarantine_inbox_path(cls, value: str | Path) -> Path:
+        return resolve_inbox_directory(value, expected_name="quarantine")
+
     @field_validator("embedding_model_path", mode="before")
     @classmethod
     def resolve_embedding_model_path(cls, value: str | Path) -> Path:
@@ -191,6 +237,14 @@ class Settings(BaseSettings):
         if not value.strip():
             raise ValueError("Los prefijos de embeddings no pueden estar vacíos")
         return value
+
+    @field_validator("embedding_runtime_policy")
+    @classmethod
+    def validate_embedding_runtime_policy(cls, value: str) -> str:
+        normalized = value.strip().lower()
+        if normalized not in {"manual", "on_demand"}:
+            raise ValueError("EMBEDDING_RUNTIME_POLICY_INVALID")
+        return normalized
 
     @field_validator("hybrid_text_weight", "hybrid_semantic_weight")
     @classmethod

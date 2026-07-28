@@ -103,7 +103,7 @@ export function DocumentUploadModal({ open, onOpenChange, onCompleted }: Documen
   const serverError = upload.error ? uploadErrorMessage(upload.error) : null;
   const temporary = knowledgeLayer === "temporary";
   return (
-    <Modal open={open} onOpenChange={onOpenChange} title="Subir PDF" description="El archivo se procesa únicamente en esta instalación local. La carga no aprueba, extrae ni indexa el documento automáticamente." size="lg" {...modalDismissProps(upload.isPending)}>
+    <Modal open={open} onOpenChange={onOpenChange} title="Subir PDF" description="El archivo se procesa únicamente en esta instalación local y entra en la cola automática." size="lg" {...modalDismissProps(upload.isPending)}>
       <form onSubmit={(event) => void submit(event)} noValidate>
         <Stack gap="md">
           <FormField label="Archivo PDF" required error={errors.file} description="Selecciona un único archivo PDF. El backend valida extensión, MIME, firma y tamaño.">
@@ -125,7 +125,7 @@ export function DocumentUploadModal({ open, onOpenChange, onCompleted }: Documen
             <Text as="p" variant="caption" className={styles.purposeDescription}>El documento quedará excluido de futuras consultas después de su vencimiento. La expiración no implica borrado físico automático.</Text>
           </fieldset>
           {temporary ? <FormField label="Expiración" required error={errors.expiresAt} description="La fecha se enviará con zona horaria al backend local.">{(props) => <TextInput {...props} type="datetime-local" value={expiresAt} disabled={upload.isPending} invalid={Boolean(errors.expiresAt)} onChange={(event) => { setExpiresAt(event.target.value); setErrors((current) => ({ ...current, expiresAt: undefined })); }} />}</FormField> : null}
-          <section className={styles.uploadSummary} aria-label="Resumen de la carga"><Text variant="secondary">Después de registrar el PDF, el documento quedará pendiente de extracción e indexación. Esta pantalla no inicia esos procesos.</Text></section>
+          <section className={styles.uploadSummary} aria-label="Resumen de la carga"><Text variant="secondary">Se procesará e indexará automáticamente.</Text></section>
           {serverError ? <p className={styles.formError} role="alert">{serverError}</p> : null}
           <Inline gap="sm" justify="end" className={styles.uploadActions}>
             <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={upload.isPending}>Cancelar</Button>

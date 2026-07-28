@@ -773,6 +773,53 @@ def test_semantic_rebuild_failure_preserves_previous_index_and_removes_temporary
     _run(scenario())
 
 
+def test_semantic_rebuild_replaces_incompatible_active_index(tmp_path: Path) -> None:
+    """An old active fingerprint blocks reads, but never blocks rebuild."""
+
+    async def scenario() -> None:
+        manager, _ = await _semantic_database(tmp_path)
+        state_store = SemanticStateStore(tmp_path / "vector" / "state.json")
+        store = FakeChromaStore()
+        old_name = f"legal_chunks_{uuid4().hex}"
+        store.create_collection(
+            old_name,
+            schema_version=settings.semantic_index_schema_version,
+            embedding_model="intfloat/multilingual-e5-small",
+            embedding_dimension=3,
+        )
+        old_state = SemanticIndexState(
+            schema_version=settings.semantic_index_schema_version,
+            active_collection=old_name,
+            embedding_model="intfloat/multilingual-e5-small",
+            embedding_dimension=3,
+            distance_metric="cosine",
+            indexed_chunks=0,
+            created_at="2026-07-24T00:00:00+00:00",
+            source_fingerprint="0" * 64,
+        )
+        state_store.write_atomic(old_state)
+        try:
+            async with manager.get_session_factory()() as session:
+                service = SemanticIndexService(
+                    session,
+                    embedding_model=FakeEmbeddingModel(),
+                    store=store,
+                    state_store=state_store,
+                )
+                response = await service.rebuild()
+                new_state = state_store.read()
+                assert response.indexed_chunks == 2
+                assert new_state is not None
+                assert new_state.active_collection != old_name
+                assert new_state.source_fingerprint != old_state.source_fingerprint
+                assert old_name not in store.collections
+                assert new_state.active_collection in store.collections
+        finally:
+            await manager.dispose()
+
+    _run(scenario())
+
+
 def test_semantic_rebuild_marks_started_documents_failed_on_error(
     tmp_path: Path,
 ) -> None:
@@ -838,6 +885,38 @@ def test_semantic_rebuild_partial_failures_remove_only_temporary_and_release_loc
             await manager.dispose()
 
     _run(scenario())
+
+
+def test_semantic_rebuild_cleanup_ignores_already_gone_temporary_collection(
+    tmp_path: Path, monkeypatch
+) -> None:
+    warnings: list[dict[str, object]] = []
+    monkeypatch.setattr(index_module, "log_warning", lambda _message, **context: warnings.append(context))
+
+    class GoneOnDeleteStore(FakeChromaStore):
+        def delete_collection(self, name: str) -> None:
+            self.collections.pop(name, None)
+            raise ChromaStoreError("SEMANTIC_COLLECTION_NOT_FOUND")
+
+    async def scenario() -> None:
+        manager, _ = await _semantic_database(tmp_path)
+        store = GoneOnDeleteStore()
+        store.fail_add_on_call = 1
+        try:
+            async with manager.get_session_factory()() as session:
+                service = SemanticIndexService(
+                    session,
+                    embedding_model=FakeEmbeddingModel(),
+                    store=store,
+                    state_store=SemanticStateStore(tmp_path / "vector" / "state.json"),
+                )
+                with pytest.raises(SemanticServiceError):
+                    await service.rebuild()
+        finally:
+            await manager.dispose()
+
+    _run(scenario())
+    assert not warnings
 
 
 def test_semantic_rebuild_cleanup_failures_preserve_safe_active_state(
@@ -1041,7 +1120,8 @@ def test_semantic_rebuild_activates_explicit_empty_index_for_zero_active_chunks(
                 state = state_store.read()
                 assert rebuilt.indexed_chunks == 0
                 assert state is not None and state.indexed_chunks == 0
-                assert state.source_fingerprint == "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                assert len(state.source_fingerprint) == 64
+                assert state.source_fingerprint != "0" * 64
                 assert set(store.collections) == {state.active_collection}
                 status = await service.status()
                 assert status.state == "ready" and not status.needs_rebuild
