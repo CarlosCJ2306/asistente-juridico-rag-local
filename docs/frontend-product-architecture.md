@@ -17,14 +17,10 @@ actualizada entre cada pantalla y sus endpoints reales.
 
 ## Límites actuales
 
-El feature `features/chat` consume `POST /api/chat/rag` mediante el cliente
-HTTP compartido y una mutation. Reutiliza `CorpusSelector`, contratos cerrados
-y guards de respuesta para mostrar texto plano, citas públicas y enlaces al
-detalle documental. La pregunta, la respuesta y las citas viven únicamente en
-estado React: no hay multi-turn, persistencia, query keys con contenido ni
-almacenamiento web.
-Al recargar o navegar fuera de `/chat`, esa sesión visual se descarta; volver
-con el navegador inicia una nueva consulta sin restaurar preguntas o respuestas.
+El feature `features/chat` admite el contrato individual de `POST /api/chat/rag`
+y conversaciones invitadas persistidas por el backend. React no accede a la
+cookie HttpOnly ni guarda preguntas, respuestas o citas en almacenamiento web.
+Cada turno vuelve a recuperar evidencia; el historial no es fuente jurídica.
 
 La biblioteca permite una carga PDF explícita para biblioteca privada o
 consulta temporal con expiración futura, pero no permite cambiar estados,
@@ -57,21 +53,64 @@ totales de páginas y fragmentos; no muestra texto ni inicia indexación.
   compactación no se desplazan, mientras solo la navegación central puede
   desplazarse. El Drawer móvil conserva su propio ciclo de foco y cierre.
 
-## Próximas áreas
+## Chat conversacional persistente
 
-### Contrato de 12C-3B
+`/chat` usa un workspace full-bleed que ocupa toda la fila disponible del App
+Shell bajo el topbar, sin `Container` de lectura, breadcrumb exterior ni
+padding de página. Usa dos regiones: un rail plegable que lista solo el historial devuelto
+por el backend y un área principal de hilo, composer y advertencia discreta.
+El rail conserva su estado exclusivamente en memoria; en tamaños reducidos se
+abre como Drawer. La evidencia se abre bajo demanda en un Drawer derecho desde
+la respuesta concreta, sin reservar una tercera columna ni cambiar el scroll
+del hilo.
+La conversación se crea al primer envío, no al entrar a la ruta. TanStack
+Query conserva únicamente respuestas de API en memoria y las query keys no
+contienen preguntas, respuestas ni citas.
+
+La cookie HttpOnly se maneja exclusivamente por el navegador en peticiones
+same-origin. No existe almacenamiento web, autenticación simulada ni
+sincronización entre dispositivos.
+
+## Deuda de validación heredada
 
 El backend ofrece CRUD bajo `/api/conversations` y creación de turnos bajo
-`/{conversation_id}/messages`. El futuro frontend deberá representar historial
-lateral, hilo ordenado, estados `answered`, `partial`, `insufficient_context` y
-`failed`, claims, cobertura y panel de citas directas. La cookie invitada es
-HttpOnly: React no debe leerla, copiarla ni persistirla. La transferencia a
-cuenta no debe mostrarse hasta que exista autenticación real y consentimiento.
+`/{conversation_id}/messages`. La interfaz representa historial lateral, hilo
+ordenado, estados `answered`, `partial`, `insufficient_context` y `failed`,
+claims, cobertura y citas directas. La cookie invitada es HttpOnly: React no
+debe leerla, copiarla ni persistirla. La transferencia a cuenta no debe
+mostrarse hasta que exista autenticación real y consentimiento.
 
-La evolución frontend sigue el plan activo: validación manual de recuperación,
-mejoras futuras de Chat, citas/fuentes y propuestas HPN asistidas. Cada área
-debe reutilizar contratos backend existentes, evitar exponer identificadores
-técnicos innecesarios y conservar revisión profesional obligatoria.
+Esta validación pendiente no cambia los contratos ni convierte conversaciones
+generales en conversaciones de caso.
+
+## Navegación objetivo desde 12D
+
+La navegación visible es Inicio, Asistente jurídico, Casos, Biblioteca
+jurídica, Matrices HPN, Red jurídica y Modelos locales. Procesamiento no se
+incorpora al App Shell porque no tiene una pantalla funcional independiente.
+
+`Casos` será un workspace con Resumen, Expediente, Matriz HPN, Red, Métricas,
+Simulaciones, Asistente y Auditoría. Todo ese workspace está **planificado**;
+no existen todavía sus rutas ni contratos. Las rutas actuales de Matrices HPN
+y Red permanecen como legado operativo hasta lograr paridad, asociación humana
+y deprecación documentada. Consulte [case-workspace.md](case-workspace.md).
+
+12D-2 incorporó `/cases` como único destino estático, con estado vacío honesto
+y enlaces a capacidades existentes. La navegación visible se organiza en
+Trabajo (Inicio, Asistente jurídico, Casos), Conocimiento (Biblioteca jurídica),
+Herramientas actuales (Matrices HPN y Red jurídica) y Sistema (Modelos locales).
+No se añadió Procesamiento porque no tiene una pantalla funcional, ni rutas
+dinámicas, API o datos de casos.
+
+12D-3 no cambia la interfaz visual ni la navegación: registra solamente
+metadata interna de compatibilidad. La experiencia se prioriza para PC; la
+validación móvil y el refinamiento visual definitivo permanecen diferidos.
+
+12D-1 consolidó los `index.ts` de features como
+fachadas públicas, eliminó imports profundos Chat→Documentos, Red→HPN y
+Modelos→Documentos, y movió una utilidad modal genérica fuera de HPN. ESLint
+impide volver a importar internals de otra feature o de
+`design-system/internal`.
 
 ## Relación con el Design System
 

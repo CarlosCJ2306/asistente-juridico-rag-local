@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 import { Alert, Card, Heading, Stack, Text } from "../../../design-system";
-import type { SemanticStatus } from "../../documents/api/semanticIndex.api";
+import type { SemanticStatus } from "../../documents";
 
 export function SemanticIndexSummary({ status }: { readonly status?: SemanticStatus }) {
   const requiresRebuild = status?.needsRebuild ?? false;

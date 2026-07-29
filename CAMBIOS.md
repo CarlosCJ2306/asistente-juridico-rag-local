@@ -1,5 +1,112 @@
 # Historial técnico de cambios
 
+## 2026-07-29 — Fase 12E-2: pertenencia documental explícita del expediente
+
+- La revisión aditiva y reversible `20260729_10` creó `case_documents`, sin
+  backfill ni cambios en documentos, FTS5, ChromaDB, conversaciones o HPN.
+- `CaseDocument` admite propósitos cerrados, orden estable, retiro lógico,
+  snapshot mínima y una única asociación activa por pareja caso-documento.
+- Solo `private_library` y `temporary` pueden asociarse. La lectura resuelve los
+  documentos por lote y calcula `available`, `pending_processing`, `stale`,
+  `expired` o `unavailable` sin reparar snapshots ni cambiar gobernanza.
+- Las rutas bajo `/api/cases/{case_id}/documents` implementan asociación,
+  listado, detalle, actualización y retiro con locking del caso y del vínculo,
+  auditoría transaccional e IDOR oculto.
+- La validación aislada conservó documentos y PDFs sintéticos, confirmó cuatro
+  SELECT para páginas de 1, 10 y 50 asociaciones y no cargó modelos. El
+  frontend `/cases` continúa estático; 12E-3 es el siguiente bloque.
+
+## 2026-07-28 — Fase 12E-1: núcleo persistente de Case y API local
+
+- Se implementó el agregado de dominio `Case`, separado del ORM, con estados
+  controlados, restauración al último estado no archivado, locking optimista,
+  expiración autoritativa y borrado lógico.
+- La migración aditiva y reversible `20260728_09` creó `cases` y
+  `case_audit_events`; cada mutación y su auditoría se confirman en una misma
+  transacción.
+- `/api/cases` permite crear, listar, consultar, editar y ejecutar acciones de
+  estado. Los casos temporales se aíslan por el hash de la sesión invitada y
+  los persistentes pertenecen a la instalación local.
+- La validación operativa confirmó aislamiento, conflicto de versión,
+  archivo/restauración y eliminación lógica sin alterar datos documentales,
+  conversaciones, HPN, FTS5 o ChromaDB.
+- `/cases` continúa estático. No se implementaron `CaseDocument`, pipeline,
+  conversaciones de caso ni vínculos `case_id` para HPN o Red. 12E-2 es el
+  siguiente bloque.
+
+## 2026-07-28 — Fase 12D-3: compatibilidad, legado y preparación de deprecación
+
+- Se formalizó una clasificación interna para HPN y Red globales, un manifiesto
+  estático versionado y referencias legacy inmutables, sin exponerlos por API.
+- Las políticas puras solo evalúan una posible asignación humana futura; no
+  escriben `case_id`, no reparan fuentes ni modifican estados.
+- La deprecación y el retiro continúan explícitamente desactivados hasta que
+  exista dominio Case, paridad funcional, migración humana y rollback validado.
+- El producto queda documentado para uso en PC; la armonización visual definitiva
+  se difiere hasta completar las capacidades funcionales principales.
+
+## 2026-07-28 — Fase 12D-2: navegación objetivo y shell de Casos
+
+- Se añadió exclusivamente `/cases` como destino estático con estado vacío
+  honesto y enlaces a capacidades existentes; no hay creación, listado ni datos
+  simulados de casos.
+- La navegación distingue Trabajo, Conocimiento, Herramientas actuales y
+  Sistema; HPN y Red jurídica conservan sus rutas globales operativas.
+- `CaseWorkspaceShell` es un componente presentacional tipado, reutilizable y
+  sin API, persistencia ni lógica de dominio.
+- El workspace de Chat mantiene el modo full-bleed también en pantallas de
+  90rem o más.
+
+## 2026-07-28 — Fase 12D-1: límites modulares y contratos de transición
+
+- Se añadieron fachadas públicas para documentos/extracción, recuperación,
+  modelos locales, Asistente general, HPN y Red legacy sin cambiar sus APIs.
+- El paquete inactivo `app.cases` define DTO congelados, cinco ports y
+  adaptadores de transición; no registra routers, abre persistencia ni carga
+  modelos al importarse.
+- La resolución documental usa una consulta batch. La recuperación legacy
+  acepta hoy un documento y rechaza alcances mayores con código cerrado, sin
+  ejecutar N búsquedas.
+- Pruebas AST, privacidad, side effects y paridad OpenAPI, junto con reglas
+  ESLint, protegen los límites backend/frontend. No existen aún tablas,
+  endpoints, rutas o pantallas de casos.
+
+## 2026-07-28 — Fase 12D-0: arquitectura del producto orientada a casos
+
+- Se auditó y clasificó el backend, frontend, persistencia, índices, scripts,
+  pruebas y documentación sin modificar código ni datos.
+- Se separaron Asistente jurídico general, Workspace de inteligencia de casos
+  y Plataforma local compartida; HPN y Red globales se conservan como legado
+  operativo durante una migración aditiva.
+- Se diseñaron el dominio `Case`, `CasePipelineHarness`,
+  `CaseEvaluationHarness`, navegación objetivo, límites de privacidad y hoja
+  de ruta 12D–12L. Estas capacidades quedan documentadas como planificadas, no
+  implementadas.
+
+## 2026-07-28 — Corrección full-bleed del Chat
+
+- `/chat` y `/chat/:conversationId` usan una variante localizada del App Shell
+  sin ancho de lectura, breadcrumb ni padding exterior.
+- El workspace ocupa toda la altura disponible y el rail cambia entre 19rem y
+  4.25rem, cediendo inmediatamente ese espacio al hilo y al composer.
+
+## 2026-07-28 — Refinamiento visual de Chat conversacional
+
+- El Chat pasó a dos regiones: historial plegable y área principal de mensajes.
+- Las evidencias se abren bajo demanda por respuesta en Drawer, sin columna
+  permanente ni espacio reservado. Composer, sesión invitada y advertencia
+  profesional adoptan una presentación compacta y responsive.
+
+## 2026-07-28 — Fase 12C-3B: experiencia frontend de conversaciones
+
+- `/chat` usa conversaciones persistentes de invitado con creación diferida,
+  hilo multi-turn, historial, archivo, eliminación y renombrado.
+- Las llamadas conversacionales usan únicamente la cookie HttpOnly same-origin;
+  no hay lectura de cookies, almacenamiento web ni autenticación simulada.
+- Se añadieron panel de evidencia por respuesta, citas interactivas, claims,
+  cobertura, copia local segura y estados responsive. La validación manual
+  integrada permanece pendiente.
+
 ## 2026-07-28 — Fase 12C-3A: conversaciones RAG persistentes
 
 - Se añadió la revisión `20260728_08`, con conversaciones, mensajes, snapshots

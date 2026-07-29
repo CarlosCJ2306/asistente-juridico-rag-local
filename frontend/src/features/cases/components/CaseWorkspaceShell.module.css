@@ -1,0 +1,15 @@
+.shell { display: grid; gap: var(--space-5); min-width: 0; }
+.header { display: flex; align-items: flex-start; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); }
+.title { margin: 0; font-size: var(--font-size-2xl); line-height: var(--line-height-tight); overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--space-3); }
+.sections { border-block-end: var(--border-width) solid var(--color-border-subtle); }
+.desktopSections { display: flex; min-width: 0; gap: var(--space-1); overflow-x: auto; }
+.sectionButton, .activeSection { min-height: var(--control-height-md); padding: var(--space-2) var(--space-3); border: 0; border-block-end: var(--border-width) solid transparent; color: var(--color-text-secondary); background: transparent; font: inherit; font-weight: var(--font-weight-semibold); white-space: nowrap; cursor: pointer; }
+.sectionButton:hover { color: var(--color-text-primary); background: var(--color-surface-subtle); }
+.sectionButton:focus-visible, .activeSection:focus-visible { outline: var(--border-width-focus) solid var(--color-focus-ring); outline-offset: calc(var(--border-width-focus) * -1); }
+.activeSection { border-block-end-color: var(--color-action-primary); color: var(--color-text-primary); }
+.sectionButton:disabled, .activeSection:disabled { cursor: default; opacity: 1; }
+.mobileSections { display: none; }
+.selectorLabel { display: block; margin-block-end: var(--space-2); color: var(--color-text-secondary); font-size: var(--font-size-sm); font-weight: var(--font-weight-semibold); }
+.content { min-width: 0; }
+@media (max-width: 47.99rem) { .desktopSections { display: none; } .mobileSections { display: block; } }

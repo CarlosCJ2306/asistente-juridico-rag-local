@@ -27,7 +27,9 @@ backend y las conexiones que ya están activas.
 | Ruta | Página o feature | Propósito | Parámetros | Entrada de navegación | Estado | Endpoints principales |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/` | `HomePage` | Inicio y orientación local. | Ninguno. | Inicio. | Implementada y conectada. | `GET /api/health`. |
-| `/chat` | `features/chat` | Formular una pregunta independiente, delimitar corpus y revisar respuesta con fuentes. | Ninguno. | Asistente jurídico, Inicio. | Implementada y conectada. | `POST /api/chat/rag`, `GET /api/documents`. |
+| `/chat` | `features/chat` | Borrador de conversación y acceso al historial invitado. | Ninguno. | Asistente jurídico, Inicio. | Implementada y conectada. | `GET`, `POST /api/conversations`. |
+| `/chat/:conversationId` | `features/chat` | Hilo multi-turn con claims y evidencia de cada respuesta. | `:conversationId`. | Historial de conversaciones. | Implementada y conectada. | CRUD y mensajes bajo `/api/conversations`. |
+| `/cases` | `features/cases` | Estado vacío preparatorio del workspace. | Ninguno. | Casos. | Estática; no conectada. | Ninguno. |
 | `/documents` | `features/documents` | Listar documentos públicos y abrir la carga PDF explícita. | Ninguno. | Documentos. | Implementada y conectada. | `GET`, `POST /api/documents`. |
 | `/documents/search` | `features/documents` | Buscar evidencia documental mediante recuperación híbrida gobernada. | Ninguno. | Desde Biblioteca documental. | Implementada; validación manual pendiente. | `POST /api/search/hybrid`. |
 | `/documents/:documentId` | `features/documents` | Consultar un documento público registrado. | `:documentId`. | Desde listado o carga exitosa. | Implementada y conectada. | `GET /api/documents/{document_id}`. |
@@ -38,8 +40,10 @@ backend y las conexiones que ya están activas.
 | `/legal-network/:matrixId` | `features/legal-network` | Mostrar la proyección estructural y la exportación PyVis restringida. | `:matrixId`. | Desde el detalle HPN. | Implementada y conectada. | `GET /api/hpn/matrices/{matrix_id}/graph` y `/graph/export`. |
 | `*` | `NotFoundPage` | Ruta no encontrada. | Ninguno. | No aplica. | Solo frontend. | Ninguno. |
 
-La ruta `/chat` no crea historial ni envía turnos previos: cada solicitud usa
-una pregunta individual y filtros permitidos por el contrato Chat RAG.
+La ruta `/chat` no crea una conversación vacía: la crea al primer envío y el
+navegador administra la cookie HttpOnly de invitado. No se guarda historial en
+el navegador. `POST /api/chat/rag` sigue disponible como flujo single-turn
+compatible para otros consumidores.
 
 ## Mapa de endpoints backend
 
@@ -48,6 +52,20 @@ una pregunta individual y filtros permitidos por el contrato Chat RAG.
 | Método y ruta | Propósito | Consumidor actual | Conexión | Nota |
 | --- | --- | --- | --- | --- |
 | `GET /api/health` | Disponibilidad del proceso local. | Cliente de salud del frontend. | Conectada. | No expone estado documental. |
+
+### Casos
+
+| Método y ruta | Propósito | Consumidor actual | Conexión | Nota |
+| --- | --- | --- | --- | --- |
+| `POST`, `GET /api/cases` | Crear y listar casos accesibles. | Ninguno. | Solo backend. | El frontend `/cases` continúa estático. |
+| `GET`, `PATCH`, `DELETE /api/cases/{case_id}` | Consultar, editar o borrar lógicamente un caso. | Ninguno. | Solo backend. | Ownership autoritativo y locking optimista. |
+| `POST /api/cases/{case_id}/activate` | Activar un caso borrador o cerrado. | Ninguno. | Solo backend. | Acción explícita con versión esperada. |
+| `POST /api/cases/{case_id}/review` | Pasar un caso activo a revisión. | Ninguno. | Solo backend. | No ejecuta HPN ni modelos. |
+| `POST /api/cases/{case_id}/close` | Cerrar un caso activo o en revisión. | Ninguno. | Solo backend. | No purga recursos. |
+| `POST /api/cases/{case_id}/archive` | Archivar en modo de solo lectura. | Ninguno. | Solo backend. | Conserva el estado restaurable. |
+| `POST /api/cases/{case_id}/restore` | Restaurar el último estado no archivado. | Ninguno. | Solo backend. | No restaura casos eliminados. |
+| `POST`, `GET /api/cases/{case_id}/documents` | Asociar documentos existentes y listar la pertenencia activa. | Ninguno. | Solo backend. | Solo biblioteca privada o temporal; no copia archivos ni contenido. |
+| `GET`, `PATCH`, `DELETE /api/cases/{case_id}/documents/{association_id}` | Consultar, ordenar, reclasificar o retirar una asociación. | Ninguno. | Solo backend. | Ownership, snapshots, locking optimista y auditoría transaccional. |
 
 ### Documentos, extracción, páginas y chunks
 
@@ -144,6 +162,7 @@ demanda, y conserva la pregunta solo durante la sesión React actual.
 | Pantalla o acción | Ruta frontend | Endpoint | Método | Estado |
 | --- | --- | --- | --- | --- |
 | Salud local | `/` | `/api/health` | `GET` | Conectada. |
+| Casos | `/cases` | `/api/cases` | — | Frontend estático; la API backend existe pero aún no está conectada. |
 | Listar documentos | `/documents` | `/api/documents` | `GET` | Conectada. |
 | Cargar PDF | `/documents` | `/api/documents` | `POST` | Conectada; encola procesamiento automático. |
 | Detalle documental | `/documents/:documentId` | `/api/documents/{document_id}` | `GET` | Conectada. |
@@ -157,16 +176,35 @@ demanda, y conserva la pregunta solo durante la sesión React actual.
 
 ## Capacidades backend sin pantalla
 
-Ya están implementadas, pero no tienen una pantalla frontend activa: extracción
-documental, consulta de páginas y chunks, estado y ciclo de vida de modelos,
-búsqueda textual, semántica e híbrida, Chat RAG, procesamiento e indexación
-explícitos y corpus administrado mediante CLI. Estas capacidades no deben
-interpretarse como flujos de interfaz ya disponibles.
+El corpus administrado por CLI y algunas operaciones técnicas de páginas,
+chunks e índices no tienen una pantalla directa. Extracción, procesamiento,
+búsqueda híbrida, Chat conversacional y ciclo de vida de modelos sí tienen
+consumidores frontend. Una capacidad técnica sin pantalla no debe presentarse
+como flujo de producto disponible.
 
 ## Rutas futuras
 
-- Procesamiento documental desde frontend — ruta por definir.
-- Chat jurídico — ruta por definir.
-- Selección de corpus — ruta por definir.
-- Fuentes y citas visibles — ruta por definir.
-- Propuestas HPN asistidas — ruta por definir.
+La siguiente ruta es **conceptual y no está implementada**:
+
+- `/cases/:caseId` — workspace con Resumen, Expediente, Matriz HPN, Red,
+  Métricas, Simulaciones, Asistente y Auditoría.
+
+Los endpoints backend de casos y pertenencia documental ya existen bajo
+`/api/cases`; las rutas frontend dinámicas y su conexión siguen pendientes. La
+navegación objetivo se describe en [case-workspace.md](case-workspace.md).
+
+## Transición de HPN y Red
+
+12E-1 conserva la paridad frontend: `/cases` sigue siendo una ruta estática;
+la API nueva no la conecta ni redirige. Las
+las rutas HPN y Red globales no se redirigen ni muestran deprecación.
+
+`/matrices-hpn`, `/matrices-hpn/:matrixId`, `/legal-network` y
+`/legal-network/:matrixId` continúan implementadas y conectadas. Son legado
+operativo respecto del futuro workspace: no se redirigirán ni retirarán hasta
+que una asociación explícita de caso, el backfill y la paridad funcional hayan
+sido validados. Una matriz no vinculada conservará acceso legacy.
+
+La paridad se verifica sobre el conjunto método+plantilla de OpenAPI: 12E-1
+añadió el núcleo y 12E-2 las cinco operaciones anidadas de documentos; las
+rutas backend anteriores y las rutas frontend actuales permanecen sin cambios.

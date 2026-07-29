@@ -36,6 +36,17 @@ python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 
 Compruebe `GET /api/health` antes de usar otros flujos. No ejecute migraciones, resets o seeds sin autorización para la base objetivo.
 
+La revisión `20260728_09` crea de forma aditiva `cases` y
+`case_audit_events`. Tras aplicarla, `/api/cases` queda disponible localmente;
+FastAPI no crea estas tablas durante el arranque. El frontend `/cases` todavía
+no consume el endpoint.
+
+La revisión aditiva `20260729_10` crea `case_documents`, sus restricciones e
+índices, sin backfill ni copia de documentos. El esquema solo cambia mediante
+Alembic: el arranque de FastAPI tampoco crea esta tabla. Las asociaciones
+quedan disponibles en la API anidada, mientras su conexión frontend corresponde
+al bloque 12E-3.
+
 ## Corpus administrado local
 
 Configure `MANAGED_CORPUS_STAGING_PATH` con una ruta relativa bajo

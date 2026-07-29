@@ -8,6 +8,17 @@ El Asistente Jurídico Local ayuda a profesionales a organizar evidencia documen
 
 El flujo objetivo es: incorporar un PDF autorizado, administrarlo en una biblioteca local, extraer páginas y fragmentos, recuperar evidencia, consultar el Chat RAG con citas y estructurar posteriormente hechos, pruebas y normas para revisión mediante Matrices HPN y Red jurídica.
 
+Las conversaciones de invitado permiten repreguntas y conservan el historial
+local durante siete días desde la última actividad. Cada turno vuelve a obtener
+evidencia documental; una respuesta anterior no constituye fuente jurídica.
+No existen cuentas, login, transferencia ni sincronización entre dispositivos:
+esas capacidades futuras requerirán autenticación real y consentimiento.
+
+El Chat ocupa todo el espacio útil restante del App Shell y es el área principal de trabajo: las fuentes pertenecen a cada
+respuesta y se inspeccionan bajo demanda. La información de sesión y la
+advertencia de revisión profesional permanecen visibles de forma discreta, sin
+competir con el hilo ni el composer.
+
 ## Alcance actual
 
 El backend ya registra y carga PDF de forma segura, extrae texto con PyMuPDF, persiste páginas y chunks, recupera evidencia con FTS5 y ChromaDB, construye contexto RAG, genera con Qwen local y devuelve citas estructuradas. También existen Matrices HPN manuales, una API de grafo y exportación PyVis.
@@ -28,14 +39,19 @@ inactividad. Cambiar embeddings puede
 exigir reconstruir explícitamente el índice antes de buscar; seleccionar o
 cargar el LLM no modifica ese índice y no inicia el Chat futuro.
 
-El frontend actual ofrece Inicio, Biblioteca documental, Búsqueda documental, Matrices HPN y Red
-jurídica. La biblioteca permite conocer los metadatos públicos, la procedencia
+El frontend actual ofrece Inicio, Asistente jurídico conversacional, Casos como
+estado vacío preparatorio, Biblioteca documental, Búsqueda documental, Modelos
+locales, Matrices HPN y Red jurídica.
+La biblioteca permite conocer los metadatos públicos, la procedencia
 y la elegibilidad para consultas, además de registrar de forma explícita un PDF
 en biblioteca privada o como consulta temporal con expiración futura. No muestra
 el contenido ni inicia cambios de gobernanza desde la interfaz. La búsqueda
 documental utiliza la recuperación híbrida ya gobernada y no inicia
-procesamiento ni indexación. Chat y fuentes visibles en frontend aún no
-existen.
+procesamiento ni indexación. Chat, historial invitado y fuentes visibles ya
+existen. El backend ya dispone del núcleo persistente `Case`, `/api/cases` y
+pertenencia explícita a documentos privados o temporales existentes. Todavía
+no hay workspace conectado; `/cases` solo presenta una estructura visual
+preparatoria.
 
 ## Capas de conocimiento
 
@@ -100,3 +116,21 @@ en el dominio, pero solo se habilitarán cuando exista autenticación real.
 Las Matrices HPN permiten registrar manualmente hechos, evidencias, normas y relaciones revisables. La Red jurídica es una proyección estructural local y de solo lectura de esas matrices. No representa conclusiones jurídicas automáticas.
 
 La edición manual HPN sigue siendo necesaria: futuras propuestas de IA serán borradores, no hechos probados ni decisiones. La revisión y aprobación humana determinan su uso.
+
+## Arquitectura de producto objetivo desde 12D
+
+La evolución separa tres áreas. 12E-1 inició el segundo límite en backend y
+12E-2 incorporó su pertenencia documental explícita:
+
+- **Asistente jurídico general:** Chat y conversaciones locales no ligadas a un expediente.
+- **Workspace de inteligencia de casos:** ya cuenta con el agregado persistente
+  `Case` y asociaciones `CaseDocument`; carga directa, HPN, Red, métricas,
+  escenarios, asistencia y frontend conectado continúan planificados.
+- **Plataforma local compartida:** documentos, gobernanza, procesamiento,
+  recuperación, modelos, persistencia, observabilidad y contratos comunes.
+
+HPN y Red son hoy globales y siguen operativas como legado. No se considerarán
+recursos de caso hasta existir una asociación explícita y validada. La
+[definición del workspace](case-workspace.md) y el
+[dominio de casos](case-domain.md) distinguen capacidades existentes de las
+planificadas.

@@ -1,5 +1,5 @@
 import { apiClient, createInvalidResponseError, type ApiResponse } from "../../../api";
-import type { HpnId } from "../../hpn-matrices/types";
+import type { HpnId } from "../../hpn-matrices";
 import { parseLegalGraphProjection, type LegalGraphProjection } from "../types";
 
 function graphPath(matrixId: HpnId): string { return `/api/hpn/matrices/${encodeURIComponent(matrixId)}/graph`; }

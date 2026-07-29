@@ -21,6 +21,9 @@ from app.core.config import settings  # noqa: E402
 from app.database.base import Base  # noqa: E402
 from app.database.models import (  # noqa: F401, E402
     Document,
+    CaseAuditEventRecord,
+    CaseDocumentRecord,
+    CaseRecord,
     DocumentChunk,
     DocumentPage,
     DocumentProcessingJob,

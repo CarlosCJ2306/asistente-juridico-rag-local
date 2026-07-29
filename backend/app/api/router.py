@@ -5,6 +5,8 @@ from fastapi import APIRouter
 from app.api.routes.documents import router as documents_router
 from app.api.routes.document_processing import router as document_processing_router
 from app.api.routes.chat import router as chat_router
+from app.api.routes.cases import router as cases_router
+from app.api.routes.case_documents import router as case_documents_router
 from app.api.routes.conversations import router as conversations_router
 from app.api.routes.health import router as health_router
 from app.api.routes.hpn import router as hpn_router
@@ -21,5 +23,7 @@ api_router.include_router(documents_router)
 api_router.include_router(search_router)
 api_router.include_router(conversations_router)
 api_router.include_router(chat_router)
+api_router.include_router(cases_router)
+api_router.include_router(case_documents_router)
 api_router.include_router(hpn_router)
 api_router.include_router(hpn_graph_router)

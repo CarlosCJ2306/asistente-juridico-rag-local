@@ -83,6 +83,23 @@ class DocumentRepository:
             statement = statement.where(Document.is_deleted.is_(False))
         return await self.session.scalar(statement)
 
+    async def get_by_ids(
+        self,
+        document_ids: list[UUID],
+        *,
+        include_deleted: bool = False,
+    ) -> dict[UUID, Document]:
+        """Resuelve un lote en una sola consulta y conserva exclusión lógica."""
+
+        unique_ids = list(dict.fromkeys(document_ids))
+        if not unique_ids:
+            return {}
+        statement = select(Document).where(Document.id.in_(unique_ids))
+        if not include_deleted:
+            statement = statement.where(Document.is_deleted.is_(False))
+        documents = list((await self.session.scalars(statement)).all())
+        return {document.id: document for document in documents}
+
     async def get_by_sha256(
         self,
         sha256: str,

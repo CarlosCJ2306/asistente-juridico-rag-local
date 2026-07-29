@@ -561,3 +561,249 @@ def test_conversation_migration_is_additive_cascading_and_reversible(
         }
     assert not any(name.startswith("conversation") for name in remaining_tables)
     assert existing_tables <= remaining_tables
+
+
+def test_case_migration_is_additive_constrained_and_reversible(tmp_path: Path) -> None:
+    database_file = tmp_path / "cases.db"
+    _run_migration(database_file, "20260728_08")
+    with sqlite3.connect(database_file) as connection:
+        existing_tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+
+    _run_migration(database_file, "20260728_09")
+    case_id = uuid4().hex
+    public_id = uuid4().hex
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+        assert {"cases", "case_audit_events"} <= tables
+        connection.execute(
+            "INSERT INTO cases (id,public_id,title,status,retention_mode,owner_type,"
+            "last_activity_at,version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (
+                case_id,
+                public_id,
+                "Caso sintético",
+                "draft",
+                "local_persistent",
+                "local_installation",
+                "2026-07-28 00:00:00",
+                1,
+                "2026-07-28 00:00:00",
+                "2026-07-28 00:00:00",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO case_audit_events "
+            "(id,case_id,event_type,actor_type,to_status,resource_version,result_code,created_at) "
+            "VALUES (?,?,?,?,?,?,?,?)",
+            (
+                uuid4().hex,
+                case_id,
+                "created",
+                "local_installation",
+                "draft",
+                1,
+                "CASE_OPERATION_COMPLETED",
+                "2026-07-28 00:00:00",
+            ),
+        )
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                "INSERT INTO cases (id,public_id,title,status,retention_mode,owner_type,"
+                "last_activity_at,version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+                (
+                    uuid4().hex,
+                    uuid4().hex,
+                    "Inválido",
+                    "draft",
+                    "temporary",
+                    "guest_session",
+                    "2026-07-28 00:00:00",
+                    1,
+                    "2026-07-28 00:00:00",
+                    "2026-07-28 00:00:00",
+                ),
+            )
+        connection.commit()
+
+    _downgrade_migration(database_file, "20260728_08")
+    with sqlite3.connect(database_file) as connection:
+        remaining_tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+    assert "cases" not in remaining_tables
+    assert "case_audit_events" not in remaining_tables
+    assert existing_tables <= remaining_tables
+
+    _run_migration(database_file, "head")
+    with sqlite3.connect(database_file) as connection:
+        assert connection.execute(
+            "SELECT COUNT(*) FROM cases"
+        ).fetchone()[0] == 0
+
+
+def test_case_document_migration_is_partial_unique_and_reversible(tmp_path: Path) -> None:
+    database_file = tmp_path / "case-documents.db"
+    _run_migration(database_file, "20260728_09")
+    case_id = uuid4().hex
+    document_id = uuid4().hex
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        existing_tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+        connection.execute(
+            "INSERT INTO cases (id,public_id,title,status,retention_mode,owner_type,"
+            "last_activity_at,version,created_at,updated_at) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (
+                case_id,
+                uuid4().hex,
+                "Caso sintético",
+                "draft",
+                "local_persistent",
+                "local_installation",
+                "2026-07-29 00:00:00",
+                1,
+                "2026-07-29 00:00:00",
+                "2026-07-29 00:00:00",
+            ),
+        )
+        connection.execute(
+            "INSERT INTO documents (id,original_filename,display_name,stored_filename,"
+            "relative_path,document_type,mime_type,extension,size_bytes,sha256,status,"
+            "knowledge_layer,source_kind,review_status,legal_validity_status,index_status,"
+            "created_at,updated_at,is_deleted) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            (
+                document_id,
+                "synthetic.pdf",
+                "Documento sintético",
+                "synthetic.pdf",
+                "storage/documents/otros/synthetic.pdf",
+                "expediente",
+                "application/pdf",
+                ".pdf",
+                10,
+                uuid4().hex + uuid4().hex,
+                "extracted",
+                "private_library",
+                "local_upload",
+                "not_required",
+                "unknown",
+                "indexed",
+                "2026-07-29 00:00:00",
+                "2026-07-29 00:00:00",
+                0,
+            ),
+        )
+        connection.commit()
+
+    _run_migration(database_file, "20260729_10")
+    columns = (
+        "id,public_id,case_id,document_id,purpose,display_order,"
+        "snapshot_display_name,snapshot_document_type,snapshot_knowledge_layer,"
+        "snapshot_source_kind,snapshot_review_status,snapshot_legal_validity_status,"
+        "snapshot_extraction_status,snapshot_index_status,snapshot_document_updated_at,"
+        "version,attached_at,updated_at"
+    )
+
+    def values(link_id: str, public_id: str, *, order: int = 0) -> tuple[object, ...]:
+        return (
+            link_id,
+            public_id,
+            case_id,
+            document_id,
+            "primary_record",
+            order,
+            "Documento sintético",
+            "expediente",
+            "private_library",
+            "local_upload",
+            "not_required",
+            "unknown",
+            "extracted",
+            "indexed",
+            "2026-07-29 00:00:00",
+            1,
+            "2026-07-29 00:00:00",
+            "2026-07-29 00:00:00",
+        )
+
+    first_id = uuid4().hex
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        indexes = {
+            row[1]: row
+            for row in connection.execute("PRAGMA index_list('case_documents')")
+        }
+        assert indexes["uq_case_documents_active_case_document"][2] == 1
+        assert indexes["uq_case_documents_active_case_document"][4] == 1
+        connection.execute(
+            f"INSERT INTO case_documents ({columns}) VALUES ({','.join('?' * 18)})",
+            values(first_id, uuid4().hex),
+        )
+        connection.commit()
+        with pytest.raises(sqlite3.IntegrityError):
+            connection.execute(
+                f"INSERT INTO case_documents ({columns}) VALUES ({','.join('?' * 18)})",
+                values(uuid4().hex, uuid4().hex),
+            )
+        connection.rollback()
+        connection.execute(
+            "UPDATE case_documents SET removed_at=?,updated_at=? WHERE id=?",
+            ("2026-07-29 00:01:00", "2026-07-29 00:01:00", first_id),
+        )
+        connection.execute(
+            f"INSERT INTO case_documents ({columns}) VALUES ({','.join('?' * 18)})",
+            values(uuid4().hex, uuid4().hex, order=1),
+        )
+        connection.commit()
+        with pytest.raises(sqlite3.IntegrityError):
+            invalid = list(values(uuid4().hex, uuid4().hex))
+            invalid[5] = -1
+            connection.execute(
+                f"INSERT INTO case_documents ({columns}) VALUES ({','.join('?' * 18)})",
+                tuple(invalid),
+            )
+        connection.rollback()
+        with pytest.raises(sqlite3.IntegrityError):
+            orphan = list(values(uuid4().hex, uuid4().hex))
+            orphan[2] = uuid4().hex
+            connection.execute(
+                f"INSERT INTO case_documents ({columns}) VALUES ({','.join('?' * 18)})",
+                tuple(orphan),
+            )
+        connection.rollback()
+        assert connection.execute("SELECT COUNT(*) FROM cases").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 1
+
+    _downgrade_migration(database_file, "20260728_09")
+    with sqlite3.connect(database_file) as connection:
+        tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+        assert "case_documents" not in tables
+        assert existing_tables <= tables
+        assert connection.execute("SELECT COUNT(*) FROM cases").fetchone()[0] == 1
+        assert connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 1
+    _run_migration(database_file, "head")
+    with sqlite3.connect(database_file) as connection:
+        assert connection.execute("SELECT COUNT(*) FROM case_documents").fetchone()[0] == 0

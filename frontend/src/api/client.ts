@@ -114,9 +114,10 @@ async function request<T>(
 
   try {
     const serialized = serializeBody(body);
+    for (const [name, value] of Object.entries(options.headers ?? {})) serialized.headers.set(name, value);
     const response = await fetch(buildUrl(path, options.query), {
       cache: "no-store",
-      credentials: "omit",
+      credentials: options.credentials ?? "omit",
       method,
       body: serialized.body,
       headers: serialized.headers,

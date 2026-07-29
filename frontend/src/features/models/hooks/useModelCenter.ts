@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { getEmbeddingRuntime, getLlmRuntime, getModelCatalog, getModelSelection, loadEmbeddingRuntime, loadLlmRuntime, modelKeys, selectModel, unloadEmbeddingRuntime, unloadLlmRuntime } from "../api";
 import type { ModelType } from "../types";
-import { getSemanticStatus, semanticIndexKeys } from "../../documents/api/semanticIndex.api";
+import { getSemanticStatus, semanticIndexKeys } from "../../documents";
 
 export function useModelCenter() {
   const queryClient = useQueryClient();

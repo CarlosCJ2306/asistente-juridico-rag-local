@@ -1,4 +1,4 @@
-import type { HpnId } from "../../hpn-matrices/types";
+import type { HpnId } from "../../hpn-matrices";
 
 export const legalGraphKeys = {
   all: ["legal-network"] as const,

@@ -10,13 +10,21 @@ Los documentos no reentrenan el modelo. Se utilizan como evidencia mediante recu
 
 ## Capacidades actuales
 
-- Backend: carga segura de PDF, extracción, páginas, chunks, embeddings locales, recuperación textual, semántica e híbrida, Chat RAG, conversaciones invitadas y citas estructuradas.
+- Backend: carga segura de PDF, extracción, páginas, chunks, embeddings locales, recuperación textual, semántica e híbrida, Chat RAG, conversaciones invitadas, citas estructuradas y núcleo persistente de casos.
 - Análisis estructural: CRUD manual de Matrices HPN, API de grafo y exportación PyVis local.
-- Frontend: Inicio, Biblioteca documental con carga PDF explícita, Matrices HPN
-  y Red jurídica.
+- Frontend: Inicio, Asistente jurídico conversacional, Casos como estado vacío
+  preparatorio, Biblioteca documental, búsqueda, procesamiento, Modelos
+  locales, Matrices HPN y Red jurídica.
 
-La experiencia frontend de conversaciones persistentes sigue pendiente; no
-existen todavía cuentas, transferencia entre dispositivos ni autenticación.
+El backend implementa el agregado `Case`, la API local `/api/cases` y la
+pertenencia documental explícita mediante `CaseDocument`, con
+retención temporal por sesión invitada, persistencia de instalación, estados,
+locking optimista, auditoría y borrado lógico. El frontend `/cases` continúa
+siendo únicamente un estado vacío preparatorio y no consume esa API. No existe
+todavía carga directa al caso, pipeline, conversación de caso ni vínculo de
+HPN/Red con un caso. Tampoco existen
+cuentas, transferencia entre dispositivos o autenticación. HPN y Red continúan
+como recursos globales hasta su futura asociación aditiva con `Case`.
 
 ## Conversaciones RAG
 
@@ -34,6 +42,19 @@ claims y snapshots de citas, y nunca trata respuestas anteriores como fuente.
 - IA local: `multilingual-e5-small` y Qwen3 mediante `llama-cpp-python`.
 - Frontend: React, TypeScript y Vite; en desarrollo, `/api` se enruta mediante proxy local.
 
+La experiencia de producto se orienta a PC y ventanas redimensionables de
+1024px a 2560px. Se conservan zoom, teclado, foco y scroll controlado; la
+armonización visual definitiva se realizará después de las capacidades
+funcionales principales.
+
+La arquitectura objetivo desde 12D separa tres límites: Asistente jurídico
+general, Workspace de inteligencia de casos y Plataforma local compartida.
+12E-1 implementó el núcleo backend de `Case` y 12E-2 añadió asociaciones
+documentales explícitas sin duplicar archivos ni índices. El workspace
+frontend sigue pendiente. Consulte el [inventario de módulos](docs/modules.md), el
+[dominio de casos](docs/case-domain.md) y la
+[estrategia de migración](docs/migration-strategy.md).
+
 ## Requisitos básicos y arranque
 
 Se requiere Python 3.12, Node.js y los modelos locales correspondientes para las capacidades de IA. Las instrucciones reproducibles de entorno, migraciones, modelos, backend y frontend están en la guía de instalación.
@@ -49,5 +70,13 @@ Se requiere Python 3.12, Node.js y los modelos locales correspondientes para las
 - [Arquitectura de producto frontend](docs/frontend-product-architecture.md)
 - [Marca y apariencia frontend](docs/frontend-branding-theming.md)
 - [Mapa canónico de rutas e integración](docs/routes.md)
+- [Inventario y decisión de módulos](docs/modules.md)
+- [Dominio de casos](docs/case-domain.md)
+- [Workspace de casos](docs/case-workspace.md)
+- [CasePipelineHarness](docs/case-pipeline-harness.md)
+- [CaseEvaluationHarness](docs/evaluation-harness.md)
+- [HPN y Red jurídica en casos](docs/hpn-and-legal-network.md)
+- [Arquitectura multiagente futura](docs/multiagent-architecture.md)
+- [Estrategia de migración](docs/migration-strategy.md)
 - [Design System frontend](docs/frontend-design-system.md)
 - [Historial técnico](CAMBIOS.md)

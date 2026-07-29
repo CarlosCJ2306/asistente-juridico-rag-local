@@ -35,8 +35,8 @@ Este es el plan activo y la única hoja de ruta vigente. Ordena la evolución de
 Las Matrices HPN manuales, la Red jurídica, la biblioteca documental, el
 procesamiento, la selección gobernada de corpus y el núcleo backend del Chat
 RAG ya están implementados. La interfaz single-turn de Chat existe; la
-experiencia frontend de historial multi-turn y evidencia persistente corresponde
-al bloque 12C-3B.
+experiencia frontend de historial multi-turn y evidencia persistente está
+implementada; su validación manual integrada corresponde al cierre del bloque.
 
 ## Hoja de ruta activa
 
@@ -127,7 +127,7 @@ Estado visible de extracción, páginas, chunks e índices, sin ocultar operacio
 - Cambiar embeddings invalida la compatibilidad semántica y exige rebuild
   explícito; cambiar el LLM no modifica los índices.
 - 12C-1 y 12C-2 están implementadas; 12C-3A completó el backend conversacional
-  y 12C-3B es el siguiente bloque autorizado.
+  y 12C-3B implementó el flujo frontend persistente con cookie HttpOnly.
 - Centro frontend `/models` completado con catálogo, selección, load/unload y
   estado semántico compartido; su validación visual manual permanece pendiente.
 
@@ -179,37 +179,120 @@ verificables, sin historial persistente.
   transferencia: ambas capacidades quedan condicionadas a un principal real y
   consentimiento explícito.
 
-### 12C-3B — Experiencia frontend de conversaciones — Siguiente bloque
+### 12C-3B — Experiencia frontend de conversaciones — Implementada; validación manual pendiente
 
-Integrar historial lateral, hilo multi-turn, cobertura y evidencia verificable
-con los endpoints de 12C-3A, sin inventar autenticación ni almacenar el token
-invitado en JavaScript.
+Incluye historial lateral, hilo multi-turn, creación diferida, cobertura,
+claims y evidencia verificable con los endpoints de 12C-3A. El navegador usa
+la cookie HttpOnly same-origin sin acceder a su valor ni persistir datos en
+almacenamiento web. La validación integrada de cookie, aislamiento, responsive
+y flujo real de modelos permanece pendiente.
 
-### 12D — Incorporación web controlada y verificable
+El refinamiento visual consolidó un layout de dos regiones, rail plegable y
+evidencia bajo demanda; la validación manual integrada pendiente se mantiene
+sin avanzar a 12C-3C.
 
-Fuentes externas bajo procedencia, fecha, permisos, conservación y revisión explícitas.
+La corrección full-bleed elimina el contenedor de lectura y el breadcrumb para
+Chat, pero 12C-3B conserva pendiente su validación visual real antes de 12C-3C.
 
-### 12E — Generación asistida de propuestas HPN
+### 12C-3C — Validación integrada de conversaciones — Pendiente heredada
 
-Borradores asistidos a partir de evidencia seleccionada; no sustituyen la edición y revisión humanas.
+Validar el flujo invitado completo en entorno local aislado: persistencia,
+aislamiento, multi-turn, citas, accesibilidad y responsive, sin simular
+autenticación.
 
-### 12F — Revisión, aprobación y trazabilidad hacia Red jurídica
+Esta validación conserva su alcance y se gestionará como deuda de cierre de
+12C; no redefine el producto objetivo ni autoriza nuevas capacidades dentro
+del Chat general.
 
-Flujo de revisión de matrices y relación controlada con la proyección de Red jurídica.
+### 12D — Reestructuración integral del producto — Completada
+
+- **12D-0 — Arquitectura, inventario y hoja de ruta — Completada
+  documentalmente:** define los límites Asistente jurídico general, Workspace
+  de inteligencia de casos y Plataforma local compartida; clasifica los
+  módulos actuales y diseña los harnesses de pipeline y evaluación. No crea
+  tablas, endpoints, rutas ni comportamiento funcional.
+- **12D-1 — Límites modulares y contratos de transición — Completada:** fachadas
+  públicas pequeñas, DTO inmutables, ports y adaptadores legacy inactivos;
+  comprobaciones AST/ESLint y paridad de rutas protegen la dirección de
+  dependencias sin tablas, endpoints o UI de casos.
+- **12D-2 — Navegación objetivo y shell de Casos — Completada:** incorpora la
+  única ruta estática `/cases`, un estado vacío honesto y un shell presentacional
+  reutilizable, sin dominio, datos ni APIs de casos.
+- **12D-3 — Compatibilidad, legado y preparación de deprecación — Completada:**
+  clasificación interna, manifiesto versionado, referencias inmutables y
+  políticas puras sin asociar recursos a Case ni cambiar rutas públicas.
+
+### 12E — Casos y expediente — En curso
+
+- **12E-1 — Núcleo persistente de Case y API local — Completada:** agregado de
+  dominio separado del ORM, tablas `cases` y `case_audit_events`, propiedad
+  `temporary` aislada por sesión invitada y `local_persistent` de instalación,
+  retención rodante, transiciones explícitas, locking optimista, auditoría
+  transaccional y borrado lógico bajo `/api/cases`.
+- **12E-2 — Pertenencia documental explícita del expediente — Completada:**
+  `CaseDocument` vincula un caso con documentos existentes de
+  `private_library` o `temporary`, conserva snapshot mínima, calcula
+  disponibilidad vigente, usa locking en ambas versiones y audita cada
+  mutación sin copiar PDF, páginas, chunks o índices.
+- El frontend `/cases` permanece estático. No existen todavía carga directa al
+  caso, pipeline, conversaciones de caso ni `case_id` en HPN o Red. La
+  propiedad `account` permanece futura y no se simula.
+- **12E-3 — Siguiente bloque:** conexión frontend del expediente a los contratos
+  backend ya implementados.
+
+### 12F — Extracción estructurada de caso — Pendiente
+
+Entidades y artefactos versionados sobre la extracción documental existente,
+con checkpoints, idempotencia y revisión.
+
+### 12G — HPN de caso — Pendiente
+
+Matrices versionadas y revisables vinculadas al expediente, conservando las
+matrices globales como legado operativo hasta una migración explícita.
+
+### 12H — Red jurídica de caso — Pendiente
+
+Proyección NetworkX y PyVis desde una versión HPN seleccionada, con métricas
+exclusivamente estructurales y trazabilidad a SQLite.
+
+### 12I — Métricas y simulaciones — Pendiente
+
+Indicadores técnicos y escenarios comparables, sin convertir centralidad,
+conectividad o resultados en conclusiones jurídicas.
+
+### 12J — Dashboard de caso — Pendiente
+
+Resumen de estado, evidencia, advertencias, revisiones y artefactos aceptados.
+
+### 12K — Asistente de caso — Pendiente
+
+Conversaciones ligadas al expediente y recuperación limitada a sus documentos
+elegibles. El Asistente jurídico general permanece separado.
+
+### 12L — Harness de evaluación y cierre — Pendiente
+
+Casos sintéticos dorados, regresión de schemas y artefactos, privacidad,
+recuperación ante fallos y validación integral reproducible.
+
+La incorporación web controlada se traslada a una capacidad futura de baja
+prioridad; no forma parte de 12D–12L.
 
 ## Dependencias
 
-12A-0A establece el modelo persistente, 12A-0B centraliza sus políticas,
-12A-0C las integra con recuperación y Chat RAG, 12A-0D valida ese flujo y
-12A-0E incorpora fuentes administradas de forma explícita. 12A-1 expone la
-biblioteca y 12A-2 incorpora la carga PDF explícita. 12B habilitó el núcleo
-Chat RAG completado en 12C-1, su interfaz implementada en 12C-2 y el dominio
-conversacional backend implementado en 12C-3A. 12C-3B es el siguiente bloque
-autorizado antes de iniciar 12D. La
-biblioteca y la carga habilitan el procesamiento; el procesamiento e índices
-habilitan el Chat RAG; el Chat con fuentes y la
-gobernanza de evidencia preceden a propuestas HPN; la revisión de esas
-propuestas precede su trazabilidad hacia la Red jurídica.
+12A estableció gobernanza y biblioteca; 12B consolidó procesamiento,
+recuperación y modelos; 12C incorporó Chat RAG y conversaciones persistentes.
+12D reorganizó esas capacidades, 12E-1 creó el agregado persistente `Case` y
+12E-2 incorporó la pertenencia documental explícita. 12E-3 conectará el
+frontend sin habilitar aún artefactos; solo entonces 12F–12K podrán producir artefactos de
+caso, HPN, Red, métricas, dashboard y asistencia contextual. 12L cerrará con
+evaluación integral. La validación heredada de 12C-3C no se confunde con una
+capacidad nueva y debe completarse antes de declarar cerrado su flujo visual.
+
+## Próximo bloque autorizado
+
+**12E-3 — Conexión frontend del expediente.** No está autorizado implementar
+extracción estructurada, pipeline, recuperación multi-documento de caso ni
+atribuir HPN/Red globales a un caso.
 
 ## Criterios generales de finalización
 

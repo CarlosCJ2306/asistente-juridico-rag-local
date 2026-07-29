@@ -1,8 +1,8 @@
 import { useState, type FormEvent, type KeyboardEvent, type RefObject } from "react";
 
 import { Button, FormField, Inline, Select, Stack, Textarea, TextInput } from "../../../design-system";
-import { CorpusSelector } from "../../documents/components";
-import type { DocumentType, KnowledgeLayer, PublicDocument } from "../../documents/types";
+import { CorpusSelector } from "../../documents";
+import type { DocumentType, KnowledgeLayer, PublicDocument } from "../../documents";
 import type { RagChatInput } from "../types";
 import styles from "../chat.module.css";
 

@@ -20,6 +20,7 @@ export function AppLayout() {
   const sections = getVisibleNavigationSections();
   const sectionTitle = getSectionTitle(location.pathname);
   const breadcrumbs = getBreadcrumbs(location.pathname);
+  const fullBleed = location.pathname === "/chat" || location.pathname.startsWith("/chat/");
 
   useEffect(() => {
     const desktopNavigation = window.matchMedia(DESKTOP_NAVIGATION_QUERY);
@@ -31,7 +32,7 @@ export function AppLayout() {
   }, []);
 
   return (
-    <div className={[styles.appLayout, sidebarCompact ? styles.appLayoutCompact : null].filter(Boolean).join(" ")}>
+    <div className={[styles.appLayout, sidebarCompact ? styles.appLayoutCompact : null, fullBleed ? styles.appLayoutFullBleed : null].filter(Boolean).join(" ")}>
       <SkipLink targetId={MAIN_CONTENT_ID} />
       <AppSidebar sections={sections} compact={sidebarCompact} onCompactChange={setSidebarCompact} />
       <AppTopbar
@@ -40,7 +41,7 @@ export function AppLayout() {
         navigationOpen={mobileNavigationOpen}
         navigationId={MOBILE_NAVIGATION_ID}
       />
-      <MainContent id={MAIN_CONTENT_ID} breadcrumbs={breadcrumbs}><Outlet /></MainContent>
+      <MainContent id={MAIN_CONTENT_ID} breadcrumbs={breadcrumbs} fullBleed={fullBleed}><Outlet /></MainContent>
       <Drawer id={MOBILE_NAVIGATION_ID} open={mobileNavigationOpen} onOpenChange={setMobileNavigationOpen} title="Navegación principal" position="start">
         <nav className={styles.mobileNavigation} aria-label="Navegación principal móvil">
           {sections.map((section) => (

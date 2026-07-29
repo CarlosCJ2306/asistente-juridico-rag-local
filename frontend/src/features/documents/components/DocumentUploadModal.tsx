@@ -2,7 +2,7 @@ import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { isRequestCancelledError, toAppError } from "../../../api";
 import { Button, FormField, Inline, Modal, Radio, Select, Stack, Text, TextInput } from "../../../design-system";
-import { modalDismissProps } from "../../hpn-matrices/utils";
+import { modalDismissProps } from "../../../utils/modal";
 import { useDocumentUpload } from "../hooks";
 import type { DocumentType, PublicDocument, PublicUploadKnowledgeLayer } from "../types";
 import { DOCUMENT_TYPE_LABELS, formatDocumentSize } from "../utils";

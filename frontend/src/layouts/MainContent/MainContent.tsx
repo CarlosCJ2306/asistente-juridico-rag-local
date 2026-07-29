@@ -9,12 +9,13 @@ export interface MainContentProps {
   id: string;
   breadcrumbs?: ReadonlyArray<BreadcrumbItem>;
   children: ReactNode;
+  fullBleed?: boolean;
 }
 
-export function MainContent({ id, breadcrumbs = [], children }: MainContentProps) {
+export function MainContent({ id, breadcrumbs = [], children, fullBleed = false }: MainContentProps) {
   return (
-    <main id={id} tabIndex={-1} className={styles.mainContent}>
-      {breadcrumbs.length > 1 ? (
+    <main id={id} tabIndex={-1} className={[styles.mainContent, fullBleed ? styles.mainContentFullBleed : null].filter(Boolean).join(" ")}>
+      {!fullBleed && breadcrumbs.length > 1 ? (
         <Container width="wide" className={styles.breadcrumbRegion}><Breadcrumbs items={breadcrumbs} /></Container>
       ) : null}
       {children}

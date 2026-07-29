@@ -5,7 +5,7 @@ import { isRequestCancelledError } from "../../../api";
 import { ProfessionalReviewNotice } from "../../../components";
 import { Alert, Button, Card, EmptyState, ErrorState, Inline, Stack, Text } from "../../../design-system";
 import { ContentLayout } from "../../../layouts";
-import { useDocuments } from "../../documents/hooks";
+import { useDocuments } from "../../documents";
 import type { RagCitation, RagChatInput, RagChatResponse } from "../types";
 import { useRagChat } from "../hooks";
 import { chatErrorMessage } from "../utils";

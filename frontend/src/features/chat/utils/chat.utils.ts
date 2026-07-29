@@ -1,6 +1,6 @@
 import { toAppError } from "../../../api";
-import type { DocumentType, KnowledgeLayer } from "../../documents/types";
-import { DOCUMENT_TYPE_LABELS, KNOWLEDGE_LAYER_LABELS } from "../../documents/utils";
+import type { DocumentType, KnowledgeLayer } from "../../documents";
+import { DOCUMENT_TYPE_LABELS, KNOWLEDGE_LAYER_LABELS } from "../../documents";
 
 export function chatErrorMessage(error: unknown): { readonly title: string; readonly message: string; readonly action: "models" | "documents" | null } {
   const appError = toAppError(error);

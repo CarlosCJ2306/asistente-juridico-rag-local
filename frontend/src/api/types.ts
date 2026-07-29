@@ -16,4 +16,7 @@ export interface ApiRequestOptions {
   readonly query?: ApiQuery;
   readonly signal?: AbortSignal;
   readonly timeoutMs?: number;
+  /** Opt-in only for browser-managed, same-origin session cookies. */
+  readonly credentials?: RequestCredentials;
+  readonly headers?: Readonly<Record<string, string>>;
 }

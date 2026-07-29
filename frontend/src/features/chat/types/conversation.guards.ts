@@ -1,0 +1,22 @@
+import type { DocumentType, KnowledgeLayer } from "../../documents";
+import type { ConversationCitation, ConversationClaim, ConversationDetail, ConversationMessage, ConversationPage, ConversationSummary, ConversationTurn } from "./conversation.types";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu;
+const MARKER = /^\[F[1-9]\d*\]$/u;
+const documentTypes = ["expediente", "normativa", "jurisprudencia", "otro"] as const;
+const layers = ["managed_corpus", "private_library", "temporary", "web_verified", "global_candidate"] as const;
+function bad(): never { throw new Error("CONVERSATION_RESPONSE_INVALID"); }
+function rec(v: unknown): Record<string, unknown> { return typeof v === "object" && v !== null && !Array.isArray(v) ? v as Record<string, unknown> : bad(); }
+function str(v: unknown): string { return typeof v === "string" && v.trim() ? v : bad(); }
+function nullableString(v: unknown): string | null { return v === null ? null : str(v); }
+function int(v: unknown, min = 0): number { return typeof v === "number" && Number.isInteger(v) && v >= min ? v : bad(); }
+function id(v: unknown): string { const value = str(v); return UUID.test(value) ? value : bad(); }
+function valueOf<T extends string>(v: unknown, values: readonly T[]): T { return typeof v === "string" && values.includes(v as T) ? v as T : bad(); }
+function summary(v: unknown): ConversationSummary { const x=rec(v); return { id:id(x.id), title:str(x.title), ownerType:valueOf(x.owner_type,["guest","account"]), status:valueOf(x.status,["active","archived"]), createdAt:str(x.created_at), updatedAt:str(x.updated_at), lastActivityAt:str(x.last_activity_at), expiresAt:nullableString(x.expires_at), messageCount:int(x.message_count) }; }
+function citation(v: unknown): ConversationCitation { const x=rec(v); const start=int(x.start_page,1), end=int(x.end_page,1); if(end<start || !MARKER.test(str(x.marker))) return bad(); return { id:id(x.id),marker:str(x.marker),documentId:id(x.document_id),displayName:str(x.display_name),documentType:valueOf(x.document_type,documentTypes) as DocumentType,knowledgeLayer:valueOf(x.knowledge_layer,layers) as KnowledgeLayer,issuingEntity:nullableString(x.issuing_entity),documentDate:nullableString(x.document_date),startPage:start,endPage:end,chunkIndex:int(x.chunk_index,1),locatorLabel:nullableString(x.locator_label),directQuote:str(x.direct_quote),quoteTruncated:typeof x.quote_truncated === "boolean" ? x.quote_truncated : bad(),citationOrder:int(x.citation_order,1),documentAvailable:typeof x.document_available === "boolean" ? x.document_available : bad() }; }
+function claim(v: unknown): ConversationClaim { const x=rec(v); if(!Array.isArray(x.citation_ids)) return bad(); return {id:id(x.id),statement:str(x.statement),claimOrder:int(x.claim_order,1),supported:typeof x.supported === "boolean" ? x.supported : bad(),citationIds:x.citation_ids.map(id)}; }
+function message(v: unknown): ConversationMessage { const x=rec(v); if(!Array.isArray(x.citations)||!Array.isArray(x.claims)||!Array.isArray(x.unsupported_points)) return bad(); const status=x.public_status===null?null:valueOf(x.public_status,["answered","partial","insufficient_context","failed"]); const coverage=x.coverage_status===null?null:valueOf(x.coverage_status,["full","partial","insufficient"]); return {id:id(x.id),role:valueOf(x.role,["user","assistant"]),content:str(x.content),sequenceNumber:int(x.sequence_number,1),publicStatus:status,coverageStatus:coverage,createdAt:str(x.created_at),completedAt:nullableString(x.completed_at),errorCode:nullableString(x.error_code),citations:x.citations.map(citation),claims:x.claims.map(claim),unsupportedPoints:x.unsupported_points.map(str)}; }
+export function parseConversationPage(v: unknown): ConversationPage { const x=rec(v); if(!Array.isArray(x.items)) return bad(); return {items:x.items.map(summary),total:int(x.total),page:int(x.page,1),pageSize:int(x.page_size,1)}; }
+export function parseConversation(v: unknown): ConversationSummary { return summary(v); }
+export function parseConversationDetail(v: unknown): ConversationDetail { const x=rec(v); if(!Array.isArray(x.messages)) return bad(); return {...summary(x),messages:x.messages.map(message).sort((a,b)=>a.sequenceNumber-b.sequenceNumber)}; }
+export function parseConversationTurn(v: unknown): ConversationTurn { const x=rec(v); return {conversation:summary(x.conversation),userMessage:message(x.user_message),assistantMessage:message(x.assistant_message)}; }

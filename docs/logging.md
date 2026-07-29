@@ -26,6 +26,13 @@ su traza completa y `LogStep` nunca las suprime.
 
 ## Política de contenido
 
+## Compatibilidad legacy
+
+Las políticas puras de transición 12D-3 no requieren logging. Si un adaptador
+legacy falla, solo puede registrar operación, adaptador, etapa, código seguro,
+tipo de excepción y `request_id`; nunca DTOs, títulos, statements, fuentes,
+objetos NetworkX o HTML.
+
 Está prohibido registrar:
 
 - texto completo de expedientes o contenido completo de chunks;
@@ -37,6 +44,12 @@ Está prohibido registrar:
 Se permiten únicamente metadatos técnicos necesarios, por ejemplo:
 `request_id`, `document_id`, `chunk_id`, `conversation_id`, `page_count`,
 `chunk_count`, `file_size`, `duration_ms`, `status_code` y `exception_type`.
+Para `Case` se permiten operación, estado, versión, duración y código estable;
+no se registran título, descripción, cookie ni hash de propietario. La
+auditoría estructurada de dominio no sustituye esta política de logs.
+Para `CaseDocument` se permiten operación, propósito, versión, cantidades y
+código estable. No se registran nombres documentales, snapshots, rutas, hashes,
+texto, páginas, chunks ni metadatos internos de almacenamiento.
 
 `security_logging.py` enmascara claves sensibles dentro del contexto
 estructurado y omite binarios. Esta protección es una última barrera, no una

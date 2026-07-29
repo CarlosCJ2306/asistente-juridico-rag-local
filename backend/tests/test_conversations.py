@@ -17,7 +17,7 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.routes.conversations import router
-from app.core.config import Settings
+from app.core.config import Settings, settings
 from app.database.base import Base
 from app.database.models.conversation import (
     Conversation,
@@ -282,6 +282,7 @@ async def test_cleanup_deletes_only_expired_guest_conversations(
 ) -> None:
     manager, _, _ = conversation_database
     factory = manager.get_session_factory()
+    effective_now = datetime.now(timezone.utc)
     async with factory() as session:
         expired = Conversation(
             title="Expirada",
@@ -291,7 +292,7 @@ async def test_cleanup_deletes_only_expired_guest_conversations(
             created_at=NOW,
             updated_at=NOW,
             last_activity_at=NOW,
-            expires_at=NOW - timedelta(days=1),
+            expires_at=effective_now - timedelta(days=1),
             schema_version=1,
         )
         active = Conversation(
@@ -302,7 +303,7 @@ async def test_cleanup_deletes_only_expired_guest_conversations(
             created_at=NOW,
             updated_at=NOW,
             last_activity_at=NOW,
-            expires_at=NOW + timedelta(days=1),
+            expires_at=effective_now + timedelta(days=1),
             schema_version=1,
         )
         session.add_all([expired, active])
@@ -318,6 +319,29 @@ def test_guest_token_validation_requires_256_bit_base64url_shape() -> None:
     assert _valid_token("a" * 43) == "a" * 43
     assert _valid_token("short") is None
     assert _valid_token("a" * 42 + "!") is None
+
+
+@pytest.mark.parametrize(
+    ("question", "expected"),
+    [
+        ("¿Qué establece el decreto?", "¿Qué establece el decreto?"),
+        ("  múltiples   espacios  ", "múltiples espacios"),
+        ("línea uno\nlínea dos", "línea uno línea dos"),
+        ("acción, niñez y Constitución", "acción, niñez y Constitución"),
+        ("Unicode ⚖ jurídico", "Unicode ⚖ jurídico"),
+    ],
+)
+def test_conversation_title_normalizes_words_without_spacing_characters(
+    question: str, expected: str
+) -> None:
+    assert ConversationService._title(question) == expected
+    assert not ConversationService._title(question).startswith("¿ Q u é")
+
+
+def test_conversation_title_truncates_within_configured_limit() -> None:
+    title = ConversationService._title("á" * (settings.conversation_title_max_length + 20))
+    assert len(title) == settings.conversation_title_max_length
+    assert title.endswith("…")
 
 
 @pytest.mark.parametrize(

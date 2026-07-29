@@ -5,7 +5,7 @@ import { ProfessionalReviewNotice } from "../../../components";
 import { AsyncContent, Button, EmptyState, ErrorState, Stack } from "../../../design-system";
 import type { AsyncStatus } from "../../../design-system";
 import { ContentLayout, FullWidthLayout } from "../../../layouts";
-import { isHpnId, type HpnId } from "../../hpn-matrices/types";
+import { isHpnId, type HpnId } from "../../hpn-matrices";
 import { legalGraphExportPath } from "../api";
 import { LegalGraphFrame, LegalGraphSummary, LegalGraphTextualView } from "../components";
 import { useLegalGraph } from "../hooks";

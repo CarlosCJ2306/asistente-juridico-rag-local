@@ -1,11 +1,12 @@
 import { createBrowserRouter } from "react-router-dom";
 
 import { AppLayout } from "../layouts";
+import { CasesPage } from "../features/cases";
 import { DocumentDetailPage, DocumentsPage, DocumentSearchPage } from "../features/documents";
 import { HpnMatricesPage, HpnMatrixDetailPage } from "../features/hpn-matrices";
 import { LegalNetworkPage } from "../features/legal-network";
 import { ModelsPage } from "../features/models";
-import { ChatPage } from "../features/chat";
+import { ConversationPage } from "../features/chat";
 import { HomePage } from "../pages/HomePage";
 import { NotFoundPage } from "../pages/NotFoundPage";
 
@@ -15,7 +16,9 @@ export const router = createBrowserRouter([
     element: <AppLayout />,
     children: [
       { index: true, element: <HomePage /> },
-      { path: "chat", element: <ChatPage /> },
+      { path: "chat", element: <ConversationPage /> },
+      { path: "chat/:conversationId", element: <ConversationPage /> },
+      { path: "cases", element: <CasesPage /> },
       { path: "documents", element: <DocumentsPage /> },
       { path: "documents/search", element: <DocumentSearchPage /> },
       { path: "documents/:documentId", element: <DocumentDetailPage /> },

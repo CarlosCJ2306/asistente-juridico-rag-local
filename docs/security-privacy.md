@@ -79,18 +79,51 @@ sessionStorage. Dos hashes no comparten datos; las conversaciones expiran y se
 eliminan en cascada siete días después de su última actividad. El acceso por
 cuenta y la transferencia requieren autenticación futura y consentimiento.
 
-La interfaz Chat mantiene pregunta, respuesta y citas solo en memoria durante
-su montaje. No los incluye en URL, query keys, almacenamiento del navegador,
-telemetría o notificaciones. Renderiza la respuesta como texto plano, no
+La interfaz Chat usa cookies HttpOnly gestionadas por el navegador para el
+historial invitado y no puede leer, copiar ni persistir su valor. No incluye
+preguntas, respuestas ni citas en URL, query keys, almacenamiento del
+navegador, telemetría o notificaciones. Renderiza la respuesta como texto plano, no
 interpreta HTML y no expone rutas, prompts, hashes ni metadatos internos. La
 carga bajo demanda de modelos continúa siendo una decisión exclusiva del
 backend.
+
+El estado visual plegado del rail y el Drawer de evidencia son efímeros de
+React. El rediseño no altera la persistencia conversacional, las cookies ni las
+reglas de retención; tampoco copia citas o evidencia a almacenamiento web.
 
 ## Matrices HPN y revisión profesional
 
 Las relaciones HPN y la Red jurídica son herramientas de organización y revisión. Las propuestas futuras de IA serán borradores. No se debe afirmar automáticamente que un hecho está probado, que una prueba es suficiente ni que una norma es aplicable.
 
+## Casos implementados y artefactos planificados
+
+El núcleo `Case` y `CaseDocument` no duplican PDF, páginas, chunks, texto ni
+vectores. Una asociación referencia un documento existente y solo admite las
+capas `private_library` y `temporary`; no cambia su gobernanza, procesamiento,
+vigencia o elegibilidad. Los casos temporales reutilizan una cookie HttpOnly y SQLite guarda
+solo su hash; un invitado ajeno recibe el mismo 404 que un recurso inexistente.
+Los casos persistentes pertenecen a la instalación local, no a una cuenta.
+El acceso a cada pertenencia se resuelve primero mediante el ownership del
+caso. Su snapshot interno permite advertir cambios o indisponibilidad sin
+reparar la fuente ni exponer nombres almacenados, rutas, hashes o contenido.
+Artefactos, ejecuciones y decisiones humanas se versionarán y auditarán con
+metadatos estructurados, sin prompts, razonamiento interno o contenido completo
+en logs. La propiedad `account` seguirá deshabilitada mientras no exista
+autenticación real; no se presentará una sesión invitada como cuenta. La API
+no acepta ownership, expiración, versión nueva ni campos de auditoría enviados
+por el cliente.
+
+El pipeline de casos no otorgará a adaptadores o futuros agentes acceso directo
+a persistencia, filesystem o índices. Las herramientas serán cerradas, las
+salidas tipadas y toda promoción jurídica requerirá revisión humana.
+
 ## Información no expuesta en frontend
+
+## Compatibilidad legacy interna
+
+La compatibilidad 12D-3 no registra ni expone DTO completos, títulos,
+statements, fuentes, rutas o identificadores de recursos. Sus políticas son
+puras y no pueden asignar recursos, modificar HPN/Red ni iniciar persistencia.
 
 El contrato público ordinario de documentos no devuelve nombres almacenados,
 rutas relativas o absolutas, hashes ni mensajes técnicos internos. Esos datos

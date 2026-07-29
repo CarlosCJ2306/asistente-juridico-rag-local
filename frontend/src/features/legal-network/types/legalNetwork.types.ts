@@ -1,4 +1,4 @@
-import type { HpnId, HpnMatrixStatus, HpnNodeType, HpnRelationType, HpnReviewStatus } from "../../hpn-matrices/types";
+import type { HpnId, HpnMatrixStatus, HpnNodeType, HpnRelationType, HpnReviewStatus } from "../../hpn-matrices";
 
 export interface LegalGraphSourceSummary {
   readonly total: number;

@@ -4,6 +4,18 @@
 
 El sistema es local. FastAPI expone servicios documentales, recuperación, Chat RAG, Matrices HPN y Red jurídica. React/Vite consume esos contratos mediante un cliente HTTP compartido. SQLite es la fuente de verdad; FTS5 y ChromaDB son índices derivados y reconstruibles.
 
+Desde 12D la arquitectura objetivo distingue tres límites:
+
+1. **Asistente jurídico general:** Chat RAG y conversaciones no asociadas a un expediente.
+2. **Workspace de inteligencia de casos:** núcleo persistente `Case`
+   implementado; expediente documental, artefactos versionados, HPN, Red,
+   métricas, escenarios y frontend conectado pendientes.
+3. **Plataforma local compartida:** biblioteca, procesamiento, recuperación,
+   modelos, persistencia, seguridad y observabilidad.
+
+El segundo límite está **parcialmente implementado** desde 12E-1. Los módulos
+existentes se clasifican en [modules.md](modules.md).
+
 ## Backend y persistencia
 
 - `documents`, `document_pages` y `document_chunks` almacenan metadatos, páginas y fragmentos trazables.
@@ -14,6 +26,14 @@ El sistema es local. FastAPI expone servicios documentales, recuperación, Chat 
 - El servicio documental valida PDF, escribe temporalmente, evita traversal y registra metadatos de forma controlada.
 - PyMuPDF reconstruye texto por palabras y líneas; el limpiador y el chunker conservan orden y rangos de página.
 - Alembic mantiene el esquema explícitamente. FastAPI no crea tablas ni ejecuta migraciones al iniciar.
+- La revisión `20260728_09` añade `cases` y `case_audit_events`. `Case` usa un
+  identificador público UUID, estados cerrados, retención temporal o local,
+  locking optimista y auditoría transaccional; no contiene documentos ni
+  referencias HPN/Red.
+- La revisión `20260729_10` añade `case_documents`. Cada fila referencia un
+  `Document` existente, guarda únicamente snapshot mínima y puede retirarse
+  lógicamente. Un índice único parcial impide dos asociaciones activas para la
+  misma pareja sin sobrescribir asociaciones retiradas.
 
 `DocumentGovernanceService` centraliza las matrices de transición de revisión,
 vigencia e indexación, las reglas de capa y versionado, y la elegibilidad RAG
@@ -111,6 +131,61 @@ real. No se crea principal ficticio ni endpoint de transferencia.
 
 Las matrices almacenan nodos fact, evidence y norm, sus fuentes y relaciones dirigidas revisables. NetworkX construye una proyección de solo lectura; la API JSON ofrece DTOs sanitizados y PyVis exporta una visualización local restringida. Las métricas y relaciones son estructurales, no conclusiones jurídicas.
 
+HPN y Red carecen actualmente de `case_id`; son legado operativo respecto del
+workspace objetivo. Su migración será aditiva y conservará matrices globales
+sin asignación. Consulte [hpn-and-legal-network.md](hpn-and-legal-network.md).
+
+## Núcleo Case y orquestación futura
+
+`app.cases` contiene el dominio independiente del ORM, repositorio asíncrono y
+servicio autoritativo. `/api/cases` expone CRUD limitado y acciones explícitas
+de estado. Los casos `temporary` reutilizan la identidad invitada y renuevan
+siete días de retención con actividad autorizada; `local_persistent` pertenece
+a la instalación. `account` no se acepta por HTTP. El borrado es lógico y no
+hay purga física en 12E-1.
+
+`CaseDocumentService` permite asociar únicamente documentos privados o
+temporales activos. Resuelve cada página documental en un lote, aplica la
+gobernanza pública vigente y compara la snapshot en memoria. Las mutaciones
+incrementan `Case.version` y `CaseDocument.version` y agregan el evento de
+auditoría dentro de la misma transacción. No inicia extracción, indexación,
+recuperación ni modelos.
+
+El [CasePipelineHarness](case-pipeline-harness.md) planificado coordinará etapas
+tipadas, checkpoints, revisión humana, reintentos y recuperación sin duplicar
+servicios. El [CaseEvaluationHarness](evaluation-harness.md) usará casos
+sintéticos y golden fixtures aislados. Ninguno está implementado en 12E-1.
+
+## Contratos de transición 12D-1
+
+Los contratos de transición de `app.cases` definen DTO inmutables y ports de documentos,
+extracción, recuperación acotada, HPN legacy y Red legacy. Adaptadores pequeños
+delegan en fachadas públicas existentes y mapean únicamente referencias y
+resúmenes seguros. 12E-1 añadió por separado ORM, repositorio, servicio y router
+del agregado `Case`, sin activar esos adaptadores ni asociar documentos.
+
+La dirección comprobada es `Casos planificados -> fachadas compartidas` y
+`Asistente general -> plataforma compartida`. La plataforma, el Asistente, HPN
+y Red no importan Casos. La importación de `app.cases` no abre SQLite o Chroma,
+ni carga embeddings o Qwen.
+
+## Navegación y shell de Casos 12D-2
+
+`/cases` es una ruta frontend estática sin acceso a backend, SQLite, índices ni
+persistencia. Su estado vacío no representa expedientes ni crea datos. La
+feature `features/cases` expone un `CaseWorkspaceShell` puramente
+presentacional para una futura entidad Case: recibe títulos, etiquetas visibles,
+secciones, advertencias y contenido desde props, sin conocer objetos de dominio.
+Las rutas HPN y Red jurídica siguen siendo globales y no se redirigen.
+
+## Compatibilidad legacy 12D-3
+
+`app.cases` conserva un manifiesto estático versionado, clasificación interna,
+referencias inmutables y políticas puras para HPN y Red globales. Estas piezas
+no importan ORM ni servicios, no consultan SQLite y no aparecen en OpenAPI.
+La asociación, deprecación y retiro permanecen desactivados: no existe
+`case_id` en HPN/Red, redirect ni asociación documental durante esta fase.
+
 ## Frontend y proxy
 
 React, TypeScript y Vite implementan App Shell, Design System, cliente HTTP
@@ -128,10 +203,11 @@ El mapa canónico de rutas frontend y endpoints asociados está en
 | --- | --- |
 | Flujo documental y Chat RAG backend | Implementado y conectado |
 | Biblioteca y carga PDF frontend | Implementadas; validación manual de carga pendiente |
-| Procesamiento, corpus, chat y fuentes frontend | Pendiente |
+| Procesamiento, corpus, chat y fuentes frontend | Implementados con validaciones manuales pendientes según el plan |
 | Matrices HPN frontend | Implementado |
 | Red jurídica frontend | Implementada; validación integrada pendiente |
-| Fuentes web y propuestas HPN asistidas | Futuro |
+| Dominio y workspace de casos | Núcleo, pertenencia documental y API implementados; frontend pendiente |
+| Fuentes web | Futuro de baja prioridad |
 
 ## Seguridad y logging
 

@@ -547,12 +547,22 @@ class ConversationService:
 
     @staticmethod
     def _title(question: str) -> str:
-        plain = " ".join(
-            character
+        cleaned = "".join(
+            " " if character.isspace() else character
             for character in question
-            if not unicodedata.category(character).startswith("C") and character not in "<>"
-        ).strip()
-        return plain[: settings.conversation_title_max_length] or "Nueva conversación"
+            if (
+                character.isspace()
+                or not unicodedata.category(character).startswith("C")
+            )
+            and character not in "<>"
+        )
+        plain = " ".join(cleaned.split())
+        if not plain:
+            return "Nueva conversación"
+        limit = settings.conversation_title_max_length
+        if len(plain) <= limit:
+            return plain
+        return f"{plain[: limit - 1].rstrip()}…"
 
     @staticmethod
     def _now() -> datetime:

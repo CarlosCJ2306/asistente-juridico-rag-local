@@ -1,5 +1,4 @@
-import type { DocumentId, DocumentType, KnowledgeLayer } from "../../documents/types";
-import type { TextMatchMode } from "../../documents/types";
+import type { DocumentId, DocumentType, KnowledgeLayer, TextMatchMode } from "../../documents";
 
 export interface RagChatInput {
   readonly question: string;

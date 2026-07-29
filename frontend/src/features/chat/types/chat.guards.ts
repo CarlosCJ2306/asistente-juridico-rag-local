@@ -1,4 +1,4 @@
-import { isDocumentId, type DocumentId, type DocumentType, type KnowledgeLayer } from "../../documents/types";
+import { isDocumentId, type DocumentId, type DocumentType, type KnowledgeLayer } from "../../documents";
 import type { RagChatResponse, RagCitation } from "./chat.types";
 
 const MARKER_PATTERN = /^\[F[1-9]\d*\]$/u;

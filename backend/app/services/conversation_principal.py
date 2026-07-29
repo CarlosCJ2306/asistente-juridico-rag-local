@@ -14,7 +14,7 @@ from app.core.config import settings
 
 
 _TOKEN_PATTERN = re.compile(r"[A-Za-z0-9_-]{43}")
-_COOKIE_PATH = "/api/conversations"
+_COOKIE_PATH = "/api"
 
 
 @dataclass(frozen=True)

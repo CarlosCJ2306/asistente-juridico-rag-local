@@ -41,6 +41,8 @@ from app.database.models.conversation import (
     ConversationOwnerType,
     ConversationStatus,
 )
+from app.database.models.case import CaseAuditEventRecord, CaseRecord
+from app.database.models.case_document import CaseDocumentRecord
 
 
 __all__ = [
@@ -55,4 +57,5 @@ __all__ = [
     "ConversationClaimCitation", "ConversationCoverageStatus", "ConversationMessage",
     "ConversationMessageRole", "ConversationMessageStatus", "ConversationOwnerType",
     "ConversationStatus",
+    "CaseAuditEventRecord", "CaseRecord", "CaseDocumentRecord",
 ]

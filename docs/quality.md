@@ -32,6 +32,22 @@ foco tras la respuesta, estados de carga y cancelación, copia local, temas,
 ancho móvil y ausencia de preguntas, respuestas o datos internos en consola,
 URL y almacenamiento del navegador.
 
+El flujo conversacional añade guards para conversación, mensajes, claims y
+snapshots de citas; creación diferida, idempotencia por intento y cancelación
+real de la petición. La validación manual debe comprobar aislamiento visual de
+invitados, historial tras recarga, interacción de citas, estados de cobertura,
+retención informada y responsive sin almacenamiento web.
+
+La validación visual del Chat cubre rail expandido y contraído, Drawer de
+evidencia y retorno de foco, Enter para enviar, Shift+Enter para nueva línea,
+composición IME, scroll independiente, ausencia de tercera columna y
+responsive en 360, 768, 1024 y 1440 px.
+
+La aceptación visual exige workspace full-width y full-height, crecimiento
+inmediato del hilo al contraer el rail, scroll interno de conversaciones y
+mensajes, composer visible y ausencia de márgenes, recortes o superposiciones
+con sidebar global expandido o compacto y zoom al 200 %.
+
 Las conversaciones se prueban con SQLite y modelos simulados: cookie HttpOnly,
 hash irreversible, aislamiento IDOR, paginación, archivo, eliminación,
 expiración y limpieza. La cobertura multi-turn comprueba recuperación nueva,
@@ -57,3 +73,39 @@ principal.
 ## Informes locales de validación
 
 `local_validation_reports/` no se versiona ni es una fuente de verdad del proyecto. La política inicial es conservar temporalmente `latest` y ejecuciones relevantes, revisar periódicamente los informes obsoletos y eliminarlos manualmente cuando ya no sean necesarios. Esta política no autoriza su borrado automático.
+
+## Evaluación de casos planificada
+
+El [CaseEvaluationHarness](evaluation-harness.md) reemplazará gradualmente la
+duplicación de validadores integrales para capacidades nuevas. Usará SQLite,
+storage e índices temporales, fixtures sintéticas, golden cases y productores
+falsos deterministas. Comparará schemas, cobertura estructural, fuentes
+ausentes, relaciones inválidas, duplicados, recuperación y privacidad.
+
+Sus métricas no evaluarán acierto jurídico, suficiencia probatoria o
+probabilidad de éxito. Actualizar un golden case requerirá revisión explícita;
+el harness nunca aceptará diferencias automáticamente.
+
+## Comprobaciones arquitectónicas 12D-1
+
+La suite inspecciona imports Python mediante AST, verifica ausencia de side
+effects al importar `app.cases`, conformidad estructural de adapters con sus
+`Protocol`, DTO congelados, privacidad recursiva, delegación única, errores
+cerrados y resolución documental batch. Desde 12E-2, OpenAPI se compara como
+conjunto normalizado método+ruta e incorpora el namespace `/api/cases` y las
+cinco operaciones anidadas de pertenencia sin alterar contratos anteriores.
+
+ESLint rechaza imports profundos entre features y accesos a
+`design-system/internal`. Una comprobación adicional conserva el conjunto de
+rutas frontend, permite únicamente `/cases` como ruta estática de Casos y
+confirma que la feature no incorpora API, hooks ni queries. Las pruebas de
+`Case` y `CaseDocument` cubren dominio, migraciones reversibles, ownership,
+transacciones con FK activas, locking, auditoría, retiro y nueva asociación,
+privacidad y API mediante SQLite temporal. La prueba anti-N+1 lista 1, 10 y 50
+asociaciones y mantiene exactamente cuatro consultas `SELECT`.
+
+## Compatibilidad legacy 12D-3
+
+La suite verifica clasificación global, manifiesto versionado, referencias
+inmutables, políticas sin efectos laterales, deprecación y retiro desactivados,
+ausencia de `case_id`, paridad OpenAPI y conservación de rutas frontend.

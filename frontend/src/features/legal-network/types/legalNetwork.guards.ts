@@ -1,4 +1,4 @@
-import { isHpnId, isHpnMatrixStatus, isHpnNodeType, isHpnRelationType, isHpnReviewStatus, type HpnId } from "../../hpn-matrices/types";
+import { isHpnId, isHpnMatrixStatus, isHpnNodeType, isHpnRelationType, isHpnReviewStatus, type HpnId } from "../../hpn-matrices";
 import type { LegalGraphEdge, LegalGraphEntityWarningCode, LegalGraphMatrix, LegalGraphNode, LegalGraphProjection, LegalGraphSourceSummary, LegalGraphSummary, LegalGraphWarning, LegalGraphWarningCode } from "./legalNetwork.types";
 
 function invalidResponse(): never { throw new Error("LEGAL_GRAPH_RESPONSE_INVALID"); }
