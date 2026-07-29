@@ -10,13 +10,22 @@ Los documentos no reentrenan el modelo. Se utilizan como evidencia mediante recu
 
 ## Capacidades actuales
 
-- Backend: carga segura de PDF, extracción, páginas, chunks, embeddings locales, recuperación textual, semántica e híbrida, Chat RAG y citas estructuradas.
+- Backend: carga segura de PDF, extracción, páginas, chunks, embeddings locales, recuperación textual, semántica e híbrida, Chat RAG, conversaciones invitadas y citas estructuradas.
 - Análisis estructural: CRUD manual de Matrices HPN, API de grafo y exportación PyVis local.
 - Frontend: Inicio, Biblioteca documental con carga PDF explícita, Matrices HPN
   y Red jurídica.
 
-El procesamiento documental desde frontend, la selección visual de corpus, el
-Chat jurídico y la presentación de fuentes en frontend siguen pendientes.
+La experiencia frontend de conversaciones persistentes sigue pendiente; no
+existen todavía cuentas, transferencia entre dispositivos ni autenticación.
+
+## Conversaciones RAG
+
+`POST /api/chat/rag` conserva el contrato individual sin persistencia. Los
+endpoints bajo `/api/conversations` crean y administran hilos invitados y
+añaden mensajes multi-turn. Una cookie HttpOnly identifica al invitado; el
+backend guarda solo su hash y aplica siete días de retención desde la última
+actividad. Cada respuesta vuelve a recuperar y revalidar evidencia, persiste
+claims y snapshots de citas, y nunca trata respuestas anteriores como fuente.
 
 ## Arquitectura resumida
 

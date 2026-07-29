@@ -8,9 +8,9 @@ export const navigationSections: ReadonlyArray<NavigationSection> = [
     label: "Trabajo",
     items: [
       { id: "home", label: "Inicio", route: "/", icon: HomeIcon, availability: "active", matchStrategy: "exact" },
+      { id: "chat", label: "Asistente jurídico", route: "/chat", icon: ChatIcon, availability: "active", matchStrategy: "prefix" },
       { id: "documents", label: "Documentos", route: "/documents", icon: DocumentIcon, availability: "active", matchStrategy: "prefix", detailLabel: "Detalle" },
       { id: "search", label: "Búsqueda", route: "/search", icon: SearchIcon, availability: "hidden", matchStrategy: "prefix" },
-      { id: "chat", label: "Chat jurídico", route: "/chat", icon: ChatIcon, availability: "hidden", matchStrategy: "prefix" },
     ],
   },
   {

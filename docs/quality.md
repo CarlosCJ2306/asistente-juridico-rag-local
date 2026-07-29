@@ -25,6 +25,21 @@ retiradas, documentos que pierden elegibilidad, inyección desde evidencia,
 solicitudes de revelación y ausencia de preguntas, respuestas, chunks o prompts
 en logs.
 
+La interfaz del Chat se valida con contratos tipados y guards de respuestas
+`answered` e `insufficient_context`, filtros de corpus, citas públicas y
+errores sanitizados. La comprobación manual cubre teclado, contador accesible,
+foco tras la respuesta, estados de carga y cancelación, copia local, temas,
+ancho móvil y ausencia de preguntas, respuestas o datos internos en consola,
+URL y almacenamiento del navegador.
+
+Las conversaciones se prueban con SQLite y modelos simulados: cookie HttpOnly,
+hash irreversible, aislamiento IDOR, paginación, archivo, eliminación,
+expiración y limpieza. La cobertura multi-turn comprueba recuperación nueva,
+contexto no probatorio, orden e idempotencia; las citas comprueban literalidad,
+snapshots, claims y disponibilidad posterior. Casos positivos y negativos de
+relevancia verifican que evidencia irrelevante —incluida minería lunar— no
+invoque Qwen ni produzca claims o citas.
+
 La automatización se valida con filesystem y SQLite temporales, PDF sintéticos,
 adaptadores de embeddings falsos y colecciones Chroma temporales o simuladas.
 Las pruebas cubren estabilidad de archivos, sidecars estrictos, recuperación

@@ -82,6 +82,18 @@ class Settings(BaseSettings):
     llm_load_timeout_seconds: float = Field(default=120.0, ge=5, le=1800)
     llm_generation_timeout_seconds: float = Field(default=180.0, ge=5, le=3600)
 
+    conversation_guest_retention_days: int = Field(default=7, ge=1, le=30)
+    conversation_cookie_name: str = "aj_guest_session"
+    conversation_cookie_secure: bool = False
+    conversation_cleanup_interval_seconds: float = Field(
+        default=3600.0, ge=60, le=86400
+    )
+    conversation_title_max_length: int = Field(default=120, ge=20, le=255)
+    conversation_context_max_messages: int = Field(default=6, ge=1, le=20)
+    conversation_context_max_chars: int = Field(default=4000, ge=500, le=20000)
+    conversation_direct_quote_max_chars: int = Field(default=500, ge=100, le=2000)
+    conversation_claim_max_chars: int = Field(default=2000, ge=100, le=6000)
+
     embedding_model_path: Path = Field(
         default=Path("models/embeddings/multilingual-e5-small"),
         validate_default=True,
@@ -258,6 +270,14 @@ class Settings(BaseSettings):
             raise ValueError("LLM_RUNTIME_POLICY_INVALID")
         return normalized
 
+    @field_validator("conversation_cookie_name")
+    @classmethod
+    def validate_conversation_cookie_name(cls, value: str) -> str:
+        normalized = value.strip()
+        if re.fullmatch(r"[A-Za-z][A-Za-z0-9_-]{2,63}", normalized) is None:
+            raise ValueError("CONVERSATION_COOKIE_NAME_INVALID")
+        return normalized
+
     @field_validator("hybrid_text_weight", "hybrid_semantic_weight")
     @classmethod
     def validate_hybrid_weight(cls, value: float) -> float:
@@ -292,6 +312,13 @@ class Settings(BaseSettings):
         "rag_repeat_penalty",
         "rag_citation_max_sources",
         "rag_source_name_max_length",
+        "conversation_guest_retention_days",
+        "conversation_cleanup_interval_seconds",
+        "conversation_title_max_length",
+        "conversation_context_max_messages",
+        "conversation_context_max_chars",
+        "conversation_direct_quote_max_chars",
+        "conversation_claim_max_chars",
         "hpn_matrix_title_max_length",
         "hpn_matrix_description_max_length",
         "hpn_node_title_max_length",

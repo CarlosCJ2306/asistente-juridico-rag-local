@@ -65,11 +65,26 @@ reglas del asistente ni habilitan filesystem, comandos o herramientas. Los
 documentos no reentrenan Qwen y el conocimiento previo del modelo no es una
 fuente jurídica verificable.
 
-Cada solicitud es stateless. Preguntas, respuestas, prompts, contexto e
-historial no se persisten ni se incluyen en logs; solo se registran metadatos
-operativos y códigos seguros. Embeddings y Qwen se resuelven desde artefactos
+`POST /api/chat/rag` continúa stateless. En los endpoints conversacionales,
+preguntas, respuestas, claims y snapshots de citas se persisten expresamente en
+SQLite, pero nunca se incluyen en logs. Prompts, contexto ensamblado,
+chain-of-thought, embeddings y rutas no se persisten. Embeddings y Qwen se resuelven desde artefactos
 locales, sin fallback a Internet. Qwen solo se carga después de confirmar
 evidencia suficiente y se libera tras inactividad protegida.
+
+La identidad invitada usa un token de 256 bits en cookie HttpOnly,
+SameSite=Lax, Path limitado y Secure configurable para HTTPS. SQLite recibe
+solo el hash irreversible. No se usa IP, user-agent, URL, localStorage ni
+sessionStorage. Dos hashes no comparten datos; las conversaciones expiran y se
+eliminan en cascada siete días después de su última actividad. El acceso por
+cuenta y la transferencia requieren autenticación futura y consentimiento.
+
+La interfaz Chat mantiene pregunta, respuesta y citas solo en memoria durante
+su montaje. No los incluye en URL, query keys, almacenamiento del navegador,
+telemetría o notificaciones. Renderiza la respuesta como texto plano, no
+interpreta HTML y no expone rutas, prompts, hashes ni metadatos internos. La
+carga bajo demanda de modelos continúa siendo una decisión exclusiva del
+backend.
 
 ## Matrices HPN y revisión profesional
 

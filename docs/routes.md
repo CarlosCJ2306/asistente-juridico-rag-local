@@ -27,6 +27,7 @@ backend y las conexiones que ya están activas.
 | Ruta | Página o feature | Propósito | Parámetros | Entrada de navegación | Estado | Endpoints principales |
 | --- | --- | --- | --- | --- | --- | --- |
 | `/` | `HomePage` | Inicio y orientación local. | Ninguno. | Inicio. | Implementada y conectada. | `GET /api/health`. |
+| `/chat` | `features/chat` | Formular una pregunta independiente, delimitar corpus y revisar respuesta con fuentes. | Ninguno. | Asistente jurídico, Inicio. | Implementada y conectada. | `POST /api/chat/rag`, `GET /api/documents`. |
 | `/documents` | `features/documents` | Listar documentos públicos y abrir la carga PDF explícita. | Ninguno. | Documentos. | Implementada y conectada. | `GET`, `POST /api/documents`. |
 | `/documents/search` | `features/documents` | Buscar evidencia documental mediante recuperación híbrida gobernada. | Ninguno. | Desde Biblioteca documental. | Implementada; validación manual pendiente. | `POST /api/search/hybrid`. |
 | `/documents/:documentId` | `features/documents` | Consultar un documento público registrado. | `:documentId`. | Desde listado o carga exitosa. | Implementada y conectada. | `GET /api/documents/{document_id}`. |
@@ -37,8 +38,8 @@ backend y las conexiones que ya están activas.
 | `/legal-network/:matrixId` | `features/legal-network` | Mostrar la proyección estructural y la exportación PyVis restringida. | `:matrixId`. | Desde el detalle HPN. | Implementada y conectada. | `GET /api/hpn/matrices/{matrix_id}/graph` y `/graph/export`. |
 | `*` | `NotFoundPage` | Ruta no encontrada. | Ninguno. | No aplica. | Solo frontend. | Ninguno. |
 
-La ruta de Chat jurídico no existe todavía en el router. Es una ruta futura por
-definir; el endpoint Chat RAG backend no implica una pantalla activa.
+La ruta `/chat` no crea historial ni envía turnos previos: cada solicitud usa
+una pregunta individual y filtros permitidos por el contrato Chat RAG.
 
 ## Mapa de endpoints backend
 
@@ -94,13 +95,27 @@ definir; el endpoint Chat RAG backend no implica una pantalla activa.
 
 | Método y ruta | Propósito | Consumidor actual | Conexión | Nota |
 | --- | --- | --- | --- | --- |
-| `POST /api/chat/rag` | Recuperar evidencia y generar una respuesta local con citas estructuradas. | Ninguno. | Solo backend. | Recibe una pregunta y filtros, no mensajes ni historial; recupera antes de cargar Qwen. |
+| `POST /api/chat/rag` | Recuperar evidencia y generar una respuesta local con citas estructuradas. | Asistente jurídico. | Conectada. | Recibe una pregunta y filtros, no mensajes ni historial; recupera antes de cargar Qwen. |
+| `POST /api/conversations` | Crear una conversación invitada. | Frontend futuro 12C-3B. | Solo backend. | El ownership proviene exclusivamente de cookie HttpOnly. |
+| `GET /api/conversations` | Listar conversaciones propias paginadas. | Frontend futuro 12C-3B. | Solo backend. | Activas por defecto, ordenadas por última actividad. |
+| `GET /api/conversations/{conversation_id}` | Obtener hilo, claims y snapshots de citas. | Frontend futuro 12C-3B. | Solo backend. | Un propietario distinto recibe 404 seguro. |
+| `PATCH /api/conversations/{conversation_id}` | Renombrar o archivar. | Frontend futuro 12C-3B. | Solo backend. | No ejecuta modelos. |
+| `DELETE /api/conversations/{conversation_id}` | Eliminar el hilo propio. | Frontend futuro 12C-3B. | Solo backend. | Cascada transaccional de artefactos conversacionales. |
+| `POST /api/conversations/{conversation_id}/messages` | Persistir un turno y ejecutar RAG multi-turn. | Frontend futuro 12C-3B. | Solo backend. | Admite `Idempotency-Key`; recupera evidencia nueva en cada turno. |
 
 La respuesta pública distingue `answered` e `insufficient_context`, conserva
 conteos técnicos seguros y solo incluye citas revalidadas con documento
 público, capa, tipo, chunk y páginas. No devuelve prompt, contexto, scores,
 vectores, rutas ni contenido completo. Los fallos de índice, modelos,
 generación o citas usan códigos estables sin traceback.
+
+No hay endpoints de cuenta ni transferencia porque no existe autenticación
+real. El esquema está preparado para integrarlos con consentimiento cuando
+exista un principal autenticado.
+
+La interfaz no carga modelos ni reconstruye índices antes de consultar. Muestra
+un estado indeterminado mientras el backend prepara recursos locales bajo
+demanda, y conserva la pregunta solo durante la sesión React actual.
 
 ### Matrices HPN, nodos y relaciones
 

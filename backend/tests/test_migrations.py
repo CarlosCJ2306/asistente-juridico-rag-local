@@ -429,7 +429,6 @@ def test_managed_corpus_registry_migration_is_reversible_and_additive(
             "SELECT COUNT(*) FROM documents WHERE id=?", (document_id,)
         ).fetchone()[0] == 1
 
-
 def test_document_processing_queue_migration_is_additive_and_reversible(
     tmp_path: Path,
 ) -> None:
@@ -483,3 +482,82 @@ def test_document_processing_queue_migration_is_additive_and_reversible(
         assert connection.execute(
             "SELECT COUNT(*) FROM documents WHERE id=?", (document_id,)
         ).fetchone()[0] == 1
+
+
+def test_conversation_migration_is_additive_cascading_and_reversible(
+    tmp_path: Path,
+) -> None:
+    database_file = tmp_path / "conversations.db"
+    _run_migration(database_file, "20260728_07")
+    with sqlite3.connect(database_file) as connection:
+        existing_tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+
+    _run_migration(database_file, "20260728_08")
+    conversation_id = uuid4().hex
+    message_id = uuid4().hex
+    with sqlite3.connect(database_file) as connection:
+        connection.execute("PRAGMA foreign_keys=ON")
+        tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+        assert {
+            "conversations",
+            "conversation_messages",
+            "conversation_citations",
+            "conversation_claims",
+            "conversation_claim_citations",
+        } <= tables
+        connection.execute(
+            "INSERT INTO conversations ("
+            "id,title,owner_type,guest_session_hash,status,created_at,updated_at,"
+            "last_activity_at,expires_at,schema_version) VALUES (?,?,?,?,?,?,?,?,?,?)",
+            (
+                conversation_id,
+                "Conversación sintética",
+                "guest",
+                "a" * 64,
+                "active",
+                "2026-07-28 00:00:00",
+                "2026-07-28 00:00:00",
+                "2026-07-28 00:00:00",
+                "2026-08-04 00:00:00",
+                1,
+            ),
+        )
+        connection.execute(
+            "INSERT INTO conversation_messages ("
+            "id,conversation_id,role,content,sequence_number,created_at) "
+            "VALUES (?,?,?,?,?,?)",
+            (
+                message_id,
+                conversation_id,
+                "user",
+                "Pregunta sintética",
+                1,
+                "2026-07-28 00:00:00",
+            ),
+        )
+        connection.execute("DELETE FROM conversations WHERE id=?", (conversation_id,))
+        assert connection.execute(
+            "SELECT COUNT(*) FROM conversation_messages"
+        ).fetchone()[0] == 0
+        connection.commit()
+
+    _downgrade_migration(database_file, "20260728_07")
+    with sqlite3.connect(database_file) as connection:
+        remaining_tables = {
+            row[0]
+            for row in connection.execute(
+                "SELECT name FROM sqlite_master WHERE type='table'"
+            )
+        }
+    assert not any(name.startswith("conversation") for name in remaining_tables)
+    assert existing_tables <= remaining_tables

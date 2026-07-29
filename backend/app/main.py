@@ -22,6 +22,7 @@ from app.core.exceptions import unhandled_exception_handler
 from app.core.middleware import RequestLoggingMiddleware
 from app.database.session import database_session_manager
 from app.services.document_automation_service import get_document_automation_service
+from app.services.conversation_cleanup_service import get_conversation_cleanup_service
 from app.services.embedding_runtime_service import get_embedding_runtime_service
 from app.services.llm_runtime_service import shutdown_llm_runtime_if_initialized
 
@@ -79,6 +80,11 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         if callable(session_factory_getter)
         else None
     )
+    conversation_cleanup = (
+        get_conversation_cleanup_service(session_factory_getter())
+        if callable(session_factory_getter)
+        else None
+    )
     try:
         log_documentation(
             "Configuración del backend cargada correctamente",
@@ -87,6 +93,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         log_success("Backend disponible", service="asistente-juridico-backend")
         if automation is not None:
             await automation.start()
+        if conversation_cleanup is not None:
+            await conversation_cleanup.start()
         yield
     except Exception as exc:
         log_critical(
@@ -98,6 +106,8 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
     finally:
         if automation is not None:
             await automation.stop()
+        if conversation_cleanup is not None:
+            await conversation_cleanup.stop()
         await shutdown_llm_runtime_if_initialized()
         await get_embedding_runtime_service().shutdown()
         try:

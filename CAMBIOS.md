@@ -1,5 +1,33 @@
 # Historial técnico de cambios
 
+## 2026-07-28 — Fase 12C-3A: conversaciones RAG persistentes
+
+- Se añadió la revisión `20260728_08`, con conversaciones, mensajes, snapshots
+  de citas, afirmaciones y sus relaciones, sin alterar documentos ni índices.
+- El modo invitado usa una cookie HttpOnly opaca y conserva únicamente su hash
+  en SQLite; renueva siete días de retención por actividad y elimina expirados
+  mediante el lifecycle local.
+- Cada turno recupera evidencia nueva, usa historial reciente solo como contexto
+  no probatorio y persiste citas literales limitadas y claims trazables.
+- Una compuerta conservadora evita generar cuando los candidatos no sustentan
+  la pregunta actual; el endpoint individual `/api/chat/rag` sigue stateless.
+- No existe autenticación real: el ownership de cuenta está preparado en el
+  esquema, pero no hay login ni transferencia hasta integrar un principal real.
+- La validación operativa aplicó la migración con backup previo, confirmó dos
+  turnos con recuperación y citas propias, persistencia tras reinicio, IDOR
+  seguro y el caso de minería lunar con cobertura insuficiente y cero citas.
+- Los modelos terminaron descargados de memoria, los conteos documentales,
+  FTS5 y HPN no cambiaron, y aprobaron 777 pruebas, Ruff, mypy y enlaces Markdown.
+
+## 2026-07-28 — Fase 12C-2: Interfaz del Chat jurídico RAG
+
+- **Frontend:** ruta `/chat`, entrada principal en navegación e inicio, pregunta
+  individual, filtros de corpus reutilizables y estado local no persistente.
+- **Respuesta:** presentación segura de `answered` e `insufficient_context`,
+  fuentes públicas con enlace documental y acciones locales de copia.
+- **Privacidad y accesibilidad:** sin preguntas o respuestas en URL, caché,
+  almacenamiento o logs; foco de resultado, contador, teclado y estados vivos.
+
 ## 2026-07-28 — Fase 12C-1: Núcleo del Chat jurídico RAG
 
 - **Pipeline:** recuperación híbrida y revalidación SQLite antes de cualquier

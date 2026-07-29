@@ -29,6 +29,18 @@ from app.database.models.hpn import (
     HpnReviewStatus,
 )
 from app.database.models.managed_corpus import ManagedCorpusEntry
+from app.database.models.conversation import (
+    Conversation,
+    ConversationCitation,
+    ConversationClaim,
+    ConversationClaimCitation,
+    ConversationCoverageStatus,
+    ConversationMessage,
+    ConversationMessageRole,
+    ConversationMessageStatus,
+    ConversationOwnerType,
+    ConversationStatus,
+)
 
 
 __all__ = [
@@ -39,4 +51,8 @@ __all__ = [
     "HpnRelation", "HpnRelationType", "HpnReviewStatus",
     "ManagedCorpusEntry",
     "DocumentProcessingJob", "DocumentProcessingOperation", "DocumentProcessingState",
+    "Conversation", "ConversationCitation", "ConversationClaim",
+    "ConversationClaimCitation", "ConversationCoverageStatus", "ConversationMessage",
+    "ConversationMessageRole", "ConversationMessageStatus", "ConversationOwnerType",
+    "ConversationStatus",
 ]

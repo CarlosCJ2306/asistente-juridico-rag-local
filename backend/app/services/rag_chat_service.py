@@ -32,6 +32,7 @@ from app.services.llm_runtime_service import (
     LlmRuntimeService,
     get_llm_runtime_service,
 )
+from app.services.rag_answerability_service import RagAnswerabilityService
 from app.services.rag_citation_service import (
     ActiveChunkReader,
     CITATION_ERROR_STAGES,
@@ -41,6 +42,7 @@ from app.services.rag_citation_service import (
 )
 from app.services.rag_context_service import RagContextService
 from app.services.rag_prompt_service import (
+    ConversationContextMessage,
     INSUFFICIENT_CONTEXT_ANSWER,
     RagPromptError,
     RagPromptService,
@@ -142,15 +144,22 @@ class RagChatService:
                 self.citation_session_factory = create_citation_session
 
     async def chat(
-        self, request: RagChatRequest, *, request_id: str | None = None
+        self,
+        request: RagChatRequest,
+        *,
+        request_id: str | None = None,
+        conversation_context: tuple[ConversationContextMessage, ...] = (),
+        enforce_answerability: bool = False,
+        evidence_observer: Callable[[tuple[ActiveChunk, ...]], None] | None = None,
     ) -> RagChatResponse:
         started_at = time.perf_counter()
         self._validate_question(request.question)
         retrieval_started = time.perf_counter()
+        retrieval_query = self._retrieval_query(request.question, conversation_context)
         try:
             hybrid = await self.hybrid_service.search(
                 HybridSearchRequest(
-                    query=request.question,
+                    query=retrieval_query,
                     text_match_mode=request.text_match_mode,
                     top_k=request.top_k,
                     document_id=request.document_id,
@@ -162,6 +171,13 @@ class RagChatService:
                 request_id=request_id,
             )
             chunks = await self.context_service.get_valid_chunks(hybrid.items, request)
+            if enforce_answerability and not RagAnswerabilityService().has_sufficient_evidence(
+                retrieval_query=request.question,
+                request=request,
+                response=hybrid,
+                chunks=chunks,
+            ):
+                chunks = []
             await self.session.rollback()
             close_session = getattr(self.session, "close", None)
             if callable(close_session):
@@ -187,6 +203,8 @@ class RagChatService:
                     started_at=started_at,
                     retrieval_ms=retrieval_ms,
                     loaded_automatically=loaded_automatically,
+                    conversation_context=conversation_context,
+                    evidence_observer=evidence_observer,
                 )
         except LlmRuntimeError as exc:
             self.log_failure(exc.code, request, request_id, started_at)
@@ -202,6 +220,8 @@ class RagChatService:
         started_at: float,
         retrieval_ms: float,
         loaded_automatically: bool,
+        conversation_context: tuple[ConversationContextMessage, ...],
+        evidence_observer: Callable[[tuple[ActiveChunk, ...]], None] | None,
     ) -> RagChatResponse:
         log_info(
             "Iniciando chat RAG local",
@@ -225,7 +245,9 @@ class RagChatService:
             self.local_llm.truncate_text_to_tokens,
         )
         try:
-            selected = prompt_service.select_context(request.question, chunks)
+            selected = prompt_service.select_context(
+                request.question, chunks, conversation_context
+            )
             if selected.chunks == 0:
                 response = self._insufficient(retrieved_chunks)
                 self._log_success(
@@ -239,6 +261,7 @@ class RagChatService:
                 request.question,
                 selected,
                 registry.markers,
+                conversation_context,
             )
         except RagCitationError as exc:
             self._log_citation_failure(exc, request, request_id, started_at)
@@ -294,10 +317,31 @@ class RagChatService:
             citation_count=len(citations),
             citations=citations,
         )
+        if evidence_observer is not None:
+            evidence_observer(selected.source_chunks)
         self._log_success(
             response, request, request_id, started_at, retrieval_ms, generation_ms
         )
         return response
+
+    @staticmethod
+    def _retrieval_query(
+        question: str,
+        conversation_context: tuple[ConversationContextMessage, ...],
+    ) -> str:
+        prior_questions = [
+            item.content.strip()
+            for item in conversation_context
+            if item.role == "user" and item.content.strip()
+        ][-2:]
+        parts = prior_questions + [question.strip()]
+        terms: list[str] = []
+        for part in parts:
+            for term in part.split():
+                if len(terms) >= settings.text_search_max_terms:
+                    break
+                terms.append(term)
+        return " ".join(terms)[: settings.text_search_query_max_chars].strip()
 
     @staticmethod
     def _validate_question(question: str) -> None:

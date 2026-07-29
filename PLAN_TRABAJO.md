@@ -34,8 +34,9 @@ Este es el plan activo y la única hoja de ruta vigente. Ordena la evolución de
 
 Las Matrices HPN manuales, la Red jurídica, la biblioteca documental, el
 procesamiento, la selección gobernada de corpus y el núcleo backend del Chat
-RAG ya están implementados. La interfaz de Chat y sus fuentes visibles siguen
-pendientes.
+RAG ya están implementados. La interfaz single-turn de Chat existe; la
+experiencia frontend de historial multi-turn y evidencia persistente corresponde
+al bloque 12C-3B.
 
 ## Hoja de ruta activa
 
@@ -125,8 +126,8 @@ Estado visible de extracción, páginas, chunks e índices, sin ocultar operacio
   embeddings y LLM, sin descargas ni rutas arbitrarias desde la API.
 - Cambiar embeddings invalida la compatibilidad semántica y exige rebuild
   explícito; cambiar el LLM no modifica los índices.
-- 12C-1 quedó completada después de 12B-4; 12C-2 es el siguiente bloque
-  autorizado.
+- 12C-1 y 12C-2 están implementadas; 12C-3A completó el backend conversacional
+  y 12C-3B es el siguiente bloque autorizado.
 - Centro frontend `/models` completado con catálogo, selección, load/unload y
   estado semántico compartido; su validación visual manual permanece pendiente.
 
@@ -161,10 +162,28 @@ Estado visible de extracción, páginas, chunks e índices, sin ocultar operacio
 - El runtime evita cargas duplicadas, protege la generación, aplica timeouts y
   descarga Qwen tras inactividad sin interferir con los controles manuales.
 
-### 12C-2 — Interfaz del Chat jurídico RAG — Siguiente bloque
+### 12C-2 — Interfaz del Chat jurídico RAG — Implementada; validación visual y operativa pendiente
 
 Interfaz stateless para pregunta, filtros de corpus, respuesta y fuentes
 verificables, sin historial persistente.
+
+### 12C-3A — Conversaciones persistentes y evidencia verificable — Completada
+
+- Conversaciones invitadas aisladas por cookie HttpOnly, persistidas siete días
+  desde la última actividad y eliminables manual o automáticamente al expirar.
+- Cada turno ejecuta recuperación nueva. El historial reciente ayuda a resolver
+  referencias conversacionales, pero nunca sustituye la evidencia documental.
+- Mensajes, estados, claims y snapshots literales de citas se conservan en
+  SQLite sin prompts, chain-of-thought, embeddings, rutas ni contexto ensamblado.
+- El esquema admite ownership `account`, pero no existe autenticación real ni
+  transferencia: ambas capacidades quedan condicionadas a un principal real y
+  consentimiento explícito.
+
+### 12C-3B — Experiencia frontend de conversaciones — Siguiente bloque
+
+Integrar historial lateral, hilo multi-turn, cobertura y evidencia verificable
+con los endpoints de 12C-3A, sin inventar autenticación ni almacenar el token
+invitado en JavaScript.
 
 ### 12D — Incorporación web controlada y verificable
 
@@ -184,7 +203,9 @@ Flujo de revisión de matrices y relación controlada con la proyección de Red 
 12A-0C las integra con recuperación y Chat RAG, 12A-0D valida ese flujo y
 12A-0E incorpora fuentes administradas de forma explícita. 12A-1 expone la
 biblioteca y 12A-2 incorpora la carga PDF explícita. 12B habilitó el núcleo
-Chat RAG completado en 12C-1; 12C-2 es el próximo bloque autorizado. La
+Chat RAG completado en 12C-1, su interfaz implementada en 12C-2 y el dominio
+conversacional backend implementado en 12C-3A. 12C-3B es el siguiente bloque
+autorizado antes de iniciar 12D. La
 biblioteca y la carga habilitan el procesamiento; el procesamiento e índices
 habilitan el Chat RAG; el Chat con fuentes y la
 gobernanza de evidencia preceden a propuestas HPN; la revisión de esas

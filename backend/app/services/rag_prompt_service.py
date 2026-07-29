@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Callable
+from typing import Callable, Literal
 
 from app.core.config import settings
 from app.database.repositories.semantic_chunk_repository import ActiveChunk
@@ -42,6 +42,12 @@ class SelectedContext:
     tokens: int
     truncated_first: bool
     source_chunks: tuple[ActiveChunk, ...] = ()
+
+
+@dataclass(frozen=True)
+class ConversationContextMessage:
+    role: Literal["user", "assistant"]
+    content: str
 
 
 class RagPromptService:
@@ -105,6 +111,7 @@ class RagPromptService:
         question: str,
         blocks: list[str],
         authorized_markers: tuple[str, ...],
+        conversation_context: tuple[ConversationContextMessage, ...] = (),
     ) -> str:
         safe_question = neutralize_untrusted_markers(question)
         marker_list = ", ".join(authorized_markers)
@@ -112,6 +119,19 @@ class RagPromptService:
         sections = [
             "/no_think",
             f"PREGUNTA:\n{safe_question}",
+        ]
+        if conversation_context:
+            contextual_lines = [
+                f"{('USUARIO' if item.role == 'user' else 'ASISTENTE')}: "
+                f"{self.neutralize_evidence(item.content)}"
+                for item in conversation_context
+            ]
+            sections.append(
+                "CONTEXTO CONVERSACIONAL NO PROBATORIO:\n"
+                "Sirve solo para interpretar referencias de la pregunta actual; "
+                "no es evidencia jurídica.\n" + "\n".join(contextual_lines)
+            )
+        sections.extend([
             f"MARCADORES AUTORIZADOS:\n{marker_list}",
             (
                 "REGLAS DE FORMATO:\n"
@@ -120,7 +140,7 @@ class RagPromptService:
                 "- Usa el formato exacto mostrado; no uses Fuente 1, F1, (F1), [F01] ni variantes.\n"
                 "- No escribas bibliografía, documentos, páginas, enlaces ni metadata."
             ),
-        ]
+        ])
         if authorized_markers:
             sections.append(
                 "FORMATO VÁLIDO:\n"
@@ -141,14 +161,20 @@ class RagPromptService:
         )
         return "\n\n".join(sections)
 
-    def available_context_tokens(self, question: str) -> int:
+    def available_context_tokens(
+        self,
+        question: str,
+        conversation_context: tuple[ConversationContextMessage, ...] = (),
+    ) -> int:
         markers = self._authorized_markers(1)
         fixed_tokens = self.count_chat_tokens(
             [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": self._user_message(question, [], markers),
+                    "content": self._user_message(
+                        question, [], markers, conversation_context
+                    ),
                 },
             ]
         )
@@ -162,10 +188,15 @@ class RagPromptService:
             raise RagPromptError("RAG_TOKEN_BUDGET_INVALID")
         return min(settings.rag_context_max_tokens, available)
 
-    def select_context(self, question: str, chunks: list[ActiveChunk]) -> SelectedContext:
+    def select_context(
+        self,
+        question: str,
+        chunks: list[ActiveChunk],
+        conversation_context: tuple[ConversationContextMessage, ...] = (),
+    ) -> SelectedContext:
         """Conserva orden; tras un bloque grande continúa con candidatos posteriores."""
 
-        budget = self.available_context_tokens(question)
+        budget = self.available_context_tokens(question, conversation_context)
         selected: list[str] = []
         selected_chunks: list[ActiveChunk] = []
         seen: set[object] = set()
@@ -193,14 +224,18 @@ class RagPromptService:
                 False,
                 tuple(selected_chunks + [chunk]),
             )
-            if tentative_tokens <= budget and self._prompt_fits(question, tentative):
+            if tentative_tokens <= budget and self._prompt_fits(
+                question, tentative, conversation_context
+            ):
                 selected = tentative_blocks
                 selected_chunks.append(chunk)
                 used = tentative_tokens
                 continue
             if selected:
                 continue
-            truncated = self._truncate_first(question, chunk, budget)
+            truncated = self._truncate_first(
+                question, chunk, budget, conversation_context
+            )
             if truncated is not None:
                 return truncated
         return SelectedContext(
@@ -212,7 +247,11 @@ class RagPromptService:
         )
 
     def _truncate_first(
-        self, question: str, chunk: ActiveChunk, budget: int
+        self,
+        question: str,
+        chunk: ActiveChunk,
+        budget: int,
+        conversation_context: tuple[ConversationContextMessage, ...] = (),
     ) -> SelectedContext | None:
         text = self.neutralize_evidence(chunk.text)
         empty_chunk = ActiveChunk(
@@ -250,7 +289,9 @@ class RagPromptService:
                 True,
                 (chunk,),
             )
-            if tokens <= budget and self._prompt_fits(question, selected):
+            if tokens <= budget and self._prompt_fits(
+                question, selected, conversation_context
+            ):
                 return selected
             text_budget -= 1
         return None
@@ -260,6 +301,7 @@ class RagPromptService:
         question: str,
         selected: SelectedContext,
         authorized_markers: tuple[str, ...] | None = None,
+        conversation_context: tuple[ConversationContextMessage, ...] = (),
     ) -> list[dict[str, str]]:
         expected = self._authorized_markers(selected.chunks)
         markers = expected if authorized_markers is None else authorized_markers
@@ -273,7 +315,9 @@ class RagPromptService:
             )
         ):
             raise RagPromptError("RAG_CITATION_METADATA_INVALID")
-        user_message = self._user_message(question, selected.blocks, markers)
+        user_message = self._user_message(
+            question, selected.blocks, markers, conversation_context
+        )
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": user_message},
@@ -283,13 +327,20 @@ class RagPromptService:
             raise RagPromptError("RAG_PROMPT_TOO_LARGE")
         return messages
 
-    def _prompt_fits(self, question: str, selected: SelectedContext) -> bool:
+    def _prompt_fits(
+        self,
+        question: str,
+        selected: SelectedContext,
+        conversation_context: tuple[ConversationContextMessage, ...] = (),
+    ) -> bool:
         markers = self._authorized_markers(selected.chunks)
         messages = [
             {"role": "system", "content": SYSTEM_PROMPT},
             {
                 "role": "user",
-                "content": self._user_message(question, selected.blocks, markers),
+                "content": self._user_message(
+                    question, selected.blocks, markers, conversation_context
+                ),
             },
         ]
         return (

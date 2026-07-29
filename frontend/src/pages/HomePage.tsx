@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import type { ReactNode } from "react";
+import { Link, useNavigate } from "react-router-dom";
 
 import { getHealth, toAppError } from "../api";
 import { productConfig } from "../app/product.config";
@@ -8,6 +9,7 @@ import { AsyncContent, Badge, Button, Card, ErrorState, Heading, Stack, Text } f
 import { ContentLayout } from "../layouts";
 
 export function HomePage() {
+  const navigate = useNavigate();
   const healthQuery = useQuery({
     queryKey: ["backend-health"],
     queryFn: ({ signal }) => getHealth(signal),
@@ -45,6 +47,16 @@ export function HomePage() {
 
   return (
     <ContentLayout title="Inicio" description={productConfig.description}>
+      <Card as="section" aria-labelledby="assistant-flow-title">
+        <Stack gap="md" align="start">
+          <Heading as="h2" size="sm" id="assistant-flow-title">Consulta evidencia local</Heading>
+          <Text variant="secondary">Pregunta, revisa la respuesta asistida y verifica las fuentes documentales utilizadas.</Text>
+          <Button onClick={() => navigate("/chat")}>Consultar al asistente</Button>
+          <div>
+            <Link to="/documents">Gestionar documentos</Link>{" · "}<Link to="/documents/search">Búsqueda documental</Link>
+          </div>
+        </Stack>
+      </Card>
       <Card as="section" aria-labelledby="service-status-title">
         <Stack gap="md" align="start">
           <Heading as="h2" size="sm" id="service-status-title">Estado del servicio local</Heading>

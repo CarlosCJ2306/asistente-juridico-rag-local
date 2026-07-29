@@ -75,7 +75,7 @@ def test_hpn_migration_chain_constraints_and_safe_downgrade(tmp_path: Path) -> N
             "SELECT name FROM sqlite_master WHERE type='table'"
         )}
         assert {"hpn_matrices", "hpn_nodes", "hpn_node_sources", "hpn_relations"} <= tables
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "20260728_07"
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "20260728_08"
         foreign_keys = {
             (row[2], row[3], row[4])
             for row in connection.execute("PRAGMA foreign_key_list('hpn_node_sources')")
@@ -240,7 +240,7 @@ def test_hpn_migration_chain_constraints_and_safe_downgrade(tmp_path: Path) -> N
         ).fetchone() is None
     _migrate(database, "head")
     with sqlite3.connect(database) as connection:
-        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "20260728_07"
+        assert connection.execute("SELECT version_num FROM alembic_version").fetchone()[0] == "20260728_08"
         assert connection.execute("SELECT COUNT(*) FROM documents").fetchone()[0] == 2
         assert connection.execute("SELECT COUNT(*) FROM document_chunks").fetchone()[0] == 1
 
@@ -261,7 +261,7 @@ def test_hpn_revision_remains_in_single_linear_migration_chain() -> None:
                 revisions.add(line.split('"')[1])
             elif line.startswith("down_revision = ") and "None" not in line:
                 parents.add(line.split('"')[1])
-    assert revisions - parents == {"20260728_07"}
+    assert revisions - parents == {"20260728_08"}
 
 
 def test_database_manager_enables_sqlite_foreign_keys(tmp_path: Path) -> None:

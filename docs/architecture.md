@@ -86,7 +86,26 @@ El coordinador del LLM serializa la carga, reutiliza la instancia cargada,
 protege generaciones activas, aplica timeouts y programa descarga por
 inactividad. `RagCitationService` valida markers, cobertura y nuevamente la
 fuente gobernada antes de construir citas con nombre visible, capa, documento,
-chunk y páginas. El Chat es stateless y exige revisión profesional.
+chunk y páginas. El endpoint individual permanece stateless y exige revisión
+profesional.
+
+## Conversaciones persistentes
+
+La revisión `20260728_08` añade conversaciones, mensajes, snapshots de citas,
+claims y relaciones claim-cita. Una sesión invitada se identifica mediante una
+cookie aleatoria HttpOnly; SQLite conserva solo SHA-256 del token. El hilo se
+limita al hash propietario y expira siete días después de la última actividad.
+Una tarea del lifecycle ejecuta limpieza al iniciar y periódicamente.
+
+En cada turno, el servicio carga solo una ventana limitada de mensajes. Ese
+contexto se rotula como no probatorio y sirve para interpretar la pregunta; la
+evidencia jurídica procede exclusivamente de una recuperación híbrida nueva y
+de chunks revalidados en SQLite. Las citas guardan metadata pública, rango de
+páginas y un extracto literal limitado. No se persisten prompts ensamblados,
+chain-of-thought, embeddings, rutas ni índices derivados.
+
+El modelo admite `owner_type=account` y `user_id`, pero no existe autenticación
+real. No se crea principal ficticio ni endpoint de transferencia.
 
 ## Matrices HPN y Red jurídica
 

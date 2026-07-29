@@ -27,6 +27,7 @@ from app.services.llm_runtime_service import LlmRuntimeService
 from app.services.semantic_index_service import SemanticServiceError
 from app.services.document_governance_service import DocumentGovernanceSnapshot
 from app.services.rag_prompt_service import (
+    ConversationContextMessage,
     EVIDENCE_CLOSE,
     EVIDENCE_OPEN,
     INSUFFICIENT_CONTEXT_ANSWER,
@@ -180,6 +181,40 @@ def _prompt_service(divisor: int = 20) -> RagPromptService:
         return text.encode("utf-8")[: limit * divisor].decode("utf-8", errors="ignore")
 
     return RagPromptService(count, count_chat, truncate)
+
+
+def test_conversation_answerability_rejects_unrelated_turn_before_qwen() -> None:
+    chunk = _chunk(text="El Decreto 564 regula una materia sintética.")
+    item = HybridSearchItem(
+        **_item(chunk).model_dump(exclude={"appeared_in_semantic", "semantic_rank", "distance_cosine"}),
+        appeared_in_semantic=True,
+        semantic_rank=1,
+        distance_cosine=0.1,
+    )
+    hybrid = FakeHybrid([item])
+    context = FakeContext([chunk])
+    llm = FakeLLM()
+    session = FakeSession()
+    service = RagChatService(
+        session,  # type: ignore[arg-type]
+        hybrid_service=hybrid,  # type: ignore[arg-type]
+        context_service=context,  # type: ignore[arg-type]
+        local_llm=llm,  # type: ignore[arg-type]
+    )
+    response = asyncio.run(
+        service.chat(
+            RagChatRequest(question="¿Qué regula la minería lunar?"),
+            conversation_context=(
+                ConversationContextMessage(role="user", content="¿Qué regula el Decreto 564?"),
+            ),
+            enforce_answerability=True,
+        )
+    )
+    assert response.status == "insufficient_context"
+    assert llm.calls == []
+    assert llm.load_calls == 0
+    assert "Decreto" in hybrid.calls[0].query
+    assert "lunar" in hybrid.calls[0].query
 
 
 @pytest.mark.parametrize(

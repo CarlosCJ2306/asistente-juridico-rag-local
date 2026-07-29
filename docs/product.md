@@ -80,9 +80,20 @@ completar desde el conocimiento previo del modelo.
 
 La búsqueda recupera candidatos trazables; el Chat añade selección de contexto,
 generación limitada y validación de citas. Sus citas estructuradas identifican
-la capa y evidencia usada. Cada pregunta es independiente: no existe memoria o
-historial persistente. Una respuesta requiere revisión profesional y no
-certifica veracidad, aplicabilidad o suficiencia jurídica.
+la capa y evidencia usada. El Asistente jurídico presenta este flujo principal
+como pregunta → evidencia → respuesta → fuentes, mientras la búsqueda
+documental conserva su papel técnico avanzado. El endpoint individual mantiene
+cada pregunta independiente. El dominio conversacional permite además hilos
+invitados temporales: cada turno usa una ventana acotada para interpretar
+referencias y recupera evidencia nueva. Las respuestas persistidas incluyen
+claims, citas directas limitadas y cobertura `full`, `partial` o
+`insufficient`; el flujo estricto vigente produce cobertura completa o
+insuficiente y mantiene `partial` preparado sin presentar contenido no
+sustentado. Toda respuesta requiere revisión profesional.
+
+Las conversaciones invitadas se retienen siete días desde la última actividad.
+Las cuentas persistentes y la transferencia con consentimiento están preparadas
+en el dominio, pero solo se habilitarán cuando exista autenticación real.
 
 ## Matrices HPN y Red jurídica
 
